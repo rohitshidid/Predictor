@@ -457,23 +457,27 @@
       opacity: 1;
     }
 
-    /* advanced field help labels — block layout (robust on every engine; no
-       reliance on bare text nodes as flex items). */
-    label.adv-label {
+    /* advanced fields — plain block divs. No flex, no <label>, no bare text
+       nodes. Renders identically on every browser and every host. */
+    .af {
+      display: block;
+    }
+
+    .af-name {
       display: block;
       font-size: 11px;
       font-weight: 600;
       color: var(--ink);
-      margin: 10px 0 4px;
+      margin-top: 8px;
     }
 
-    label.adv-label .adv-sub {
+    .af-desc {
       display: block;
       font-size: 10px;
-      color: var(--muted);
       font-weight: 400;
       line-height: 1.3;
-      margin-top: 2px;
+      color: var(--muted);
+      margin: 1px 0 4px;
     }
 
     /* ---- overlay ---- */
@@ -529,7 +533,7 @@
       <h1 id="title">T20 Power Rankings</h1>
       <span class="pill" id="modePill">baseline</span>
       <span class="pill" id="aiPill">AI</span>
-      <span class="pill on" id="buildPill" title="Deploy marker — if you don't see this pill, you're on a cached OLD version; hard-reload.">build&nbsp;3 · labels&nbsp;✓</span>
+      <span class="pill on" id="buildPill" title="Deploy marker — if you don't see this pill, you're on a cached OLD version; hard-reload.">build&nbsp;4 · labels&nbsp;✓</span>
       <span class="sub" id="sub"></span>
     </div>
 
@@ -575,135 +579,85 @@
         <details id="adv">
           <summary>Advanced parameters (phase splits, players)</summary>
           <div class="adv" style="margin-top:8px;">
-            <div>
-              <label class="adv-label"
-                title="Runs Team X scored in the Powerplay — overs 1 to 6 (the first 36 balls). A strong Powerplay sets up a big total.">
-                X Powerplay runs
-                <span class="adv-sub">Overs 1–6 · how many runs did Team X score early?</span>
-              </label>
-              <input type="number" id="ppX" min="0" title="Runs scored by Team X in overs 1–6 (Powerplay).">
+            <div class="af">
+              <div class="af-name">X Powerplay runs</div>
+              <div class="af-desc">Overs 1–6 · runs scored early</div>
+              <input type="number" id="ppX" min="0">
             </div>
-            <div>
-              <label class="adv-label" title="Runs Team Y scored in the Powerplay — overs 1 to 6.">
-                Y Powerplay runs
-                <span class="adv-sub">Overs 1–6 · how many runs did Team Y score early?</span>
-              </label>
-              <input type="number" id="ppY" min="0" title="Runs scored by Team Y in overs 1–6 (Powerplay).">
+            <div class="af">
+              <div class="af-name">Y Powerplay runs</div>
+              <div class="af-desc">Overs 1–6 · runs scored early</div>
+              <input type="number" id="ppY" min="0">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Runs Team X scored in the Death overs — overs 16 to 20 (the last 30 balls). The final push is often where T20 matches are won or lost.">
-                X Death-over runs
-                <span class="adv-sub">Overs 16–20 · runs in the final push</span>
-              </label>
-              <input type="number" id="dRunsX" min="0" title="Runs scored by Team X in overs 16–20 (Death overs).">
+            <div class="af">
+              <div class="af-name">X Death-over runs</div>
+              <div class="af-desc">Overs 16–20 · the final push</div>
+              <input type="number" id="dRunsX" min="0">
             </div>
-            <div>
-              <label class="adv-label" title="Runs Team Y scored in the Death overs — overs 16 to 20.">
-                Y Death-over runs
-                <span class="adv-sub">Overs 16–20 · runs in the final push</span>
-              </label>
-              <input type="number" id="dRunsY" min="0" title="Runs scored by Team Y in overs 16–20 (Death overs).">
+            <div class="af">
+              <div class="af-name">Y Death-over runs</div>
+              <div class="af-desc">Overs 16–20 · the final push</div>
+              <input type="number" id="dRunsY" min="0">
             </div>
-            <div>
-              <label class="adv-label"
-                title="How many balls did Team X face in the Death overs? Max is 30 (a full 5 overs). If the team was all out before over 20, this will be less than 30.">
-                X Death balls faced
-                <span class="adv-sub">Balls faced in overs 16–20 (max 30)</span>
-              </label>
-              <input type="number" id="dBallsX" min="0" max="30"
-                title="Balls faced by Team X in overs 16–20. Max 30 (full 5 overs).">
+            <div class="af">
+              <div class="af-name">X Death balls faced</div>
+              <div class="af-desc">Balls faced in overs 16–20 (max 30)</div>
+              <input type="number" id="dBallsX" min="0" max="30">
             </div>
-            <div>
-              <label class="adv-label"
-                title="How many balls did Team Y face in the Death overs? Max is 30 (a full 5 overs).">
-                Y Death balls faced
-                <span class="adv-sub">Balls faced in overs 16–20 (max 30)</span>
-              </label>
-              <input type="number" id="dBallsY" min="0" max="30"
-                title="Balls faced by Team Y in overs 16–20. Max 30 (full 5 overs).">
+            <div class="af">
+              <div class="af-name">Y Death balls faced</div>
+              <div class="af-desc">Balls faced in overs 16–20 (max 30)</div>
+              <input type="number" id="dBallsY" min="0" max="30">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Total balls faced by Team X in this innings. A full T20 innings = 120 balls (20 overs). If they were all out early, enter the actual balls faced.">
-                X Total balls faced
-                <span class="adv-sub">Full innings = 120 balls (20 overs)</span>
-              </label>
-              <input type="number" id="ballsX" min="1" max="120" value="120"
-                title="Total balls faced by Team X. 120 = completed all 20 overs.">
+            <div class="af">
+              <div class="af-name">X Total balls faced</div>
+              <div class="af-desc">Full innings = 120 balls (20 overs)</div>
+              <input type="number" id="ballsX" min="1" max="120" value="120">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Total balls faced by Team Y in this innings. 120 = all 20 overs completed.">
-                Y Total balls faced
-                <span class="adv-sub">Full innings = 120 balls (20 overs)</span>
-              </label>
-              <input type="number" id="ballsY" min="1" max="120" value="120"
-                title="Total balls faced by Team Y. 120 = completed all 20 overs.">
+            <div class="af">
+              <div class="af-name">Y Total balls faced</div>
+              <div class="af-desc">Full innings = 120 balls (20 overs)</div>
+              <input type="number" id="ballsY" min="1" max="120" value="120">
             </div>
-            <div>
-              <label class="adv-label"
-                title="How many of Team X's star players are available today? Star = ranked in the ICC T20 top 30 (batters + bowlers). Injuries drop this number. 0 = no key players available.">
-                X Star players available
-                <span class="adv-sub">ICC top-30 ranked players in today's XI</span>
-              </label>
-              <input type="number" id="starsX" min="0"
-                title="Number of Team X's ICC top-30 ranked players playing today.">
+            <div class="af">
+              <div class="af-name">X Star players available</div>
+              <div class="af-desc">ICC top-30 ranked players in the XI</div>
+              <input type="number" id="starsX" min="0">
             </div>
-            <div>
-              <label class="adv-label"
-                title="How many of Team Y's star players are available today? Injuries reduce this. Used to measure how strong the lineup is compared to their usual squad.">
-                Y Star players available
-                <span class="adv-sub">ICC top-30 ranked players in today's XI</span>
-              </label>
-              <input type="number" id="starsY" min="0"
-                title="Number of Team Y's ICC top-30 ranked players playing today.">
+            <div class="af">
+              <div class="af-name">Y Star players available</div>
+              <div class="af-desc">ICC top-30 ranked players in the XI</div>
+              <input type="number" id="starsY" min="0">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Combined runs scored by Team X's top-4 batters. Feeds the Top-4 Consistency metric — a reliable top order makes a team more rankable.">
-                X Top-4 batting runs
-                <span class="adv-sub">Runs from X's top 4 batters combined</span>
-              </label>
-              <input type="number" id="top4X" min="0" title="Combined score of Team X's top-4 batters.">
+            <div class="af">
+              <div class="af-name">X Top-4 batting runs</div>
+              <div class="af-desc">Runs from X's top 4 batters combined</div>
+              <input type="number" id="top4X" min="0">
             </div>
-            <div>
-              <label class="adv-label" title="Combined runs scored by Team Y's top-4 batters.">
-                Y Top-4 batting runs
-                <span class="adv-sub">Runs from Y's top 4 batters combined</span>
-              </label>
-              <input type="number" id="top4Y" min="0" title="Combined score of Team Y's top-4 batters.">
+            <div class="af">
+              <div class="af-name">Y Top-4 batting runs</div>
+              <div class="af-desc">Runs from Y's top 4 batters combined</div>
+              <input type="number" id="top4Y" min="0">
             </div>
-            <div>
-              <label class="adv-label"
-                title="How many wickets Team X lost this innings (max 10). Together with the top-2 bowler share it feeds Bowling Concentration.">
-                X wickets lost
-                <span class="adv-sub">Wickets X lost (0–10)</span>
-              </label>
-              <input type="number" id="wktsX" min="0" max="10" title="Wickets Team X lost this innings.">
+            <div class="af">
+              <div class="af-name">X wickets lost</div>
+              <div class="af-desc">Wickets X lost (0–10)</div>
+              <input type="number" id="wktsX" min="0" max="10">
             </div>
-            <div>
-              <label class="adv-label" title="How many wickets Team Y lost this innings (max 10).">
-                Y wickets lost
-                <span class="adv-sub">Wickets Y lost (0–10)</span>
-              </label>
-              <input type="number" id="wktsY" min="0" max="10" title="Wickets Team Y lost this innings.">
+            <div class="af">
+              <div class="af-name">Y wickets lost</div>
+              <div class="af-desc">Wickets Y lost (0–10)</div>
+              <input type="number" id="wktsY" min="0" max="10">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Of the wickets Team X lost, how many fell to the opposition's TOP-2 bowlers? A high share means Team Y's attack leans on 2 bowlers (fragile if they're rested/injured).">
-                Top-2 share of X wkts
-                <span class="adv-sub">Y's 2 best bowlers took how many of X's wkts</span>
-              </label>
-              <input type="number" id="top2X" min="0" max="10" title="Wickets among X's that went to Y's top-2 bowlers.">
+            <div class="af">
+              <div class="af-name">Top-2 share of X wkts</div>
+              <div class="af-desc">Y's 2 best bowlers · of X's wickets</div>
+              <input type="number" id="top2X" min="0" max="10">
             </div>
-            <div>
-              <label class="adv-label"
-                title="Of the wickets Team Y lost, how many fell to the opposition's TOP-2 bowlers?">
-                Top-2 share of Y wkts
-                <span class="adv-sub">X's 2 best bowlers took how many of Y's wkts</span>
-              </label>
-              <input type="number" id="top2Y" min="0" max="10" title="Wickets among Y's that went to X's top-2 bowlers.">
+            <div class="af">
+              <div class="af-name">Top-2 share of Y wkts</div>
+              <div class="af-desc">X's 2 best bowlers · of Y's wickets</div>
+              <input type="number" id="top2Y" min="0" max="10">
             </div>
           </div>
         </details>
