@@ -2,7 +2,7 @@
   "season": "2026",
   "league": "Caribbean Premier League",
   "leagueShort": "CPL",
-  "generatedAt": "2026-07-23T22:01:14.767Z",
+  "generatedAt": "2026-07-23T22:29:17.195Z",
   "note": "Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.",
   "teams": [
     {
@@ -12,7 +12,8 @@
       "colors": {
         "primary": "#C8102E",
         "secondary": "#F5C518"
-      }
+      },
+      "logo": "/logos/tkr.png"
     },
     {
       "name": "Guyana Amazon Warriors",
@@ -21,7 +22,8 @@
       "colors": {
         "primary": "#16A34A",
         "secondary": "#F5C518"
-      }
+      },
+      "logo": "/logos/gaw.png"
     },
     {
       "name": "Antigua & Barbuda Falcons",
@@ -30,7 +32,8 @@
       "colors": {
         "primary": "#1E3A8A",
         "secondary": "#EF4444"
-      }
+      },
+      "logo": "/logos/abf.png"
     },
     {
       "name": "Barbados Royals",
@@ -39,7 +42,8 @@
       "colors": {
         "primary": "#E6007E",
         "secondary": "#0B1B3F"
-      }
+      },
+      "logo": "/logos/br.png"
     },
     {
       "name": "Saint Lucia Kings",
@@ -48,7 +52,8 @@
       "colors": {
         "primary": "#1D4ED8",
         "secondary": "#FACC15"
-      }
+      },
+      "logo": "/logos/slk.png"
     },
     {
       "name": "St Kitts & Nevis Patriots",
@@ -57,7 +62,8 @@
       "colors": {
         "primary": "#0E7490",
         "secondary": "#DC2626"
-      }
+      },
+      "logo": "/logos/snp.png"
     },
     {
       "name": "Jamaica Kingsmen",
@@ -66,7 +72,8 @@
       "colors": {
         "primary": "#111827",
         "secondary": "#FDB913"
-      }
+      },
+      "logo": "/logos/jam.png"
     }
   ],
   "matches": [

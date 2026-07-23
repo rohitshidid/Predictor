@@ -153,7 +153,15 @@ const season = {
   leagueShort: 'CPL',
   generatedAt: new Date().toISOString(),
   note: 'Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.',
-  teams: TEAMS.map((t) => ({ name: t.name, short: t.short, squadStars: t.squadStars, colors: t.colors })),
+  teams: TEAMS.map((t) => ({
+    name: t.name,
+    short: t.short,
+    squadStars: t.squadStars,
+    colors: t.colors,
+    // Drop a licensed logo file at public/logos/<short>.png (or .svg/.webp) and it
+    // renders automatically; until then the UI falls back to the brand crest badge.
+    logo: `/logos/${t.short.toLowerCase()}.png`,
+  })),
   matches: buildSchedule(),
 };
 

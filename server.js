@@ -60,6 +60,7 @@ function buildState(rows) {
       squadStars: t.squadStars || 0,
       primary: (t.colors && t.colors.primary) || '#334155',
       secondary: (t.colors && t.colors.secondary) || '#94a3b8',
+      logo: t.logo || null,
     })),
     ranking,
     blurbs,
@@ -148,6 +149,22 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/state') {
       return send(res, 200, buildState());
+    }
+
+    // Serve licensed team logo files dropped into public/logos/. path.basename
+    // strips any directory component, so ../ traversal can't escape the folder.
+    if (req.method === 'GET' && url.pathname.startsWith('/logos/')) {
+      const file = path.join(__dirname, 'public', 'logos', path.basename(url.pathname));
+      if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+        const type = {
+          '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+          '.svg': 'image/svg+xml', '.webp': 'image/webp', '.gif': 'image/gif',
+        }[path.extname(file).toLowerCase()] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+        return res.end(fs.readFileSync(file));
+      }
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      return res.end('not found');
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mode') {

@@ -168,10 +168,23 @@
       flex-wrap: wrap;
     }
 
+    .logowrap {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
     .logo {
       flex-shrink: 0;
       border-radius: 50%;
       box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    }
+
+    img.teamimg {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      border-radius: 5px;
     }
 
     .name {
@@ -838,7 +851,7 @@
       <div class="rank">${r.rank}</div>
       <div class="body">
         <div class="head">
-          ${logoSvg(r.name)}<span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
+          ${logoHtml(r.name)}<span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
         </div>
         <p class="blurb">${esc(b.text)}</p>
         <div class="stats">
@@ -877,6 +890,18 @@
         <circle cx="24" cy="24" r="18.5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
         <text x="24" y="24.5" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" font-weight="800" font-size="${fs}" letter-spacing=".3" fill="${textOn(primary)}">${esc(s)}</text>
       </svg>`;
+    }
+    // Prefer a licensed logo file if one is present; if it 404s (none dropped in
+    // yet) the onerror swaps in the brand crest, so the list is never empty.
+    function logoHtml(name) {
+      const t = teamMeta(name);
+      const crest = logoSvg(name);
+      if (!t.logo) return crest;
+      return `<span class="logowrap">` +
+        `<img class="teamimg" src="${esc(t.logo)}" alt="${esc(name)} logo" width="34" height="34" ` +
+        `onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';">` +
+        `<span class="crest" style="display:none;">${crest}</span>` +
+        `</span>`;
     }
     // Chips for any enabled optional metric, so the maths is visible in the list.
     function optChips(r) {
