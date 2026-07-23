@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>T20 Power Rankings — Match Simulator</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #fff;
+      --ink: #12151a;
+      --muted: #5b6472;
+      --line: #e4e8ee;
+      --up: #12864f;
+      --down: #c0392b;
+      --accent: #0b5cff;
+      --chip: #eef1f5;
+      --chip2: #e7ebf1;
+      --shadow: 0 1px 3px rgba(20, 30, 50, .06), 0 8px 24px rgba(20, 30, 50, .05);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0c0f14;
+        --card: #151a22;
+        --ink: #eef1f5;
+        --muted: #96a0b0;
+        --line: #232a34;
+        --up: #37d391;
+        --down: #ff6b5e;
+        --accent: #5b8cff;
+        --chip: #1e242e;
+        --chip2: #262d38;
+        --shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: -.02em;
+    }
+
+    h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin: 0 0 10px;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px 18px 60px;
+    }
+
+    @media (max-width:920px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .menu {
+        position: static !important;
+      }
+    }
+
+    /* ---- header ---- */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .topbar .sub {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: var(--chip);
+    }
+
+    .pill.on {
+      color: var(--up);
+      background: color-mix(in srgb, var(--up) 15%, transparent);
+    }
+
+    .pill.off {
+      color: var(--down);
+      background: color-mix(in srgb, var(--down) 15%, transparent);
+    }
+
+    /* ---- ranking list ---- */
+    ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .team {
+      display: flex;
+      gap: 14px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      transition: transform .25s ease;
+    }
+
+    .team.flash {
+      animation: flash .8s ease;
+    }
+
+    @keyframes flash {
+      0% {
+        background: color-mix(in srgb, var(--accent) 12%, var(--card));
+      }
+
+      100% {
+        background: var(--card);
+      }
+    }
+
+    .rank {
+      font-size: 26px;
+      font-weight: 800;
+      min-width: 34px;
+      text-align: center;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .name {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .short {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .05em;
+    }
+
+    .mv {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 20px;
+      background: var(--chip);
+    }
+
+    .mv.up {
+      color: var(--up);
+    }
+
+    .mv.down {
+      color: var(--down);
+    }
+
+    .mv.same {
+      color: var(--muted);
+    }
+
+    .mv.new {
+      color: var(--accent);
+    }
+
+    .src {
+      margin-left: auto;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .src.ai {
+      color: var(--up);
+      background: color-mix(in srgb, var(--up) 14%, transparent);
+    }
+
+    .src.template {
+      color: var(--muted);
+      background: var(--chip);
+    }
+
+    .blurb {
+      margin: 7px 0 9px;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stats b {
+      color: var(--ink);
+    }
+
+    /* ---- menu ---- */
+    .menu {
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-self: start;
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row>* {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 10px 0 4px;
+      font-weight: 600;
+    }
+
+    select,
+    input[type=number],
+    textarea {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 44px;
+    }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      color: var(--ink);
+      border-radius: 9px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--chip2);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    button.primary:hover {
+      filter: brightness(1.08);
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .modebtns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modebtns button {
+      flex: 1;
+    }
+
+    .modebtns button.active {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    details {
+      margin-top: 10px;
+      border-top: 1px dashed var(--line);
+      padding-top: 8px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .adv {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+    }
+
+    .adv .full {
+      grid-column: 1 / -1;
+    }
+
+    .wt {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .wt .wrow {
+      display: grid;
+      grid-template-columns: 120px 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .wt input[type=range] {
+      width: 100%;
+    }
+
+    .wtsum {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .wtsum b {
+      color: var(--ink);
+    }
+
+    .note {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    .err {
+      color: var(--down);
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 16px;
+    }
+
+    /* ---- tooltips ---- */
+    .tip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--chip2);
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      cursor: help;
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .tip-box {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+      left: 0;
+      top: calc(100% + 6px);
+      z-index: 99;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 11.5px;
+      color: var(--ink);
+      line-height: 1.5;
+      width: 220px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .15);
+      transition: opacity .15s ease, visibility .15s ease;
+    }
+
+    .tip-wrap:hover .tip-box,
+    .tip-wrap:focus-within .tip-box {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* advanced field help labels */
+    label.adv-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    label.adv-label .adv-sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+      line-height: 1.3;
+      margin-top: 1px;
+    }
+
+    /* ---- overlay ---- */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 10, 14, .55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    #overlay.on {
+      display: flex;
+    }
+
+    .spin {
+      background: var(--card);
+      padding: 18px 26px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      font-weight: 600;
+    }
+
+    .spin .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 8px;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: .3;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <h1 id="title">T20 Power Rankings</h1>
+      <span class="pill" id="modePill">baseline</span>
+      <span class="pill" id="aiPill">AI</span>
+      <span class="sub" id="sub"></span>
+    </div>
+
+    <!-- LEFT: live ranking -->
+    <div>
+      <ol id="list"></ol>
+    </div>
+
+    <!-- RIGHT: control menu -->
+    <div class="menu">
+      <div class="panel">
+        <h2>Season</h2>
+        <div class="modebtns">
+          <button id="btnBaseline" class="active">From Baseline</button>
+          <button id="btnFresh">Fresh Start</button>
+        </div>
+        <div class="note" id="modeNote"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button id="btnReset" class="ghost" style="flex:1;">Reset current</button>
+          <button id="btnAiAll" class="ghost" style="flex:1;">AI-write all</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Simulate a match</h2>
+        <div class="row">
+          <div><label>Team X</label><select id="teamX"></select></div>
+          <div><label>Team Y</label><select id="teamY"></select></div>
+        </div>
+        <div class="row">
+          <div><label>X score</label><input type="number" id="runsX" value="180" min="40" max="320"></div>
+          <div><label>Y score</label><input type="number" id="runsY" value="165" min="40" max="320"></div>
+        </div>
+        <div class="row">
+          <div><label>Bats first</label><select id="battingFirst"></select></div>
+          <div><label>Winner</label><select id="winner"></select></div>
+        </div>
+        <div class="row">
+          <div><label>Home venue</label><select id="venue"></select></div>
+          <div><label>Toss winner</label><select id="toss"></select></div>
+        </div>
+
+        <details id="adv">
+          <summary>Advanced parameters (phase splits, players)</summary>
+          <div class="adv" style="margin-top:8px;">
+            <div>
+              <label class="adv-label"
+                title="Runs Team X scored in the Powerplay — overs 1 to 6 (the first 36 balls). A strong Powerplay sets up a big total.">
+                X Powerplay runs
+                <span class="adv-sub">Overs 1–6 · how many runs did Team X score early?</span>
+              </label>
+              <input type="number" id="ppX" min="0" title="Runs scored by Team X in overs 1–6 (Powerplay).">
+            </div>
+            <div>
+              <label class="adv-label" title="Runs Team Y scored in the Powerplay — overs 1 to 6.">
+                Y Powerplay runs
+                <span class="adv-sub">Overs 1–6 · how many runs did Team Y score early?</span>
+              </label>
+              <input type="number" id="ppY" min="0" title="Runs scored by Team Y in overs 1–6 (Powerplay).">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Runs Team X scored in the Death overs — overs 16 to 20 (the last 30 balls). The final push is often where T20 matches are won or lost.">
+                X Death-over runs
+                <span class="adv-sub">Overs 16–20 · runs in the final push</span>
+              </label>
+              <input type="number" id="dRunsX" min="0" title="Runs scored by Team X in overs 16–20 (Death overs).">
+            </div>
+            <div>
+              <label class="adv-label" title="Runs Team Y scored in the Death overs — overs 16 to 20.">
+                Y Death-over runs
+                <span class="adv-sub">Overs 16–20 · runs in the final push</span>
+              </label>
+              <input type="number" id="dRunsY" min="0" title="Runs scored by Team Y in overs 16–20 (Death overs).">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="How many balls did Team X face in the Death overs? Max is 30 (a full 5 overs). If the team was all out before over 20, this will be less than 30.">
+                X Death balls faced
+                <span class="adv-sub">Balls faced in overs 16–20 (max 30)</span>
+              </label>
+              <input type="number" id="dBallsX" min="0" max="30"
+                title="Balls faced by Team X in overs 16–20. Max 30 (full 5 overs).">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="How many balls did Team Y face in the Death overs? Max is 30 (a full 5 overs).">
+                Y Death balls faced
+                <span class="adv-sub">Balls faced in overs 16–20 (max 30)</span>
+              </label>
+              <input type="number" id="dBallsY" min="0" max="30"
+                title="Balls faced by Team Y in overs 16–20. Max 30 (full 5 overs).">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Total balls faced by Team X in this innings. A full T20 innings = 120 balls (20 overs). If they were all out early, enter the actual balls faced.">
+                X Total balls faced
+                <span class="adv-sub">Full innings = 120 balls (20 overs)</span>
+              </label>
+              <input type="number" id="ballsX" min="1" max="120" value="120"
+                title="Total balls faced by Team X. 120 = completed all 20 overs.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Total balls faced by Team Y in this innings. 120 = all 20 overs completed.">
+                Y Total balls faced
+                <span class="adv-sub">Full innings = 120 balls (20 overs)</span>
+              </label>
+              <input type="number" id="ballsY" min="1" max="120" value="120"
+                title="Total balls faced by Team Y. 120 = completed all 20 overs.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="How many of Team X's star players are available today? Star = ranked in the ICC T20 top 30 (batters + bowlers). Injuries drop this number. 0 = no key players available.">
+                X Star players available
+                <span class="adv-sub">ICC top-30 ranked players in today's XI</span>
+              </label>
+              <input type="number" id="starsX" min="0"
+                title="Number of Team X's ICC top-30 ranked players playing today.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="How many of Team Y's star players are available today? Injuries reduce this. Used to measure how strong the lineup is compared to their usual squad.">
+                Y Star players available
+                <span class="adv-sub">ICC top-30 ranked players in today's XI</span>
+              </label>
+              <input type="number" id="starsY" min="0"
+                title="Number of Team Y's ICC top-30 ranked players playing today.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Combined runs scored by Team X's top-4 batters. Feeds the Top-4 Consistency metric — a reliable top order makes a team more rankable.">
+                X Top-4 batting runs
+                <span class="adv-sub">Runs from X's top 4 batters combined</span>
+              </label>
+              <input type="number" id="top4X" min="0" title="Combined score of Team X's top-4 batters.">
+            </div>
+            <div>
+              <label class="adv-label" title="Combined runs scored by Team Y's top-4 batters.">
+                Y Top-4 batting runs
+                <span class="adv-sub">Runs from Y's top 4 batters combined</span>
+              </label>
+              <input type="number" id="top4Y" min="0" title="Combined score of Team Y's top-4 batters.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="How many wickets Team X lost this innings (max 10). Together with the top-2 bowler share it feeds Bowling Concentration.">
+                X wickets lost
+                <span class="adv-sub">Wickets X lost (0–10)</span>
+              </label>
+              <input type="number" id="wktsX" min="0" max="10" title="Wickets Team X lost this innings.">
+            </div>
+            <div>
+              <label class="adv-label" title="How many wickets Team Y lost this innings (max 10).">
+                Y wickets lost
+                <span class="adv-sub">Wickets Y lost (0–10)</span>
+              </label>
+              <input type="number" id="wktsY" min="0" max="10" title="Wickets Team Y lost this innings.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Of the wickets Team X lost, how many fell to the opposition's TOP-2 bowlers? A high share means Team Y's attack leans on 2 bowlers (fragile if they're rested/injured).">
+                Top-2 share of X wkts
+                <span class="adv-sub">Y's 2 best bowlers took how many of X's wkts</span>
+              </label>
+              <input type="number" id="top2X" min="0" max="10" title="Wickets among X's that went to Y's top-2 bowlers.">
+            </div>
+            <div>
+              <label class="adv-label"
+                title="Of the wickets Team Y lost, how many fell to the opposition's TOP-2 bowlers?">
+                Top-2 share of Y wkts
+                <span class="adv-sub">X's 2 best bowlers took how many of Y's wkts</span>
+              </label>
+              <input type="number" id="top2Y" min="0" max="10" title="Wickets among Y's that went to X's top-2 bowlers.">
+            </div>
+          </div>
+        </details>
+
+        <label>Something significant — Team X <span id="sigXteam" style="color:var(--accent)"></span></label>
+        <textarea id="sigX" placeholder="e.g. Chased 200 with 3 overs to spare; openers put on 120"></textarea>
+        <label>Something significant — Team Y <span id="sigYteam" style="color:var(--accent)"></span></label>
+        <textarea id="sigY" placeholder="e.g. Collapsed from 90/1 to 140 all out"></textarea>
+
+        <button id="btnRandom" class="ghost" style="width:100%;margin-top:12px;">🎲 Randomize parameters</button>
+        <button id="btnFinish" class="primary" style="width:100%;margin-top:8px;">Simulate Match</button>
+        <div class="err" id="err"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Extra metrics (optional)</h2>
+        <div id="optMetrics"></div>
+        <div class="note">Tick to include a metric in the ranking maths. Each enabled one adds a weight slider below.
+          These are the Group&nbsp;4–5 metrics from the spec — off by default.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Weights (live) <span id="wtnote" style="text-transform:none;font-weight:400;"></span></h2>
+        <div class="wt" id="weights"></div>
+        <div class="wtsum" id="wtsum"></div>
+        <div class="note">Drag to re-weight. Ranking recomputes instantly — summaries stay put (only match simulation
+          rewrites prose).</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <div class="spin"><span class="dot"></span><span id="spinText">Working…</span></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const WEIGHT_META = {
+      winPct: {
+        label: 'Win %',
+        tip: 'Percentage of matches the team has won across the whole season. Simple and important — but it treats every win the same, whether by 1 run or 80 runs.'
+      },
+      marginAdjustedWin: {
+        label: 'Win quality',
+        tip: 'Not just did they win, but HOW convincingly? A win by 8 wickets with 20 balls to spare scores ~85/100. A last-ball 1-wicket squeaker scores ~5/100. Higher = team dominates rather than just getting by.'
+      },
+      rollingNRR: {
+        label: 'Rolling NRR',
+        tip: 'Net Run Rate over the last 5 games only (not the whole season). NRR = runs scored per over minus runs conceded per over. Rolling NRR shows current form much better than the season average, which can be skewed by one early blowout.'
+      },
+      form: {
+        label: 'Form (momentum)',
+        tip: 'A rolling momentum score based on the last 5 results, with the most recent game counting the most. It is like asking: is this team on a hot streak right now? Recent wins matter more than older ones.'
+      },
+      powerplayDominance: {
+        label: 'Powerplay',
+        tip: 'How much the team dominates the first 6 overs (Powerplay). Batting run rate in overs 1–6 minus the bowling run rate in overs 1–6. Positive = the team has an advantage in the opening phase.'
+      },
+      deathOversNet: {
+        label: 'Death overs',
+        tip: 'Performance in the last 5 overs (overs 16–20), where ~40% of T20 runs are scored. Combines batting strike rate (runs per ball) vs. bowling economy. Teams that win the death overs win most T20 matches.'
+      },
+      sos: {
+        label: 'Str. of schedule',
+        tip: 'Strength of Schedule — how tough were the opponents faced? A team with 7 wins against strong opposition is ranked higher than one with 7 wins against bottom-table teams. Averages the Win% of all opponents played.'
+      },
+      homeAwayAdjustment: {
+        label: 'Home/away',
+        tip: 'Does this team play differently at home vs. away? A team that only wins at home is risky when travelling. This factor rewards teams that perform consistently regardless of venue.'
+      },
+      keyPlayerAvailability: {
+        label: 'Key players',
+        tip: 'Are the team\'s star players available? Based on the number of ICC top-30 ranked players (batters + bowlers) in the playing XI. A team missing 2–3 key players due to injury should rank lower — Win% and NRR don\'t know that.'
+      }
+    };
+    // Optional (toggleable) metrics — parameters.md Groups 4–5.
+    const OPT_META = {
+      expectedWins: {
+        label: 'Expected wins (xW)',
+        tip: 'Pythagorean expectation, borrowed from baseball: runs² / (runs² + conceded²). It estimates how many wins a team DESERVES from how it scores vs. concedes. A team winning far above its xW is riding luck and likely to regress — a real prediction signal.'
+      },
+      tossLeverage: {
+        label: 'Toss leverage',
+        tip: 'How often the team wins WITHOUT the toss in its favour. Rewards teams that win regardless of the coin flip; a team that only wins after winning the toss is fragile and predictable.'
+      },
+      chaseSet: {
+        label: 'Chase vs set',
+        tip: 'Versatility — is the team good at BOTH chasing and setting a total? A one-dimensional side (only wins batting first, or only chasing) is exposed when the toss or pitch forces the other. Rewards teams strong in both.'
+      },
+      top4Consistency: {
+        label: 'Top-4 consistency',
+        tip: 'Do the top-4 batters deliver a high AND steady total? A top order that posts ~110 every game is more reliable (and rankable) than one that swings between 180 and 60. Combines average with low volatility.'
+      },
+      bowlingConcentration: {
+        label: 'Bowling spread',
+        tip: 'Is the wicket-taking spread across the attack, or reliant on 2 bowlers? A top-2-dependent attack collapses if either is rested or injured. Rewards a resilient, evenly-shared bowling unit (inverse of the wicket-Gini risk).'
+      }
+    };
+    let STATE = null;
+
+    function overlay(on, text) { $('spinText').textContent = text || 'Working…'; $('overlay').classList.toggle('on', !!on); }
+
+    async function api(path, body) {
+      const opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+      const res = await fetch(path, opt);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.status);
+      return data;
+    }
+
+    function fmtSigned(x, d) { return (x >= 0 ? '+' : '') + Number(x).toFixed(d); }
+
+    function renderList(prevRanks) {
+      const ol = $('list'); ol.innerHTML = '';
+      for (const r of STATE.ranking) {
+        const b = STATE.blurbs[r.name] || { text: '', source: 'template' };
+        const mv = r.movement === 'up' ? `<span class="mv up">▲${r.delta}</span>`
+          : r.movement === 'down' ? `<span class="mv down">▼${Math.abs(r.delta)}</span>`
+            : r.movement === 'same' ? `<span class="mv same">—</span>` : `<span class="mv new">NEW</span>`;
+        const srcBadge = b.source === 'ai' ? `<span class="src ai" title="AI-written, grounded-verified">AI ✓</span>`
+          : `<span class="src template" title="Deterministic template">TEMPLATE</span>`;
+        const li = document.createElement('li');
+        li.className = 'team';
+        if (prevRanks && prevRanks[r.name] !== r.rank) li.classList.add('flash');
+        li.innerHTML = `
+      <div class="rank">${r.rank}</div>
+      <div class="body">
+        <div class="head">
+          <span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
+        </div>
+        <p class="blurb">${esc(b.text)}</p>
+        <div class="stats">
+          <span><b>${r.won}-${r.lost}</b> W-L</span>
+          <span><b>${Math.round(r.winPct * 100)}%</b> win</span>
+          <span><b>${fmtSigned(r.rollingNRR, 2)}</b> rNRR</span>
+          <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
+          <span><b>${r.formRecord.wins}/${r.formRecord.of}</b> form</span>
+          <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
+          <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
+          <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
+          <span><b>${r.score.toFixed(1)}</b> score</span>
+        </div>
+      </div>`;
+        ol.appendChild(li);
+      }
+    }
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    // Chips for any enabled optional metric, so the maths is visible in the list.
+    function optChips(r) {
+      const en = STATE.enabled || {}; const out = [];
+      if (en.expectedWins) out.push(`<span><b>${r.expectedWins.toFixed(2)}</b> xW</span>`);
+      if (en.tossLeverage) out.push(`<span><b>${fmtSigned(r.tossLeverage, 2)}</b> toss</span>`);
+      if (en.chaseSet) out.push(`<span><b>${Math.round(r.chaseWinPct * 100)}/${Math.round(r.setWinPct * 100)}</b> chase/set</span>`);
+      if (en.top4Consistency) out.push(`<span><b>${r.top4Mean.toFixed(0)}±${r.top4Std.toFixed(0)}</b> top4</span>`);
+      if (en.bowlingConcentration) out.push(`<span><b>${Math.round(r.bowlConcentration * 100)}%</b> top2wkts</span>`);
+      return out.join('');
+    }
+
+    function fillTeamSelects() {
+      const teams = STATE.teams;
+      const opts = teams.map(t => `<option value="${esc(t.name)}">${esc(t.short)} — ${esc(t.name)}</option>`).join('');
+      for (const id of ['teamX', 'teamY']) { $(id).innerHTML = opts; }
+      $('teamX').value = teams[0].name;
+      $('teamY').value = teams[1].name;
+      syncMatchSelects();
+    }
+    function syncMatchSelects() {
+      const x = $('teamX').value, y = $('teamY').value;
+      const two = (a, b) => `<option value="${esc(a)}">${short(a)}</option><option value="${esc(b)}">${short(b)}</option>`;
+      $('battingFirst').innerHTML = two(x, y); $('winner').innerHTML = two(x, y);
+      $('venue').innerHTML = two(x, y); $('toss').innerHTML = two(x, y);
+      $('sigXteam').textContent = '(' + short(x) + ')'; $('sigYteam').textContent = '(' + short(y) + ')';
+      fillDefaults();
+    }
+    function short(name) { const t = STATE.teams.find(t => t.name === name); return t ? t.short : name; }
+    function squadOf(name) { const t = STATE.teams.find(t => t.name === name); return t ? t.squadStars : 0; }
+
+    // Smart defaults for the advanced fields whenever key inputs change.
+    function fillDefaults() {
+      const x = $('teamX').value, y = $('teamY').value;
+      const rx = +$('runsX').value || 0, ry = +$('runsY').value || 0;
+      const first = $('battingFirst').value, winner = $('winner').value;
+      // chasing team uses fewer balls if it won
+      const chaser = first === x ? y : x;
+      const ballsChaser = winner === chaser ? 114 : 120;
+      const setBalls = (team, val) => { $(team === x ? 'ballsX' : 'ballsY').value = team === first ? 120 : val; };
+      setBalls(x, ballsChaser); setBalls(y, ballsChaser);
+      const dflt = (runs, balls) => ({
+        pp: Math.round(runs * 0.30), dBalls: Math.max(0, Math.min(30, balls - 90)),
+        dRuns: Math.round(runs * 0.34 * Math.max(0, Math.min(30, balls - 90)) / 30)
+      });
+      const bx = +$('ballsX').value, by = +$('ballsY').value;
+      const dx = dflt(rx, bx), dy = dflt(ry, by);
+      $('ppX').value = dx.pp; $('dRunsX').value = dx.dRuns; $('dBallsX').value = dx.dBalls;
+      $('ppY').value = dy.pp; $('dRunsY').value = dy.dRuns; $('dBallsY').value = dy.dBalls;
+      $('starsX').value = squadOf(x); $('starsY').value = squadOf(y);
+      // Top-4 ≈ 65% of the total; wickets: loser tends to lose more; top-2 share ≈ 55%.
+      $('top4X').value = Math.round(rx * 0.65); $('top4Y').value = Math.round(ry * 0.65);
+      const wk = (team) => (winner === team ? 5 : 8);
+      $('wktsX').value = wk(x); $('wktsY').value = wk(y);
+      $('top2X').value = Math.round((+$('wktsX').value) * 0.55);
+      $('top2Y').value = Math.round((+$('wktsY').value) * 0.55);
+    }
+
+    // Build one slider row (shared by base + optional weights).
+    function weightRow(k, v, meta, store) {
+      const row = document.createElement('div'); row.className = 'wrow';
+      const tipHtml = meta.tip
+        ? `<span class="tip-wrap"><span>${esc(meta.label)}</span><span class="tip-icon" tabindex="0">?</span><span class="tip-box">${esc(meta.tip)}</span></span>`
+        : `<span>${esc(meta.label)}</span>`;
+      row.innerHTML = `${tipHtml}
+      <input type="range" min="0" max="0.5" step="0.01" value="${v}" data-k="${k}" data-store="${store}">
+      <span class="wval">${v.toFixed(2)}</span>`;
+      return row;
+    }
+
+    function renderWeights() {
+      const wrap = $('weights'); wrap.innerHTML = '';
+      for (const k of Object.keys(STATE.weights)) {
+        wrap.appendChild(weightRow(k, STATE.weights[k], WEIGHT_META[k] || { label: k, tip: '' }, 'weights'));
+      }
+      // Enabled optional metrics get a slider too, visually separated.
+      const enabledOpt = Object.keys(STATE.optionalWeights || {}).filter(k => STATE.enabled && STATE.enabled[k]);
+      if (enabledOpt.length) {
+        const div = document.createElement('div');
+        div.style.cssText = 'grid-column:1/-1;border-top:1px dashed var(--line);margin:4px 0 2px;padding-top:6px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;';
+        div.textContent = 'Optional metrics'; wrap.appendChild(div);
+        for (const k of enabledOpt) {
+          wrap.appendChild(weightRow(k, STATE.optionalWeights[k], OPT_META[k] || { label: k, tip: '' }, 'optionalWeights'));
+        }
+      }
+      updateWtSum();
+      wrap.querySelectorAll('input[type=range]').forEach(inp => {
+        inp.addEventListener('input', e => {
+          e.target.nextElementSibling.textContent = (+e.target.value).toFixed(2);
+          const store = e.target.dataset.store;
+          STATE[store][e.target.dataset.k] = +e.target.value; updateWtSum();
+          debounceWeights();
+        });
+      });
+    }
+
+    function renderOptional() {
+      const wrap = $('optMetrics'); wrap.innerHTML = '';
+      for (const k of Object.keys(STATE.optionalWeights || {})) {
+        const meta = OPT_META[k] || { label: k, tip: '' };
+        const on = !!(STATE.enabled && STATE.enabled[k]);
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--ink);';
+        row.innerHTML = `<input type="checkbox" data-k="${k}" ${on ? 'checked' : ''} style="width:auto;margin:0;">
+          <span class="tip-wrap"><span>${esc(meta.label)}</span><span class="tip-icon" tabindex="0">?</span><span class="tip-box">${esc(meta.tip)}</span></span>`;
+        wrap.appendChild(row);
+      }
+      wrap.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', e => {
+          STATE.enabled = STATE.enabled || {};
+          STATE.enabled[e.target.dataset.k] = e.target.checked;
+          renderWeights();     // add/remove the slider
+          applyWeights();      // re-rank immediately
+        });
+      });
+    }
+
+    function updateWtSum() {
+      const base = Object.values(STATE.weights).reduce((a, b) => a + b, 0);
+      const opt = Object.keys(STATE.optionalWeights || {})
+        .filter(k => STATE.enabled && STATE.enabled[k])
+        .reduce((a, k) => a + STATE.optionalWeights[k], 0);
+      const sum = base + opt;
+      $('wtsum').innerHTML = `Total weight: <b>${sum.toFixed(2)}</b> ${Math.abs(sum - 1) > 0.001 ? '· (≠1.0 — scores just scale)' : '· balanced'}`;
+    }
+
+    let wtTimer = null;
+    function debounceWeights() { clearTimeout(wtTimer); wtTimer = setTimeout(applyWeights, 350); }
+    async function applyWeights() {
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      const data = await api('/api/weights', { weights: STATE.weights, optionalWeights: STATE.optionalWeights, enabled: STATE.enabled });
+      STATE = data; renderList(prev);
+    }
+
+    function applyState(data, prevRanks) {
+      STATE = data;
+      $('title').textContent = `${data.league} — Power Rankings`;
+      $('modePill').textContent = data.mode;
+      $('aiPill').textContent = data.aiConfigured ? `AI ✓ (${data.grounding})` : 'AI off';
+      $('aiPill').className = 'pill ' + (data.aiConfigured ? 'on' : 'off');
+      $('sub').textContent = `Season ${data.season} · ${data.matchCount} matches · min blurb score ${data.minScore}`;
+      $('modeNote').textContent = data.mode === 'baseline'
+        ? 'Seeded from the 90-match snapshot. Simulated matches append on top.'
+        : 'Empty season — build the whole table by simulating matches.';
+      $('btnBaseline').classList.toggle('active', data.mode === 'baseline');
+      $('btnFresh').classList.toggle('active', data.mode === 'fresh');
+      renderList(prevRanks);
+      renderOptional();
+      renderWeights();
+    }
+
+    // Randomize every match parameter (NOT the significant notes, NOT a submit).
+    // Fills the form + advanced fields; the user still clicks Simulate Match.
+    const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    function randomizeMatch() {
+      $('err').textContent = '';
+      const teams = STATE.teams;
+      const i = randInt(0, teams.length - 1);
+      let j = randInt(0, teams.length - 1); while (j === i) j = randInt(0, teams.length - 1);
+      $('teamX').value = teams[i].name; $('teamY').value = teams[j].name;
+      syncMatchSelects(); // rebuilds the X/Y-scoped selects + default sig labels
+      const x = teams[i].name, y = teams[j].name;
+      const rx = randInt(120, 220), ry = randInt(120, 220);
+      $('runsX').value = rx; $('runsY').value = ry;
+      // Random toss, venue, who bats first; winner is whoever scored more (consistent).
+      $('venue').value = Math.random() < 0.5 ? x : y;
+      $('toss').value = Math.random() < 0.5 ? x : y;
+      const first = Math.random() < 0.5 ? x : y;
+      $('battingFirst').value = first;
+      const winner = rx === ry ? x : (rx > ry ? x : y);
+      $('winner').value = winner;
+      fillDefaults(); // phase splits, balls, stars, top4, wickets from the new scores
+      // Add a little jitter on top of the smart defaults so runs don't fully dictate phases.
+      const jit = (id, lo, hi) => { $(id).value = Math.max(0, (+$(id).value) + randInt(lo, hi)); };
+      jit('ppX', -8, 8); jit('ppY', -8, 8); jit('dRunsX', -6, 6); jit('dRunsY', -6, 6);
+      $('starsX').value = randInt(Math.max(0, squadOf(x) - 2), squadOf(x));
+      $('starsY').value = randInt(Math.max(0, squadOf(y) - 2), squadOf(y));
+      $('wktsX').value = randInt(3, 10); $('wktsY').value = randInt(3, 10);
+      $('top2X').value = Math.min(+$('wktsX').value, randInt(2, +$('wktsX').value));
+      $('top2Y').value = Math.min(+$('wktsY').value, randInt(2, +$('wktsY').value));
+      if (!$('adv').open) $('adv').open = true; // reveal so the user sees what was filled
+    }
+
+    function buildInnings() {
+      const x = $('teamX').value, y = $('teamY').value, first = $('battingFirst').value;
+      const mk = (team) => {
+        const isX = team === x;
+        return {
+          batting: team, bowling: isX ? y : x,
+          runs: +$(isX ? 'runsX' : 'runsY').value || 0, balls: +$(isX ? 'ballsX' : 'ballsY').value || 120,
+          ppRuns: +$(isX ? 'ppX' : 'ppY').value || 0, deathRuns: +$(isX ? 'dRunsX' : 'dRunsY').value || 0,
+          deathBalls: +$(isX ? 'dBallsX' : 'dBallsY').value || 0,
+          top4: +$(isX ? 'top4X' : 'top4Y').value || 0,
+          wktsLost: +$(isX ? 'wktsX' : 'wktsY').value || 0,
+          bowlTop2: +$(isX ? 'top2X' : 'top2Y').value || 0
+        };
+      };
+      const second = first === x ? y : x;
+      return [mk(first), mk(second)];
+    }
+
+    async function finishMatch() {
+      $('err').textContent = '';
+      const x = $('teamX').value, y = $('teamY').value;
+      if (x === y) { $('err').textContent = 'Pick two different teams.'; return; }
+      const payload = {
+        home: x, away: y, venueHomeTeam: $('venue').value, tossWinner: $('toss').value,
+        battingFirst: $('battingFirst').value, winner: $('winner').value, innings: buildInnings(),
+        stars: { [x]: { available: +$('starsX').value || 0, squad: squadOf(x) }, [y]: { available: +$('starsY').value || 0, squad: squadOf(y) } },
+        significant: { [x]: $('sigX').value.trim(), [y]: $('sigY').value.trim() }
+      };
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      overlay(true, STATE.aiConfigured ? 'Simulating + writing AI summaries…' : 'Simulating…');
+      try {
+        const data = await api('/api/simulate', payload);
+        applyState(data, prev);
+        $('sigX').value = ''; $('sigY').value = '';
+      } catch (e) { $('err').textContent = e.message; }
+      finally { overlay(false); }
+    }
+
+    // ---- wire up ----
+    $('teamX').addEventListener('change', syncMatchSelects);
+    $('teamY').addEventListener('change', syncMatchSelects);
+    ['runsX', 'runsY', 'battingFirst', 'winner', 'ballsX', 'ballsY'].forEach(id => $(id).addEventListener('change', fillDefaults));
+    $('btnRandom').addEventListener('click', randomizeMatch);
+    $('btnFinish').addEventListener('click', finishMatch);
+    $('btnReset').addEventListener('click', async () => { overlay(true, 'Resetting…'); try { applyState(await api('/api/reset', {})); } finally { overlay(false); } });
+    $('btnBaseline').addEventListener('click', async () => { overlay(true, 'Loading baseline…'); try { applyState(await api('/api/mode', { mode: 'baseline' })); } finally { overlay(false); } });
+    $('btnFresh').addEventListener('click', async () => { overlay(true, 'Fresh season…'); try { applyState(await api('/api/mode', { mode: 'fresh' })); } finally { overlay(false); } });
+    $('btnAiAll').addEventListener('click', async () => {
+      if (!STATE.aiConfigured) { $('err').textContent = 'No API key — AI disabled.'; return; }
+      overlay(true, 'Writing all AI summaries…');
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      try { applyState(await api('/api/generate-all', {}), prev); } finally { overlay(false); }
+    });
+
+    (async function init() {
+      overlay(true, 'Loading…');
+      try {
+        const data = await api('/api/state');
+        applyState(data);
+        fillTeamSelects();
+      } catch (e) { $('err').textContent = 'Failed to load: ' + e.message; }
+      finally { overlay(false); }
+    })();
+  </script>
+</body>
+
+</html>

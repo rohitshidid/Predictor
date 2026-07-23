@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rankings",
+      "autoPort": false,
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4310", "--directory", "/Users/rohitshidid/Documents/AntiGravity/Champhunt/Willow TV Project/Predictor"],
+      "port": 4310
+    }
+  ]
+}

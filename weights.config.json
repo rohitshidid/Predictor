@@ -1,0 +1,52 @@
+{
+  "_comment": "Ranking weighting lives here, NOT in code. Tune without touching the engine. The 9 weights should sum to 1.0. Normalization bounds map each raw metric onto 0..1 before weighting.",
+  "weights": {
+    "winPct": 0.25,
+    "marginAdjustedWin": 0.1,
+    "rollingNRR": 0.15,
+    "form": 0.15,
+    "powerplayDominance": 0.1,
+    "deathOversNet": 0.1,
+    "sos": 0.05,
+    "homeAwayAdjustment": 0.05,
+    "keyPlayerAvailability": 0.05
+  },
+  "_optionalNote": "Extra metrics from parameters.md Groups 4-5. Off by default; toggle in the UI. Each contributes its weight to the score ONLY when enabled=true.",
+  "optionalWeights": {
+    "expectedWins": 0.1,
+    "tossLeverage": 0.05,
+    "chaseSet": 0.08,
+    "top4Consistency": 0.08,
+    "bowlingConcentration": 0.05
+  },
+  "enabled": {
+    "expectedWins": false,
+    "tossLeverage": false,
+    "chaseSet": false,
+    "top4Consistency": false,
+    "bowlingConcentration": false
+  },
+  "form": {
+    "window": 5,
+    "decay": 0.8,
+    "alpha": 0.35
+  },
+  "nrr": {
+    "rollingWindow": 5,
+    "seasonMin": -2.0,
+    "seasonMax": 2.0
+  },
+  "powerplay": {
+    "overs": [1, 6],
+    "dominanceMin": -3.0,
+    "dominanceMax": 3.0
+  },
+  "deathOvers": {
+    "_scalingNote": "Converts bowling economy (runs/over) onto the batting strike-rate scale (runs/100 balls): 100/6 = 16.67. Net = deathBatSR - deathBowlEcon*scalingFactor.",
+    "overs": [16, 20],
+    "scalingFactor": 16.67,
+    "netMin": -60.0,
+    "netMax": 60.0
+  },
+  "scoreScale": 100
+}

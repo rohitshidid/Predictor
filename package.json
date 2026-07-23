@@ -1,0 +1,17 @@
+{
+  "name": "willow-power-rankings-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Willow TV — T20 Cricket Power Rankings POC. Deterministic ranking engine + AI blurbs.",
+  "author": "Rohit Shidid <rohitshidid@gmail.com>",
+  "type": "commonjs",
+  "scripts": {
+    "gen-data": "node src/generateSeason.js",
+    "build": "node build.js",
+    "serve": "node server.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

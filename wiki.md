@@ -43,6 +43,25 @@ _Registry of what each file in this repository does and where it lives._
 | `system_health.md` | repo root | Operations hub — active state, rules, tasks, roadmap. |
 | `selfcorrection.md` | repo root | Preference ledger — user preferences and corrections. |
 | `wiki.md` | repo root | Project encyclopedia — this file. |
+| `parameters.md` | repo root | Spec for the expanded metric set (12 params, 5 groups) + target weights.config structure. |
+| `package.json` | repo root | Node manifest. Scripts: `gen-data`, `build` (static), `serve`/`start` (simulator). Dependency-free. |
+| `server.js` | repo root | **Interactive simulator server** (vanilla Node http). Routes: state, simulate, weights, mode, reset, generate-all. |
+| `build.js` | repo root | Legacy static orchestrator: data → rank → AI blurbs → `rankings.html` + `audit.json`. |
+| `weights.config.json` | repo root | The 9 metric weights + form(α)/NRR/powerplay/death normalization bounds. Config, not code. |
+| `public/index.html` | `public/` | **Single-page simulator UI.** Ranking list + right-hand parameter menu, sig-event boxes, live weight sliders. |
+| `.env` / `.env.example` | repo root | Secrets (gitignored) + template. `GEMINI_API_KEY`, models, `BLURB_GROUNDING`. |
+| `.claude/launch.json` | `.claude/` | Preview config for the standalone page (superseded by ROOT launch.json's `rankings` entry). |
+| `generateSeason.js` | `src/` | Seeded generator → self-consistent synthetic IPL season. |
+| `config.js` | `src/` | Env-driven config + dependency-free `.env` loader. Mirrors `predictionGame/config.js`. |
+| `engine.js` | `src/` | **Deterministic ranking engine.** No AI. Computes all 9 metrics from raw per-innings data + score + deltas. |
+| `simState.js` | `src/` | In-memory simulator state: baseline/fresh season, append match, mode switch, prev-rank snapshot. |
+| `templates.js` | `src/` | Deterministic blurb templates + fact sheets (fallback + grounding source of truth). |
+| `blurbs.js` | `src/` | **AI blurb layer.** Gemini generate + grounded critic; accepts per-team significant-event context. Ports `llm.js` + `searchLLM.js`. |
+| `render.js` | `src/` | Renders ranked table → self-contained, theme-aware `rankings.html`. |
+| `data/ipl_2024.json` | `data/` | Generated season snapshot (90 matches, 10 teams). |
+| `data/lastweek.json` | `data/` | Previous-week ranks → the ▲/▼ movement deltas. |
+| `rankings.html` | repo root | **Generated demo output** (gitignored). The POC artifact. |
+| `audit.json` | repo root | **Generated audit trail** (gitignored): every blurb verdict, score, unsupported claims. |
 
 ## 3. Line References
 _Anchors linking documentation to exact lines of code / doc._
