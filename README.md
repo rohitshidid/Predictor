@@ -205,6 +205,55 @@ That URL is now publicly accessible. Share it with anyone — it routes directly
 
 ---
 
+## Sharing Publicly via LocalTunnel
+
+LocalTunnel is the simplest zero-install option — no account, no setup, runs directly with `npx`. Like Cloudflare Tunnel, your laptop must be on and the server must be running.
+
+### Steps
+
+**1. Start the server** (in one terminal):
+
+```bash
+cd "/Users/rohitshidid/Documents/AntiGravity/Champhunt/Willow TV Project/Predictor"
+node server.js
+```
+
+You should see:
+```
+[server] Power-Ranking simulator on http://localhost:4310
+```
+
+**2. Open the tunnel** (in a second terminal — no install needed):
+
+```bash
+npx localtunnel --port 4310
+```
+
+The first time you run it, npx will ask to install `localtunnel@2.0.2` — type `y` and press Enter. After that it runs instantly.
+
+You will see:
+```
+your url is: https://some-random-name.loca.lt
+```
+
+That URL is now publicly accessible. Share it with anyone.
+
+> **Note:** When someone opens the URL for the first time, LocalTunnel may show a "tunnel password" page. The password is your **public IP address** — visitors can find it by going to [https://loca.lt/mytunnelpassword](https://loca.lt/mytunnelpassword) and entering that string.
+
+**3. Stop the tunnel** — press `Ctrl+C` in the tunnel terminal.
+
+### Comparison: LocalTunnel vs Cloudflare Tunnel
+
+| | LocalTunnel | Cloudflare Tunnel |
+|---|---|---|
+| **Install required** | None (`npx`) | `brew install cloudflared` |
+| **Speed** | Slightly slower | Faster (QUIC protocol) |
+| **Reliability** | Occasionally drops | More stable |
+| **URL style** | `*.loca.lt` | `*.trycloudflare.com` |
+| **Password page** | Yes (first visit) | No |
+
+---
+
 ## Troubleshooting
 
 **Port already in use?**
