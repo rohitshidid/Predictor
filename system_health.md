@@ -35,20 +35,20 @@ _Current development guidelines in effect._
 ## Current Tasks
 _The macro-level task currently being worked on._
 
-- **Repository hygiene.** Consolidate all state files on `main` under Rohit's
-  authorship and remove any external tooling references.
+- **POC planning.** Lock the build plan and POC scope for the ranking engine +
+  blurb demo, and get sign-off on the open decisions in `steps.md`.
 
 ## Micro-tasks
 _Granular checklist of the immediate next steps._
 
-- [x] Read the three state files for context.
-- [x] Set git identity to Rohit Shidid <rohitshidid@gmail.com>.
-- [x] Move the three state files onto `main`.
-- [x] Strip external attribution from content and commit messages.
-- [x] Remove the throwaway test artifact.
-- [ ] Commit and push to `main`.
-- [ ] Retire the old feature branch.
-- [ ] Await the next development task.
+- [x] Consolidate state files on `main` under Rohit's authorship.
+- [x] Write `steps.md` (build plan + POC).
+- [x] Commit and push `steps.md` + updated state files to `main`.
+- [ ] Get owner's answers on the open decisions (engine language, POC data,
+      reuse location) in `steps.md` §5.
+- [ ] Build POC step 1: `data/ipl_<season>.json` snapshot.
+- [ ] Build POC step 2: deterministic ranking engine + `weights.config`.
+- [ ] Build POC step 3–4: templated blurbs + static `rankings.html`.
 
 ## Upcoming Goals
 _Roadmap of future features / refactoring (per structure.md build order)._

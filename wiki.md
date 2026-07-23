@@ -39,6 +39,7 @@ _Registry of what each file in this repository does and where it lives._
 | File | Location | Purpose |
 |---|---|---|
 | `structure.md` | repo root | Planning/handover doc for the Power Rankings project. No code. |
+| `steps.md` | repo root | Build plan & POC — phased build order and the concrete POC to start with. |
 | `system_health.md` | repo root | Operations hub — active state, rules, tasks, roadmap. |
 | `selfcorrection.md` | repo root | Preference ledger — user preferences and corrections. |
 | `wiki.md` | repo root | Project encyclopedia — this file. |
