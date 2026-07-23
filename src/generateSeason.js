@@ -19,19 +19,18 @@ function mulberry32(seed) {
 const rnd = mulberry32(20240322);
 
 // `strength` biases outcomes; `squadStars` = # of top-30 ICC players on the
-// roster (feeds Key Player Availability). Neither is stored on matches — the
-// engine only ever reads results.
+// roster (feeds Key Player Availability). `colors` (primary/secondary) drive the
+// original crest badge in the UI — brand colours only, not the trademarked logo
+// artwork. None of this is stored on matches; the engine only reads results.
+// 2026 Caribbean Premier League — 7 franchises.
 const TEAMS = [
-  { name: 'Kolkata Knight Riders', short: 'KKR', strength: 0.72, squadStars: 5 },
-  { name: 'Sunrisers Hyderabad', short: 'SRH', strength: 0.64, squadStars: 4 },
-  { name: 'Rajasthan Royals', short: 'RR', strength: 0.63, squadStars: 4 },
-  { name: 'Royal Challengers Bengaluru', short: 'RCB', strength: 0.58, squadStars: 5 },
-  { name: 'Chennai Super Kings', short: 'CSK', strength: 0.57, squadStars: 4 },
-  { name: 'Delhi Capitals', short: 'DC', strength: 0.5, squadStars: 3 },
-  { name: 'Lucknow Super Giants', short: 'LSG', strength: 0.48, squadStars: 3 },
-  { name: 'Gujarat Titans', short: 'GT', strength: 0.45, squadStars: 3 },
-  { name: 'Mumbai Indians', short: 'MI', strength: 0.4, squadStars: 5 },
-  { name: 'Punjab Kings', short: 'PBKS', strength: 0.38, squadStars: 2 },
+  { name: 'Trinbago Knight Riders', short: 'TKR', strength: 0.68, squadStars: 5, colors: { primary: '#C8102E', secondary: '#F5C518' } },
+  { name: 'Guyana Amazon Warriors', short: 'GAW', strength: 0.66, squadStars: 5, colors: { primary: '#16A34A', secondary: '#F5C518' } },
+  { name: 'Antigua & Barbuda Falcons', short: 'ABF', strength: 0.55, squadStars: 4, colors: { primary: '#1E3A8A', secondary: '#EF4444' } },
+  { name: 'Barbados Royals', short: 'BR', strength: 0.54, squadStars: 4, colors: { primary: '#E6007E', secondary: '#0B1B3F' } },
+  { name: 'Saint Lucia Kings', short: 'SLK', strength: 0.52, squadStars: 4, colors: { primary: '#1D4ED8', secondary: '#FACC15' } },
+  { name: 'St Kitts & Nevis Patriots', short: 'SNP', strength: 0.47, squadStars: 3, colors: { primary: '#0E7490', secondary: '#DC2626' } },
+  { name: 'Jamaica Kingsmen', short: 'JAM', strength: 0.44, squadStars: 3, colors: { primary: '#111827', secondary: '#FDB913' } },
 ];
 
 const TOTAL_BALLS = 120; // 20 overs
@@ -149,15 +148,15 @@ function buildSchedule() {
 }
 
 const season = {
-  season: '2024',
-  league: 'Indian Premier League',
-  leagueShort: 'IPL',
+  season: '2026',
+  league: 'Caribbean Premier League',
+  leagueShort: 'CPL',
   generatedAt: new Date().toISOString(),
   note: 'Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.',
-  teams: TEAMS.map((t) => ({ name: t.name, short: t.short, squadStars: t.squadStars })),
+  teams: TEAMS.map((t) => ({ name: t.name, short: t.short, squadStars: t.squadStars, colors: t.colors })),
   matches: buildSchedule(),
 };
 
-const outPath = path.join(__dirname, '..', 'data', 'ipl_2024.json');
+const outPath = path.join(__dirname, '..', 'data', 'cpl_2026.json');
 fs.writeFileSync(outPath, JSON.stringify(season, null, 2));
 console.log(`[gen] wrote ${season.matches.length} matches for ${season.teams.length} teams -> ${outPath}`);

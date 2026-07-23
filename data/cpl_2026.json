@@ -1,0 +1,2090 @@
+{
+  "season": "2026",
+  "league": "Caribbean Premier League",
+  "leagueShort": "CPL",
+  "generatedAt": "2026-07-23T22:01:14.767Z",
+  "note": "Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.",
+  "teams": [
+    {
+      "name": "Trinbago Knight Riders",
+      "short": "TKR",
+      "squadStars": 5,
+      "colors": {
+        "primary": "#C8102E",
+        "secondary": "#F5C518"
+      }
+    },
+    {
+      "name": "Guyana Amazon Warriors",
+      "short": "GAW",
+      "squadStars": 5,
+      "colors": {
+        "primary": "#16A34A",
+        "secondary": "#F5C518"
+      }
+    },
+    {
+      "name": "Antigua & Barbuda Falcons",
+      "short": "ABF",
+      "squadStars": 4,
+      "colors": {
+        "primary": "#1E3A8A",
+        "secondary": "#EF4444"
+      }
+    },
+    {
+      "name": "Barbados Royals",
+      "short": "BR",
+      "squadStars": 4,
+      "colors": {
+        "primary": "#E6007E",
+        "secondary": "#0B1B3F"
+      }
+    },
+    {
+      "name": "Saint Lucia Kings",
+      "short": "SLK",
+      "squadStars": 4,
+      "colors": {
+        "primary": "#1D4ED8",
+        "secondary": "#FACC15"
+      }
+    },
+    {
+      "name": "St Kitts & Nevis Patriots",
+      "short": "SNP",
+      "squadStars": 3,
+      "colors": {
+        "primary": "#0E7490",
+        "secondary": "#DC2626"
+      }
+    },
+    {
+      "name": "Jamaica Kingsmen",
+      "short": "JAM",
+      "squadStars": 3,
+      "colors": {
+        "primary": "#111827",
+        "secondary": "#FDB913"
+      }
+    }
+  ],
+  "matches": [
+    {
+      "id": 1,
+      "date": "2024-03-22T14:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "Saint Lucia Kings",
+      "battingFirst": "Barbados Royals",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Saint Lucia Kings",
+          "runs": 144,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 45,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 85,
+          "wktsLost": 8,
+          "bowlTop2": 6
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Barbados Royals",
+          "runs": 160,
+          "balls": 114,
+          "overs": 19,
+          "ppRuns": 40,
+          "deathRuns": 42,
+          "deathBalls": 24,
+          "top4": 85,
+          "wktsLost": 8,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 2,
+      "date": "2024-03-23T02:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "Saint Lucia Kings",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 133,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 46,
+          "deathBalls": 30,
+          "top4": 81,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Saint Lucia Kings",
+          "runs": 138,
+          "balls": 109,
+          "overs": 18.2,
+          "ppRuns": 40,
+          "deathRuns": 29,
+          "deathBalls": 19,
+          "top4": 79,
+          "wktsLost": 7,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 3,
+      "date": "2024-03-23T14:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 162,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 52,
+          "deathRuns": 58,
+          "deathBalls": 30,
+          "top4": 96,
+          "wktsLost": 5,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 131,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 37,
+          "deathRuns": 45,
+          "deathBalls": 30,
+          "top4": 83,
+          "wktsLost": 5,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 4,
+      "date": "2024-03-24T02:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "Guyana Amazon Warriors",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 143,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 81,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Saint Lucia Kings",
+          "runs": 135,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 45,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 88,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 5,
+      "date": "2024-03-24T14:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 145,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 8,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 140,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 53,
+          "deathBalls": 30,
+          "top4": 86,
+          "wktsLost": 7,
+          "bowlTop2": 6
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 6,
+      "date": "2024-03-25T02:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 140,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 88,
+          "wktsLost": 4,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 158,
+          "balls": 111,
+          "overs": 18.5,
+          "ppRuns": 41,
+          "deathRuns": 36,
+          "deathBalls": 21,
+          "top4": 81,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 7,
+      "date": "2024-03-25T14:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 94,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 128,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 44,
+          "deathBalls": 30,
+          "top4": 74,
+          "wktsLost": 8,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 8,
+      "date": "2024-03-26T02:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 151,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 50,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 6,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 125,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 35,
+          "deathRuns": 43,
+          "deathBalls": 30,
+          "top4": 79,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 9,
+      "date": "2024-03-26T14:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "Antigua & Barbuda Falcons",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 133,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 43,
+          "deathBalls": 30,
+          "top4": 80,
+          "wktsLost": 5,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 136,
+          "balls": 98,
+          "overs": 16.3,
+          "ppRuns": 36,
+          "deathRuns": 12,
+          "deathBalls": 8,
+          "top4": 65,
+          "wktsLost": 9,
+          "bowlTop2": 7
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 3,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 10,
+      "date": "2024-03-27T02:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 135,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 80,
+          "wktsLost": 8,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 111,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 43,
+          "deathBalls": 30,
+          "top4": 77,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 11,
+      "date": "2024-03-27T14:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "Saint Lucia Kings",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 140,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 83,
+          "wktsLost": 9,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Saint Lucia Kings",
+          "runs": 157,
+          "balls": 113,
+          "overs": 18.8,
+          "ppRuns": 37,
+          "deathRuns": 40,
+          "deathBalls": 23,
+          "top4": 74,
+          "wktsLost": 9,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 3,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 12,
+      "date": "2024-03-28T02:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Antigua & Barbuda Falcons",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Barbados Royals",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 89,
+          "wktsLost": 6,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 125,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 84,
+          "wktsLost": 5,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 3,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 13,
+      "date": "2024-03-28T14:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Jamaica Kingsmen",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 137,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 49,
+          "deathBalls": 30,
+          "top4": 78,
+          "wktsLost": 7,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 143,
+          "balls": 100,
+          "overs": 16.7,
+          "ppRuns": 32,
+          "deathRuns": 16,
+          "deathBalls": 10,
+          "top4": 60,
+          "wktsLost": 6,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Jamaica Kingsmen": {
+          "available": 2,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 14,
+      "date": "2024-03-29T02:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "Trinbago Knight Riders",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 149,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 54,
+          "deathBalls": 30,
+          "top4": 85,
+          "wktsLost": 3,
+          "bowlTop2": 1
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 150,
+          "balls": 94,
+          "overs": 15.7,
+          "ppRuns": 39,
+          "deathRuns": 7,
+          "deathBalls": 4,
+          "top4": 78,
+          "wktsLost": 7,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 15,
+      "date": "2024-03-29T14:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "Antigua & Barbuda Falcons",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 153,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 54,
+          "deathBalls": 30,
+          "top4": 92,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Saint Lucia Kings",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 88,
+          "wktsLost": 10,
+          "bowlTop2": 8
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 3,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 16,
+      "date": "2024-03-30T02:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 159,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 53,
+          "deathRuns": 60,
+          "deathBalls": 30,
+          "top4": 101,
+          "wktsLost": 9,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 167,
+          "balls": 115,
+          "overs": 19.2,
+          "ppRuns": 46,
+          "deathRuns": 46,
+          "deathBalls": 25,
+          "top4": 89,
+          "wktsLost": 3,
+          "bowlTop2": 1
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 17,
+      "date": "2024-03-30T14:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "Guyana Amazon Warriors",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 144,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 123,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 59,
+          "deathBalls": 30,
+          "top4": 99,
+          "wktsLost": 10,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 5
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 18,
+      "date": "2024-03-31T02:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Jamaica Kingsmen",
+      "winner": "Jamaica Kingsmen",
+      "innings": [
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Barbados Royals",
+          "runs": 149,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 88,
+          "wktsLost": 9,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 140,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 49,
+          "deathBalls": 30,
+          "top4": 88,
+          "wktsLost": 9,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 19,
+      "date": "2024-03-31T14:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 133,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 5,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Saint Lucia Kings",
+          "runs": 124,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 53,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 9,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 20,
+      "date": "2024-04-01T02:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "Trinbago Knight Riders",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 157,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 52,
+          "deathRuns": 58,
+          "deathBalls": 30,
+          "top4": 98,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 156,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 59,
+          "deathBalls": 30,
+          "top4": 92,
+          "wktsLost": 7,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        },
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 21,
+      "date": "2024-04-01T14:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 133,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 46,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 9,
+          "bowlTop2": 7
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Saint Lucia Kings",
+          "runs": 109,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 49,
+          "deathBalls": 30,
+          "top4": 84,
+          "wktsLost": 3,
+          "bowlTop2": 1
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 22,
+      "date": "2024-04-02T02:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "Barbados Royals",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Barbados Royals",
+          "runs": 139,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 130,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 42,
+          "deathBalls": 30,
+          "top4": 80,
+          "wktsLost": 6,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        },
+        "Barbados Royals": {
+          "available": 3,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 23,
+      "date": "2024-04-02T14:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "Barbados Royals",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Barbados Royals",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Barbados Royals",
+          "runs": 137,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 81,
+          "wktsLost": 7,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 148,
+          "balls": 90,
+          "overs": 15,
+          "ppRuns": 34,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 66,
+          "wktsLost": 5,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 24,
+      "date": "2024-04-03T02:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Barbados Royals",
+          "runs": 148,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 89,
+          "wktsLost": 4,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 137,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 7,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 3,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 25,
+      "date": "2024-04-03T14:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Jamaica Kingsmen",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 85,
+          "wktsLost": 10,
+          "bowlTop2": 6
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 148,
+          "balls": 118,
+          "overs": 19.7,
+          "ppRuns": 43,
+          "deathRuns": 46,
+          "deathBalls": 28,
+          "top4": 82,
+          "wktsLost": 9,
+          "bowlTop2": 7
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        },
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 26,
+      "date": "2024-04-04T02:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Saint Lucia Kings",
+          "runs": 128,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 40,
+          "deathBalls": 30,
+          "top4": 76,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 121,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 52,
+          "deathBalls": 30,
+          "top4": 92,
+          "wktsLost": 3,
+          "bowlTop2": 1
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 27,
+      "date": "2024-04-04T14:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Jamaica Kingsmen",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Saint Lucia Kings",
+          "runs": 136,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 46,
+          "deathBalls": 30,
+          "top4": 86,
+          "wktsLost": 7,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 142,
+          "balls": 118,
+          "overs": 19.7,
+          "ppRuns": 39,
+          "deathRuns": 44,
+          "deathBalls": 28,
+          "top4": 79,
+          "wktsLost": 7,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 28,
+      "date": "2024-04-05T02:00:00.000Z",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "tossWinner": "St Kitts & Nevis Patriots",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 159,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 56,
+          "deathBalls": 30,
+          "top4": 92,
+          "wktsLost": 9,
+          "bowlTop2": 7
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 144,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 82,
+          "wktsLost": 7,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        },
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 29,
+      "date": "2024-04-05T14:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Barbados Royals",
+      "battingFirst": "Barbados Royals",
+      "winner": "Barbados Royals",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 130,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 37,
+          "deathRuns": 42,
+          "deathBalls": 30,
+          "top4": 76,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Barbados Royals",
+          "runs": 125,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 84,
+          "wktsLost": 9,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 30,
+      "date": "2024-04-06T02:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Saint Lucia Kings",
+      "battingFirst": "Barbados Royals",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Saint Lucia Kings",
+          "runs": 152,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 49,
+          "deathBalls": 30,
+          "top4": 95,
+          "wktsLost": 10,
+          "bowlTop2": 7
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Barbados Royals",
+          "runs": 156,
+          "balls": 116,
+          "overs": 19.3,
+          "ppRuns": 36,
+          "deathRuns": 45,
+          "deathBalls": 26,
+          "top4": 79,
+          "wktsLost": 10,
+          "bowlTop2": 7
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 31,
+      "date": "2024-04-06T14:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "Antigua & Barbuda Falcons",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 139,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 46,
+          "deathBalls": 30,
+          "top4": 89,
+          "wktsLost": 5,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 129,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 41,
+          "deathRuns": 46,
+          "deathBalls": 30,
+          "top4": 74,
+          "wktsLost": 4,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 32,
+      "date": "2024-04-07T02:00:00.000Z",
+      "home": "Trinbago Knight Riders",
+      "away": "Saint Lucia Kings",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "tossWinner": "Trinbago Knight Riders",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 145,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 83,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Saint Lucia Kings",
+          "runs": 163,
+          "balls": 117,
+          "overs": 19.5,
+          "ppRuns": 41,
+          "deathRuns": 48,
+          "deathBalls": 27,
+          "top4": 87,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 5
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 33,
+      "date": "2024-04-07T14:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Barbados Royals",
+      "winner": "Jamaica Kingsmen",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 140,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 44,
+          "deathRuns": 45,
+          "deathBalls": 30,
+          "top4": 89,
+          "wktsLost": 4,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Barbados Royals",
+          "runs": 156,
+          "balls": 93,
+          "overs": 15.5,
+          "ppRuns": 34,
+          "deathRuns": 5,
+          "deathBalls": 3,
+          "top4": 70,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 34,
+      "date": "2024-04-08T02:00:00.000Z",
+      "home": "Saint Lucia Kings",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "tossWinner": "Trinbago Knight Riders",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 137,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 39,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 80,
+          "wktsLost": 8,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Saint Lucia Kings",
+          "runs": 109,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 55,
+          "deathBalls": 30,
+          "top4": 91,
+          "wktsLost": 3,
+          "bowlTop2": 2
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 35,
+      "date": "2024-04-08T14:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "Barbados Royals",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Barbados Royals",
+          "runs": 152,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 47,
+          "deathRuns": 53,
+          "deathBalls": 30,
+          "top4": 86,
+          "wktsLost": 10,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 150,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 54,
+          "deathBalls": 30,
+          "top4": 85,
+          "wktsLost": 4,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 3,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 36,
+      "date": "2024-04-09T02:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "Antigua & Barbuda Falcons",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "Jamaica Kingsmen",
+      "winner": "Jamaica Kingsmen",
+      "innings": [
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 138,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 48,
+          "deathBalls": 30,
+          "top4": 84,
+          "wktsLost": 10,
+          "bowlTop2": 6
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 126,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 40,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 6,
+          "bowlTop2": 3
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 37,
+      "date": "2024-04-09T14:00:00.000Z",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Guyana Amazon Warriors",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "tossWinner": "Antigua & Barbuda Falcons",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 45,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 94,
+          "wktsLost": 8,
+          "bowlTop2": 5
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 136,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 47,
+          "deathRuns": 51,
+          "deathBalls": 30,
+          "top4": 97,
+          "wktsLost": 6,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 38,
+      "date": "2024-04-10T02:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "Trinbago Knight Riders",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 149,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 50,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 5,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 161,
+          "balls": 98,
+          "overs": 16.3,
+          "ppRuns": 34,
+          "deathRuns": 14,
+          "deathBalls": 8,
+          "top4": 71,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        },
+        "Trinbago Knight Riders": {
+          "available": 5,
+          "squad": 5
+        }
+      }
+    },
+    {
+      "id": 39,
+      "date": "2024-04-10T14:00:00.000Z",
+      "home": "Jamaica Kingsmen",
+      "away": "St Kitts & Nevis Patriots",
+      "venueHomeTeam": "Jamaica Kingsmen",
+      "tossWinner": "Jamaica Kingsmen",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 135,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 42,
+          "deathRuns": 44,
+          "deathBalls": 30,
+          "top4": 84,
+          "wktsLost": 5,
+          "bowlTop2": 3
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 110,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 45,
+          "deathRuns": 44,
+          "deathBalls": 30,
+          "top4": 85,
+          "wktsLost": 8,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 40,
+      "date": "2024-04-11T02:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "Barbados Royals",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "Guyana Amazon Warriors",
+      "battingFirst": "Barbados Royals",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 135,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 47,
+          "deathBalls": 30,
+          "top4": 83,
+          "wktsLost": 7,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Barbados Royals",
+          "runs": 145,
+          "balls": 115,
+          "overs": 19.2,
+          "ppRuns": 41,
+          "deathRuns": 40,
+          "deathBalls": 25,
+          "top4": 83,
+          "wktsLost": 10,
+          "bowlTop2": 6
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        },
+        "Barbados Royals": {
+          "available": 3,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 41,
+      "date": "2024-04-11T14:00:00.000Z",
+      "home": "Guyana Amazon Warriors",
+      "away": "Jamaica Kingsmen",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "tossWinner": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Jamaica Kingsmen",
+          "runs": 160,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 50,
+          "deathRuns": 56,
+          "deathBalls": 30,
+          "top4": 102,
+          "wktsLost": 6,
+          "bowlTop2": 4
+        },
+        {
+          "batting": "Jamaica Kingsmen",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 128,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 38,
+          "deathRuns": 42,
+          "deathBalls": 30,
+          "top4": 73,
+          "wktsLost": 6,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 5,
+          "squad": 5
+        },
+        "Jamaica Kingsmen": {
+          "available": 3,
+          "squad": 3
+        }
+      }
+    },
+    {
+      "id": 42,
+      "date": "2024-04-12T02:00:00.000Z",
+      "home": "Barbados Royals",
+      "away": "Trinbago Knight Riders",
+      "venueHomeTeam": "Barbados Royals",
+      "tossWinner": "Barbados Royals",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Barbados Royals",
+          "runs": 143,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 46,
+          "deathRuns": 50,
+          "deathBalls": 30,
+          "top4": 87,
+          "wktsLost": 5,
+          "bowlTop2": 2
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 136,
+          "balls": 120,
+          "overs": 20,
+          "ppRuns": 43,
+          "deathRuns": 45,
+          "deathBalls": 30,
+          "top4": 78,
+          "wktsLost": 10,
+          "bowlTop2": 5
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 5
+        }
+      }
+    }
+  ]
+}

@@ -168,6 +168,12 @@
       flex-wrap: wrap;
     }
 
+    .logo {
+      flex-shrink: 0;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    }
+
     .name {
       font-weight: 700;
       font-size: 15px;
@@ -832,7 +838,7 @@
       <div class="rank">${r.rank}</div>
       <div class="body">
         <div class="head">
-          <span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
+          ${logoSvg(r.name)}<span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
         </div>
         <p class="blurb">${esc(b.text)}</p>
         <div class="stats">
@@ -851,6 +857,27 @@
       }
     }
     function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    // Original crest badge — a monogram roundel in the team's brand colours.
+    // Not the trademarked logo artwork; drop in licensed logo files if you have them.
+    function teamMeta(name) { return STATE.teams.find(t => t.name === name) || {}; }
+    function textOn(hex) {
+      const c = String(hex || '').replace('#', '');
+      if (c.length < 6) return '#fff';
+      const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.58 ? '#0b0e14' : '#ffffff';
+    }
+    function logoSvg(name, size) {
+      const t = teamMeta(name);
+      const primary = t.primary || '#334155', secondary = t.secondary || '#94a3b8';
+      const s = t.short || '?'; const sz = size || 34;
+      const fs = s.length >= 3 ? 12.5 : 15.5;
+      return `<svg class="logo" width="${sz}" height="${sz}" viewBox="0 0 48 48" role="img" aria-label="${esc(name)} badge">
+        <circle cx="24" cy="24" r="22" fill="${primary}" stroke="${secondary}" stroke-width="4"/>
+        <circle cx="24" cy="24" r="18.5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+        <text x="24" y="24.5" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" font-weight="800" font-size="${fs}" letter-spacing=".3" fill="${textOn(primary)}">${esc(s)}</text>
+      </svg>`;
+    }
     // Chips for any enabled optional metric, so the maths is visible in the list.
     function optChips(r) {
       const en = STATE.enabled || {}; const out = [];

@@ -1,16 +1,13 @@
 {
   "_comment": "Previous week's final ranks (teamName -> rank). The engine diffs the current ranking against this to produce the movement arrows. In production this is last week's generated output, stored automatically.",
-  "asOf": "2024-05-12",
+  "asOf": "2026-09-06",
   "ranks": {
-    "Kolkata Knight Riders": 1,
-    "Rajasthan Royals": 2,
-    "Sunrisers Hyderabad": 3,
-    "Chennai Super Kings": 4,
-    "Delhi Capitals": 6,
-    "Lucknow Super Giants": 5,
-    "Gujarat Titans": 7,
-    "Royal Challengers Bengaluru": 9,
-    "Punjab Kings": 8,
-    "Mumbai Indians": 10
+    "Guyana Amazon Warriors": 1,
+    "Trinbago Knight Riders": 2,
+    "Barbados Royals": 3,
+    "Antigua & Barbuda Falcons": 5,
+    "Saint Lucia Kings": 4,
+    "St Kitts & Nevis Patriots": 6,
+    "Jamaica Kingsmen": 7
   }
 }

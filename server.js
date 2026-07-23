@@ -54,7 +54,13 @@ function buildState(rows) {
     optionalWeights: config.optionalWeights || {},
     enabled: config.enabled || {},
     matchCount: sim.getData().matches.length,
-    teams: sim.getTeams().map((t) => ({ name: t.name, short: t.short, squadStars: t.squadStars || 0 })),
+    teams: sim.getTeams().map((t) => ({
+      name: t.name,
+      short: t.short,
+      squadStars: t.squadStars || 0,
+      primary: (t.colors && t.colors.primary) || '#334155',
+      secondary: (t.colors && t.colors.secondary) || '#94a3b8',
+    })),
     ranking,
     blurbs,
   };

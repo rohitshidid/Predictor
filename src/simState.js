@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const BASELINE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'data', 'ipl_2024.json'), 'utf8')
+  fs.readFileSync(path.join(__dirname, '..', 'data', 'cpl_2026.json'), 'utf8')
 );
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
