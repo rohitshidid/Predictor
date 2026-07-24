@@ -1217,7 +1217,7 @@
           <div class="fmeta">${esc(match.competition)} · ${esc(match.venue)} · ${esc(match.date)}<br>
             Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(match.winner)} won by ${esc(match.margin)}</b></div>
           ${line(match.innings[0])}${line(match.innings[1])}
-          <div class="fnote">Source: <b>${esc(provider)}</b>${match.source === 'stub' ? ' (verified scorecard — no live key wired yet)' : ''}. Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${match.format && match.format !== 'T20' ? `<br>Note: this is an <b>${esc(match.format)}</b> test fixture — phase splits are estimated and the T20 engine reads the totals literally.` : ''}</div>
+          <div class="fnote">Source: <b>${esc(match.source === 'espn' ? 'ESPN (live)' : 'offline snapshot')}</b>${match.source === 'stub' ? ` — live fetch unavailable${match.fallbackReason ? ' (' + esc(match.fallbackReason) + ')' : ''}` : ''}. Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${match.format && match.format !== 'T20' ? `<br>Note: this is an <b>${esc(match.format)}</b> fixture — phase splits are estimated and the T20 engine reads the totals literally.` : ''}</div>
         </div>`;
     }
 
