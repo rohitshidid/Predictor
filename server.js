@@ -17,6 +17,7 @@ const { rank } = require('./src/engine');
 const { blurbForTeam } = require('./src/blurbs');
 const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
+const { fetchMatch, providerName } = require('./src/liveMatch');
 
 const PORT = Number(process.env.PORT || 4310);
 const BASE_WEIGHTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'weights.config.json'), 'utf8'));
@@ -149,6 +150,15 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/state') {
       return send(res, 200, buildState());
+    }
+
+    // Pull a finished match from the data provider (stub today, CricAPI when a
+    // key is wired) and return it normalized. The client auto-fills the form
+    // from this — no manual entry. `id` is the provider's match id.
+    if (req.method === 'GET' && url.pathname === '/api/fetch-match') {
+      const id = url.searchParams.get('id') || '';
+      const match = await fetchMatch(id);
+      return send(res, 200, { provider: providerName(), match });
     }
 
     // Serve licensed team logo files dropped into public/logos/. path.basename
