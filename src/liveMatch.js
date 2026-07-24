@@ -209,6 +209,110 @@ const IND_ENG_3RD_ODI_2026 = {
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
+// ---- link reading + Gemini resolver -----------------------------------------
+// "Team A vs Team B" and pasted links are resolved by Gemini grounded search
+// (the project's crown-jewel pattern). The server first physically fetches each
+// link and strips it to text, then hands the excerpts + the team query to Gemini,
+// which returns the match as normalized JSON. Needs GEMINI_API_KEY.
+const MAX_LINKS = 10;
+
+async function readLink(url) {
+  try {
+    if (!/^https?:\/\//i.test(url)) return { url, ok: false, error: 'not an http(s) url' };
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (PowerRankings match fetcher)' },
+    });
+    if (!res.ok) return { url, ok: false, error: `HTTP ${res.status}` };
+    const html = (await res.text()).slice(0, 300000);
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&[a-z]+;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 6000);
+    return { url, ok: true, text };
+  } catch (e) {
+    return { url, ok: false, error: e.message };
+  }
+}
+
+async function readLinks(links) {
+  return Promise.all((links || []).slice(0, MAX_LINKS).map(readLink));
+}
+
+function extractJson(text) {
+  const fenced = String(text).match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const c = fenced ? fenced[1] : String(text);
+  const s = c.indexOf('{'), e = c.lastIndexOf('}');
+  if (s === -1 || e === -1 || e < s) throw new Error('no JSON in model reply');
+  return JSON.parse(c.slice(s, e + 1));
+}
+
+const num = (v, def = 0) => { const n = Number(v); return Number.isFinite(n) ? n : def; };
+
+function normalizeGemini(d, sources) {
+  if (!d || !Array.isArray(d.innings) || d.innings.length < 2) throw new Error('no match found for that pair');
+  const inn = d.innings.slice(0, 2).map((i) => {
+    const balls = num(i.balls, 300) || 300;
+    return {
+      batting: String(i.batting || ''), bowling: String(i.bowling || ''),
+      runs: num(i.runs), balls, overs: +num(i.overs, balls / 6).toFixed(1),
+      wktsLost: Math.max(0, Math.min(10, num(i.wktsLost, 0))),
+      top4: num(i.top4), bowlTop2: num(i.bowlTop2),
+      ppRuns: i.ppRuns != null ? num(i.ppRuns) : null,
+      deathRuns: i.deathRuns != null ? num(i.deathRuns) : null,
+      deathBalls: i.deathBalls != null ? num(i.deathBalls) : null,
+    };
+  });
+  return {
+    source: 'gemini',
+    competition: String(d.competition || 'Match'),
+    format: String(d.format || (inn[0].balls > 200 ? 'ODI' : 'T20')),
+    date: String(d.date || '').slice(0, 10),
+    venue: String(d.venue || 'Unknown venue'),
+    home: String(d.home || inn[0].batting),
+    away: String(d.away || inn[1].batting),
+    battingFirst: String(d.battingFirst || inn[0].batting),
+    tossWinner: String(d.tossWinner || inn[0].batting),
+    tossDecision: String(d.tossDecision || 'bat'),
+    winner: String(d.winner || ''),
+    margin: String(d.margin || ''),
+    innings: inn,
+    batters: (d.batters && typeof d.batters === 'object') ? d.batters : {},
+    bowlers: (d.bowlers && typeof d.bowlers === 'object') ? d.bowlers : {},
+    groundingSources: sources || [],
+  };
+}
+
+async function fetchViaGemini(o, linksRead) {
+  if (!cfg.isConfigured()) throw new Error('GEMINI_API_KEY not set');
+  const { generateGrounded } = require('./blurbs');
+  const excerpts = (linksRead || []).filter((l) => l.ok)
+    .map((l, i) => `SOURCE ${i + 1} (${l.url}):\n${l.text}`).join('\n\n').slice(0, 24000);
+  const who = (o.teamA && o.teamB) ? `the LATEST COMPLETED men's cricket match between "${o.teamA}" and "${o.teamB}"` : 'the cricket match described in the sources below';
+  const prompt = `You are a cricket data extractor. Identify ${who}. Use Google Search to confirm the most recent result and the exact scorecard.${excerpts ? `\n\nAlso use these page excerpts the user provided:\n${excerpts}` : ''}
+
+Return STRICT JSON ONLY (no prose, no markdown) in EXACTLY this schema. All numbers must be real from the scorecard; use null for a phase split you cannot find:
+{
+ "competition": string, "format": "ODI"|"T20"|"Test"|string, "date": "YYYY-MM-DD", "venue": string,
+ "home": string, "away": string, "battingFirst": string, "tossWinner": string, "tossDecision": "bat"|"bowl",
+ "winner": string, "margin": string,
+ "innings": [
+   {"batting": string, "bowling": string, "runs": number, "balls": number, "overs": number, "wktsLost": number, "top4": number, "bowlTop2": number, "ppRuns": number|null, "deathRuns": number|null, "deathBalls": number|null},
+   {"batting": string, "bowling": string, "runs": number, "balls": number, "overs": number, "wktsLost": number, "top4": number, "bowlTop2": number, "ppRuns": number|null, "deathRuns": number|null, "deathBalls": number|null}
+ ],
+ "batters": { "<team>": [ {"name": string, "runs": number} ] },
+ "bowlers": { "<team>": [ {"name": string, "wkts": number} ] }
+}
+Where top4 = combined runs of that innings' top-4 batting positions, and bowlTop2 = wickets taken by the OTHER team's two leading bowlers in that innings.`;
+  const g = await generateGrounded(prompt);
+  return normalizeGemini(extractJson(g.text), g.sources);
+}
+
 // ---- provider registry ------------------------------------------------------
 const PROVIDERS = {
   espn: fetchEspn,
@@ -231,23 +335,56 @@ function providerName() {
   return (process.env.MATCH_PROVIDER || 'espn').trim();
 }
 
-// Fetch + normalize one finished match. On a live-provider failure, fall back to
-// the verified snapshot (tagged source:'stub') so the client always gets data.
-async function fetchMatch(id) {
+// Fetch + normalize one finished match.
+//   opts = { id?, teamA?, teamB?, links? }
+// - teamA+teamB or links present -> Gemini grounded resolution (reads the links
+//   too); without a key it still HITS the links but falls back to the snapshot.
+// - otherwise -> keyless live ESPN by id, snapshot on failure.
+// Always resolves to normalized data so the client never dead-ends.
+async function fetchMatch(opts = {}) {
+  const o = typeof opts === 'string' ? { id: opts } : (opts || {});
+  const wantsQuery = (o.teamA && o.teamB) || (Array.isArray(o.links) && o.links.length);
+
+  if (wantsQuery) {
+    const linksRead = (Array.isArray(o.links) && o.links.length) ? await readLinks(o.links) : [];
+    const linkSummary = linksRead.map((l) => ({ url: l.url, ok: l.ok, chars: l.text ? l.text.length : 0, error: l.error || null }));
+    const requested = { teamA: o.teamA || null, teamB: o.teamB || null };
+
+    if (cfg.isConfigured()) {
+      try {
+        const m = await fetchViaGemini(o, linksRead);
+        m.linksRead = linkSummary; m.requested = requested;
+        return m;
+      } catch (e) {
+        const m = await PROVIDERS.stub();
+        m.source = 'stub'; m.fallbackReason = e.message;
+        m.linksRead = linkSummary; m.requested = requested;
+        return m;
+      }
+    }
+    // No Gemini key: the links were still physically fetched (linksRead proves
+    // it), but resolution/extraction needs the model — return the snapshot, flagged.
+    const m = await PROVIDERS.stub();
+    m.source = 'stub';
+    m.fallbackReason = 'team search + link reading need GEMINI_API_KEY (set it in .env)';
+    m.linksRead = linkSummary; m.requested = requested;
+    return m;
+  }
+
   const name = providerName();
   const provider = PROVIDERS[name];
   if (!provider) throw new Error(`unknown match provider: ${name}`);
   try {
-    const match = await provider(id);
+    const match = await provider(o.id);
     match.source = match.source || name;
     return match;
   } catch (e) {
     if (name === 'stub') throw e;
-    const match = await PROVIDERS.stub(id);
+    const match = await PROVIDERS.stub(o.id);
     match.source = 'stub';
     match.fallbackReason = e.message;
     return match;
   }
 }
 
-module.exports = { fetchMatch, providerName, IND_ENG_3RD_ODI_2026 };
+module.exports = { fetchMatch, providerName, MAX_LINKS, IND_ENG_3RD_ODI_2026 };

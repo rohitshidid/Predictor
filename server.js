@@ -152,12 +152,16 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, buildState());
     }
 
-    // Pull a finished match from the data provider (stub today, CricAPI when a
-    // key is wired) and return it normalized. The client auto-fills the form
-    // from this — no manual entry. `id` is the provider's match id.
-    if (req.method === 'GET' && url.pathname === '/api/fetch-match') {
-      const id = url.searchParams.get('id') || '';
-      const match = await fetchMatch(id);
+    // Pull a finished match and return it normalized. GET (no body) uses the
+    // keyless live ESPN default; POST { teamA, teamB, links } resolves the latest
+    // match between two teams and reads any pasted links via Gemini grounding.
+    if (url.pathname === '/api/fetch-match' && (req.method === 'GET' || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await readBody(req) : {};
+      const id = url.searchParams.get('id') || (body.id || '');
+      const teamA = String(body.teamA || '').trim().slice(0, 60);
+      const teamB = String(body.teamB || '').trim().slice(0, 60);
+      const links = Array.isArray(body.links) ? body.links.map((l) => String(l).trim()).filter(Boolean).slice(0, 10) : [];
+      const match = await fetchMatch({ id, teamA, teamB, links });
       return send(res, 200, { provider: providerName(), match });
     }
 
