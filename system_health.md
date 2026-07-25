@@ -54,9 +54,11 @@ _The macro-level task currently being worked on._
 
 ## Parameter model (from parameters.md, ALL 12 implemented 2026-07-23)
 9 ALWAYS-ON weighted metrics (normalized 0..1, weights in `weights.config.json`):
-winPct 0.25 · marginAdjustedWin 0.10 · rollingNRR 0.15 · form(Bayesian α) 0.15 ·
-powerplayDominance 0.10 · deathOversNet 0.10 · sos 0.05 · homeAwayAdjustment 0.05 ·
-keyPlayerAvailability 0.05. Death net scalingFactor 16.67 (economy→per-100-balls).
+winPct 0.30 · deathOversNet 0.18 · powerplayDominance 0.16 · rollingNRR 0.09 ·
+form(Bayesian α) 0.08 · homeAwayAdjustment 0.08 · keyPlayerAvailability 0.05 ·
+marginAdjustedWin 0.03 · sos 0.03 (fitted 2026-07-25, see Weights section above;
+was hand-set 0.25/0.10/0.15/0.15/0.10/0.10/0.05/0.05/0.05).
+Death net scalingFactor 16.67 (economy→per-100-balls).
 5 OPTIONAL metrics (`config.optionalWeights` + `config.enabled`, off by default,
 toggled per-session in the UI): expectedWins (Pythagorean xW) · tossLeverage
 (reward winning without the toss) · chaseSet (versatility) · top4Consistency
@@ -65,12 +67,59 @@ New per-innings data fields: `top4`, `wktsLost`, `bowlTop2`. Every metric derive
 from raw match data → math stays defensible. NOTE: keyPlayer/star availability is
 still SYNTHETIC (squadStars), not a live ICC top-30 feed.
 
+## Weights (fitted 2026-07-25 — no longer hand-set)
+- **Method:** 300 seeded synthetic seasons, each team carrying the latent
+  `strength` the generator used; metrics normalized exactly as `engine.js` does;
+  maximize `corr(score, strength)` s.t. `w >= 0`, `sum(w) = 1`; fit on 66% of
+  seasons, score on the held-out 34%. Full write-up in `parameters.md`.
+- **Shipped core:** winPct 0.30 · deathOversNet 0.18 · powerplayDominance 0.16 ·
+  rollingNRR 0.09 · form 0.08 · homeAwayAdjustment 0.08 ·
+  keyPlayerAvailability 0.05 · marginAdjustedWin 0.03 · sos 0.03.
+- **Held-out Spearman vs true strength:** 0.694 (old hand-set) -> 0.760 (fitted).
+  Correct #1: 46% -> 50%.
+- **Deliberately NOT shipped:** the unconstrained best fit (0.892 Spearman) puts
+  ~75% of the table on the two phase metrics and Win% at 0.05. It would let a
+  team win every match and not rank first — unpublishable, and over-fitted to a
+  generator that derives phase splits straight from `strength`.
+- **Two defects the fit exposed, both still open:**
+  - `marginAdjustedWin` measured r = +0.01 — no signal AS COMPUTED. It averages
+    only over wins and reads a chase as `(120-balls)/120`. Weight cut to a floor;
+    the METRIC needs reworking before it earns weight back.
+  - `sos` measured r = -1.00 in a complete round robin (opponents' average Win%
+    mirrors your own) and the engine adds it POSITIVELY, so it penalises the best
+    teams. Weight cut to a floor. Fix the sign or restrict it to unbalanced
+    schedules before raising it.
+- **Caveat on record:** the only ground truth today is the synthetic generator, so
+  phase metrics are likely over-credited. Re-fit against real results once a
+  season of live CricAPI data exists — the method transfers unchanged.
+
 ## Match search (locked 2026-07-25)
 - **Resolver order:** CricAPI structured feed (authoritative — the match is chosen
   by filtering/sorting a real index in code) → Gemini grounded search (backup,
   date-pinned) → explicit `notFound`. It NEVER falls back to the offline snapshot
   for a team query; handing back an unrelated fixture stamped REJECTED reads as a
   bug in the search rather than as "we could not find it".
+- **FORMAT-AGNOSTIC BY DESIGN.** Nothing filters on match type. Whatever the pair
+  played most recently — T20, ODI, Test, T10 — wins, chosen purely by date. A
+  draw/tie/no-result reports its own status instead of naming a winner.
+- **Series ranking (fixed 2026-07-25):** a series naming exactly ONE of the two
+  teams is a bilateral against a third team and CANNOT hold their match — it now
+  scores -6, not +3. India and Pakistan never play bilaterals, so the only series
+  that can hold their fixture is a multi-team tournament naming neither of them;
+  the old scoring buried it below "India tour of Zimbabwe" every time.
+- **All probed series are compared (fixed 2026-07-25).** Probing used to stop at
+  the first series containing any fixture, which returned the second-latest
+  match. Now the newest across every probed series wins; a series that ENDED
+  before the best match in hand is skipped as unable to beat it.
+- **Year-less dates (fixed 2026-07-25).** CricAPI writes `endDate` without a year
+  ("Mar 08"); `Date.parse` resolves that to 2001 and backdated the 2026 World Cup
+  by 25 years, so it was skipped. `seriesDate()` resolves the year against the
+  series' own start; unparseable returns 0, which every caller reads as "unknown,
+  do not skip".
+- **The cache is visible and clearable.** A cached answer states its age on the
+  card; a live one says so. `↻ Search again` bypasses the cache for one lookup,
+  `🗑 Clear all previous cache` (POST /api/cache/clear) drops everything. A cache
+  the operator cannot see or clear eventually lies to them.
 - **The model has no clock.** The Gemini prompt now pins today's date and a
   freshness window, accepts `{"notFound": true}` as a correct answer, and retries
   once with the rejection reason when it returns something stale.
@@ -123,7 +172,14 @@ _Granular checklist of the immediate next steps._
       consistency, bowling Gini) as toggleable optional metrics with weight sliders.
 - [x] Multi-select "Extra metrics (optional)" panel + list chips + Randomize button
       (fills all params, no auto-simulate). Verified in browser, console clean.
-- [ ] Review output + tune weights via the live sliders (or `weights.config.json`).
+- [x] Tune weights — fitted against latent strength over 300 seasons rather than
+      hand-set; held-out Spearman 0.694 -> 0.760. Write-up in `parameters.md`.
+- [ ] Rework `marginAdjustedWin` (measured r = +0.01 — no signal as computed),
+      then re-fit its weight.
+- [ ] Fix `sos` sign / restrict it to unbalanced schedules (measured r = -1.00 in
+      a round robin, and the engine adds it positively).
+- [ ] Re-fit all weights against REAL results once a season of live CricAPI data
+      has accumulated. The method transfers unchanged.
 - [x] Wire live CricAPI as the primary match resolver, with a disk cache, an
       explicit call budget and quota-aware error reporting.
 - [ ] Decide: `BLURB_GROUNDING=web` + REAL ICC top-30 feed for key-player

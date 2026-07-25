@@ -847,6 +847,11 @@
         </div>
 
         <button id="btnFetch" class="ghost" style="width:100%;margin-top:12px;">⤓ Fetch match result (API)</button>
+        <div class="row" style="margin-top:6px;">
+          <button id="btnRefetch" class="ghost" style="flex:1;" title="Ignore every stored response and search the feed again">↻ Search again (ignore cache)</button>
+          <button id="btnClearCache" class="ghost" style="flex:1;" title="Delete all stored provider responses">🗑 Clear all previous cache</button>
+        </div>
+        <div id="cacheNote" style="color:var(--muted);font-size:11px;margin-top:4px;"></div>
         <div id="fetchPreview"></div>
         <button id="btnFinish" class="primary" style="width:100%;margin-top:8px;">Simulate Match</button>
         <div class="err" id="err"></div>
@@ -1271,12 +1276,27 @@
       matchLinks.push(v); inp.value = ''; renderLinks(); inp.focus();
     }
 
-    async function fetchMatchResult() {
+    async function clearMatchCache() {
       $('err').textContent = '';
-      overlay(true, 'Fetching latest result…');
+      overlay(true, 'Clearing cache…');
+      try {
+        const r = await api('/api/cache/clear', {});
+        $('cacheNote').textContent = r.cleared
+          ? `Cleared ${r.cleared} cached response${r.cleared === 1 ? '' : 's'} — the next search runs cold.`
+          : 'Cache was already empty.';
+        $('fetchPreview').innerHTML = '';
+      } catch (e) {
+        $('err').textContent = 'Could not clear cache: ' + e.message;
+      } finally { overlay(false); }
+    }
+
+    async function fetchMatchResult(refresh) {
+      $('err').textContent = '';
+      $('cacheNote').textContent = '';
+      overlay(true, refresh ? 'Searching the feed again…' : 'Fetching latest result…');
       try {
         const teamA = $('teamAName').value.trim(), teamB = $('teamBName').value.trim();
-        const { provider, match, quota } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks });
+        const { provider, match, quota } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks, refresh: !!refresh });
         // Nothing resolved at all — there is no scorecard to show, so render the
         // reason and the resolver chain instead of a half-empty match card.
         if (match.notFound) {
@@ -1327,7 +1347,8 @@
     function leadLine(match, inn) {
       const bat = (match.batters && match.batters[inn.batting]) || [];
       const top = bat.slice(0, 2).map(b => `${b.name} ${b.runs}`).join(', ');
-      const won = match.winner === inn.batting ? ` — won by ${match.margin}` : '';
+      const won = (match.winner && match.winner === inn.batting)
+        ? (match.margin ? ` — won by ${match.margin}` : ' — won') : '';
       return `${inn.batting} ${inn.runs}${inn.wktsLost >= 10 ? ' all out' : ''} (${inn.overs} ov)${top ? ' — ' + top : ''}${won}`.slice(0, 200);
     }
 
@@ -1348,7 +1369,20 @@
       const q = (quota || match.quota);
       const quotaLine = q && q.limit
         ? `<br>CricAPI quota: <b>${q.used}/${q.limit}</b> calls used today${q.used >= q.limit ? ' — exhausted, resets at midnight IST' : ''}` : '';
-      return req + tried + links + quotaLine;
+      // A cached answer that looks identical to a live one is how a stale result
+      // survives three re-searches without the operator noticing.
+      const cacheLine = match.fromCache
+        ? `<br><b>Served from cache</b> (stored ${humanAge(match.cacheAgeMs)} ago) — press <b>Search again</b> or <b>Clear all previous cache</b> to force a live lookup.`
+        : (match.source === 'cricapi' ? '<br>Live lookup — not from cache.' : '');
+      return req + tried + links + quotaLine + cacheLine;
+    }
+
+    function humanAge(ms) {
+      const m = Math.round((ms || 0) / 60000);
+      if (m < 1) return 'less than a minute';
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60);
+      return `${h}h ${m % 60}m`;
     }
 
     function renderFetchFailure(match, quota) {
@@ -1362,6 +1396,14 @@
           <div class="fmeta">${esc(hint)}</div>
           <div class="fnote">${fetchDiagnostics(match, quota)}</div>
         </div>`;
+    }
+
+    // A draw, a tie or a no-result has no winner to name — say what happened
+    // instead of rendering "No Winner won by <status>".
+    function resultText(match) {
+      if (match.winner && match.margin) return `${match.winner} won by ${match.margin}`;
+      if (match.winner) return `${match.winner} won`;
+      return match.status || 'No result';
     }
 
     function renderFetchPreview(provider, match, x, y) {
@@ -1388,7 +1430,7 @@
           <h3>Fetched: ${esc(match.home)} v ${esc(match.away)}</h3>
           ${warnHtml}
           <div class="fmeta">${esc(match.competition)} · ${esc(match.venue)} · ${esc(match.date)}<br>
-            Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(match.winner)} won by ${esc(match.margin)}</b></div>
+            Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(resultText(match))}</b></div>
           ${line(match.innings[0])}${line(match.innings[1])}
           <div class="fnote">${src}${diag}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
         </div>`;
@@ -1502,7 +1544,9 @@
     ['runsX', 'runsY', 'battingFirst', 'winner', 'ballsX', 'ballsY'].forEach(id => $(id).addEventListener('change', fillDefaults));
     $('btnAddLink').addEventListener('click', addLink);
     $('linkInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } });
-    $('btnFetch').addEventListener('click', fetchMatchResult);
+    $('btnFetch').addEventListener('click', () => fetchMatchResult(false));
+    $('btnRefetch').addEventListener('click', () => fetchMatchResult(true));
+    $('btnClearCache').addEventListener('click', clearMatchCache);
     $('dlPng').addEventListener('click', () => downloadPng().catch(e => $('err').textContent = e.message));
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);

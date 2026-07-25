@@ -1,23 +1,34 @@
 {
-  "_comment": "Ranking weighting lives here, NOT in code. Tune without touching the engine. The 9 weights should sum to 1.0. Normalization bounds map each raw metric onto 0..1 before weighting.",
+  "_comment": "Ranking weighting lives here, NOT in code. Tune without touching the engine. The 9 weights sum to 1.0. Normalization bounds map each raw metric onto 0..1 before weighting.",
+  "_derivation": "Weights fitted, not guessed. Method: 300 independently seeded synthetic seasons, each team carrying the latent `strength` the generator used; every metric normalized exactly as the engine does it; then maximize the correlation between the weighted score and true strength, subject to w >= 0 and sum(w) = 1, fitted on 66% of seasons and scored on the held-out 34%. Floors and caps keep the table publishable (results must visibly drive it, no single family may dominate). Held-out Spearman vs true strength: 0.69 with the previous hand-set weights, 0.76 with these. CAVEAT: the only ground truth available is the synthetic generator, so the phase metrics score better here than they would on real cricket, where a team's powerplay/death profile is a style choice and not a clean readout of overall quality. Re-fit these against real results once a season of live CricAPI data has accumulated.",
   "weights": {
-    "winPct": 0.25,
-    "marginAdjustedWin": 0.1,
-    "rollingNRR": 0.15,
-    "form": 0.15,
-    "powerplayDominance": 0.1,
-    "deathOversNet": 0.1,
-    "sos": 0.05,
-    "homeAwayAdjustment": 0.05,
+    "winPct": 0.3,
+    "marginAdjustedWin": 0.03,
+    "rollingNRR": 0.09,
+    "form": 0.08,
+    "powerplayDominance": 0.16,
+    "deathOversNet": 0.18,
+    "sos": 0.03,
+    "homeAwayAdjustment": 0.08,
     "keyPlayerAvailability": 0.05
   },
-  "_optionalNote": "Extra metrics from parameters.md Groups 4-5. Off by default; toggle in the UI. Each contributes its weight to the score ONLY when enabled=true.",
+  "_weightNotes": {
+    "winPct": "Held at the cap. Pure fit wanted far less, because a binary W/L over ~12 games is a noisy estimate of quality next to any season-averaged continuous measure. But a power ranking whose table does not visibly track winning is not publishable, so this carries a floor.",
+    "powerplayDominance": "Raised from 0.10. Phase measures are averaged over every ball of the season, so their sampling noise falls away far faster than win/loss does over a short season.",
+    "deathOversNet": "Raised from 0.10 — the strongest single correlate of team strength in the study (r = 0.87), matching what parameters.md predicted.",
+    "rollingNRR": "Trimmed from 0.15. Correlates 0.81 with form, so much of what it adds was already counted.",
+    "form": "Trimmed from 0.15. Correlates 0.76 with winPct; kept meaningful because movement and streaks are what the prose is written about.",
+    "marginAdjustedWin": "Cut from 0.10 to a floor. Measured correlation with strength was 0.007 — no signal AS CURRENTLY COMPUTED. It averages only over matches won and, for a chase, reads balls remaining out of 120, so a dominant side and a lucky one score alike. Worth re-weighting only after the metric itself is reworked.",
+    "sos": "Cut from 0.05 to a floor, and read the sign before raising it: in a complete round robin a team's opponents' average win% is close to the mirror of its own, which measured as r = -1.0 against strength. Adding it POSITIVELY therefore penalises the best teams. It only carries real information on an unbalanced schedule (internationals, or mid-season).",
+    "keyPlayerAvailability": "Held at 0.05 on domain grounds, not evidence. Star availability barely varies in the synthetic data (r = 0.08), so the study cannot see its value; parameters.md rates it a top real-world predictor. Revisit once a real ICC top-30 feed is wired."
+  },
+  "_optionalNote": "Extra metrics from parameters.md Groups 4-5. Off by default; toggle in the UI. Each contributes its weight to the score ONLY when enabled=true. Measured marginal value ON TOP OF the core 9: top4Consistency adds a little; expectedWins, chaseSet and tossLeverage add nothing measurable because they correlate 0.91, 0.95 and 0.80 with winPct, which is already weighted; bowlingConcentration showed no signal at all (r = -0.02). They are kept small so switching one on nudges the table rather than distorting it.",
   "optionalWeights": {
-    "expectedWins": 0.1,
-    "tossLeverage": 0.05,
-    "chaseSet": 0.08,
-    "top4Consistency": 0.08,
-    "bowlingConcentration": 0.05
+    "expectedWins": 0.05,
+    "tossLeverage": 0.03,
+    "chaseSet": 0.05,
+    "top4Consistency": 0.12,
+    "bowlingConcentration": 0.03
   },
   "enabled": {
     "expectedWins": false,

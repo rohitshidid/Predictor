@@ -412,9 +412,9 @@ async function cricapiCall(path, params) {
 // Cached GET. `ttl` says how long this KIND of document stays fresh: the live
 // window is minutes, a series list is a day, a finished scorecard is forever.
 // Only successful responses are stored, so a quota failure is never cached.
-async function cricapiGet(path, params, ttl) {
+async function cricapiGet(path, params, ttl, refresh = false) {
   const key = `${path}?${new URLSearchParams(params).toString()}`;
-  const { data } = await cache.through('cricapi', key, ttl, () => cricapiCall(path, params));
+  const { data } = await cache.through('cricapi', key, ttl, () => cricapiCall(path, params), refresh);
   return data;
 }
 
@@ -439,6 +439,34 @@ function teamMatches(candidate, wanted) {
   // One side carrying a squad qualifier the other lacks = not the same team.
   if (SQUAD_QUALIFIER.test(cRaw) !== SQUAD_QUALIFIER.test(wRaw)) return false;
   return c.includes(w) || w.includes(c);
+}
+
+// CricAPI writes series dates in two different shapes: `startDate` is usually a
+// full ISO date, but `endDate` is routinely year-less ("Mar 08", "Oct 14").
+// Date.parse resolves those against year 2001, which silently backdates a
+// current tournament by 25 years — enough to make a 2026 World Cup look older
+// than a 2025 tour and be skipped as unable to hold anything newer.
+//
+// `reference` supplies the year a year-less date belongs to. `rollForward` is
+// for end dates, which must never precede their own start — a range that wraps
+// the new year ("Dec 13" -> "Jan 07") belongs to the following year. Anything
+// unparseable returns 0, which every caller reads as "unknown, do not skip"
+// rather than as a real date.
+function seriesDate(raw, reference, rollForward = false) {
+  const s = String(raw || '').trim();
+  if (!s) return 0;
+  const direct = Date.parse(s);
+  if (/\d{4}/.test(s) && Number.isFinite(direct)) return direct;
+  const ref = Number.isFinite(reference) ? reference : Date.now();
+  const year = new Date(ref).getUTCFullYear();
+  const at = (y) => Date.parse(`${s} ${y} UTC`);
+  let guess = at(year);
+  if (!Number.isFinite(guess)) return 0;
+  if (guess < ref) {
+    const next = at(year + 1);
+    if (rollForward && Number.isFinite(next)) guess = next;
+  }
+  return Number.isFinite(guess) ? guess : 0;
 }
 
 const isFinished = (m) => {
@@ -495,7 +523,7 @@ function linkHints(links) {
   return [...new Set(terms)].sort((a, b) => a.split(' ').length - b.split(' ').length);
 }
 
-async function cricapiFindLatest(teamA, teamB, links = []) {
+async function cricapiFindLatest(teamA, teamB, links = [], refresh = false) {
   const found = [];
   // Transport/API errors must never masquerade as "no such match" — that is what
   // hid a proxy failure behind a misleading "not found" during development.
@@ -512,7 +540,7 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
   // 1. cricScore — the current window. Covers the production case (a fixture
   //    that just ended) in a single cheap call.
   try {
-    const cs = await cricapiGet('cricScore', {}, cfg.cricapi.ttl.score);
+    const cs = await cricapiGet('cricScore', {}, cfg.cricapi.ttl.score, refresh);
     for (const m of cs.data || []) {
       const teams = [m.t1, m.t2].map((t) => String(t || '').replace(/\s*\[.*?\]\s*/g, '').trim());
       const norm = { ...m, teams, dateTimeGMT: m.dateTimeGMT, status: m.status, id: m.id };
@@ -561,8 +589,36 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
       if (hit === hintTokens.length) score += 4;          // covers all of it
       score -= Math.max(0, nameWords.length - hintTokens.length) * 0.5; // extra words = qualifier
     }
-    if (teamMatchesName(s.name, teamA)) score += 3;
-    if (teamMatchesName(s.name, teamB)) score += 3;
+    // How the series NAME relates to the requested pair. Naming exactly ONE of
+    // them is the strongest negative signal available: "India tour of Zimbabwe"
+    // is a bilateral against a third team, so an India v Pakistan match cannot
+    // possibly be in it. Rewarding that +3 for the word "India" is what buried
+    // the real fixture — India and Pakistan never play bilaterals, so the only
+    // series that can hold their match is a multi-team tournament whose name
+    // mentions neither of them.
+    const namesA = teamMatchesName(s.name, teamA);
+    const namesB = teamMatchesName(s.name, teamB);
+    if (namesA && namesB) score += 8;        // a bilateral between exactly these two
+    else if (namesA || namesB) score -= 6;   // a bilateral involving someone else
+    // else: names neither — a multi-team event, which is exactly where a
+    // marquee fixture lives. Neutral, not penalised.
+
+    // Stage and squad qualifiers the caller did not ask for. A men's senior
+    // request should not spend probes on warm-ups, regional qualifiers, U19 or
+    // women's editions of the same tournament.
+    const asked = SQUAD_QUALIFIER.test(teamA) || SQUAD_QUALIFIER.test(teamB);
+    if (!asked && /(qualifier|warm[\s-]?up|women|u1[6-9]|under[\s-]?1[6-9]|emerging|development|legends|masters)/i.test(s.name)) {
+      score -= 4;
+    }
+
+    // A bigger event is likelier to host the fixture — 55 matches is a World
+    // Cup, 2 is a short tour.
+    score += Math.min(2, (Number(s.matches) || 0) / 30);
+
+    // Recency breaks what is left.
+    const ageDays = (Date.now() - (Date.parse(s.startDate) || 0)) / 86400000;
+    if (ageDays <= 120) score += 2;
+    else if (ageDays <= 400) score += 1;
     return score;
   };
 
@@ -576,7 +632,7 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
     if (seenTerm.size >= cfg.cricapi.maxSeriesTerms) break;
     seenTerm.add(key);
     try {
-      const r = await cricapiGet('series', { offset: '0', search: term }, cfg.cricapi.ttl.series);
+      const r = await cricapiGet('series', { offset: '0', search: term }, cfg.cricapi.ttl.series, refresh);
       for (const s of r.data || []) {
         if (!s.id || series.some((x) => x.id === s.id)) continue;
         if (Number(s.matches) === 0) continue;
@@ -586,20 +642,39 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
     if (quotaHit) break;
   }
   if (quotaHit && !series.length) throw quotaHit;
-  const started = (s) => Date.parse(s.startDate) || 0;
   const now = Date.now();
+  const started = (s) => seriesDate(s.startDate, now) || 0;
   const candidates = series.filter((x) => started(x) <= now);
   // Most relevant first, then most recent — so the real tournament beats both
   // its qualifiers and any newer but unrelated series.
   candidates.sort((a, b) => (relevance(b) - relevance(a)) || (started(b) - started(a)));
 
+  // Probe every candidate in budget and take the newest match across ALL of
+  // them. Stopping at the first series that happened to contain a fixture is
+  // what returned the second-latest match: the pair is usually named in an old
+  // bilateral tour's title and not in the current tournament's, so the stale
+  // series was reached first and won by default.
+  //
+  // The one call worth skipping is a series that ENDED before the best match
+  // already in hand — it cannot possibly hold anything newer.
+  // A series' end date decides whether it can still hold something newer, so it
+  // has to be read correctly — see seriesDate(): CricAPI writes it without a
+  // year, and the naive parse lands in 2001.
+  const ended = (s) => seriesDate(s.endDate, started(s) || now, true) || started(s) || 0;
+  const matchTs = (m) => new Date(m.dateTimeGMT || m.date || 0).getTime() || 0;
+  let bestTs = 0;
   for (const s of candidates.slice(0, cfg.cricapi.maxSeriesProbe)) {
+    const end = ended(s);
+    if (bestTs && end && end < bestTs) continue;
     try {
-      const info = await cricapiGet('series_info', { id: s.id }, cfg.cricapi.ttl.seriesInfo);
+      const info = await cricapiGet('series_info', { id: s.id }, cfg.cricapi.ttl.seriesInfo, refresh);
       const list = (info.data && info.data.matchList) || [];
-      for (const m of list) if (matchesPair(m, teamA, teamB) && isFinished(m)) found.push(m);
+      for (const m of list) {
+        if (!matchesPair(m, teamA, teamB) || !isFinished(m)) continue;
+        found.push(m);
+        bestTs = Math.max(bestTs, matchTs(m));
+      }
     } catch (e) { note(`series_info(${s.name})`, e); }
-    if (found.length) break; // ranked order — the first hit is the right series
     if (quotaHit) break;
   }
 
@@ -673,13 +748,23 @@ function normalizeCricApi(d) {
     .map((b) => ({ name: (b.bowler && b.bowler.name) || b.name || '', wkts: Number(b.w) || 0 }))
     .filter((b) => b.name && b.wkts > 0).sort((a, b) => b.wkts - a.wkts).slice(0, 3);
 
-  const winner = d.matchWinner || (String(d.status || '').match(/^(.+?)\s+won/) || [])[1] || '';
-  const margin = (String(d.status || '').match(/won by\s+(.+)$/i) || [])[1] || String(d.status || '');
+  // Any format is fair game — the question is only "what did these two play
+  // last". A drawn Test or a tie therefore has to render as a result in its own
+  // right: CricAPI answers matchWinner "No Winner" for those, and passing that
+  // straight through produced "No Winner won by Day 4: 2nd Session".
+  const status = String(d.status || '');
+  const rawWinner = String(d.matchWinner || '').trim();
+  const decided = rawWinner && !/^no\s*winner$/i.test(rawWinner) && !/^(draw|tie|drawn|tied)$/i.test(rawWinner);
+  const winner = decided ? rawWinner : ((status.match(/^(.+?)\s+won\b/) || [])[1] || '');
+  const margin = (status.match(/won by\s+(.+)$/i) || [])[1] || '';
 
   return {
     source: 'cricapi',
     competition: d.name || d.series || 'Match',
+    // The scorecard's own format label, whatever it is — Test, ODI, T20, T10.
     format: (d.matchType || '').toUpperCase() || 'T20',
+    // Kept verbatim so a no-result match can state its own outcome.
+    status,
     date: String(d.date || (d.dateTimeGMT || '')).slice(0, 10),
     venue: d.venue || 'Unknown venue',
     home: teams[0] || innings[0].batting,
@@ -701,17 +786,19 @@ function normalizeCricApi(d) {
 // thing an operator does, and on a 100-calls-a-day plan the second press has to
 // be free. The pair is order-insensitive — "India v Pakistan" and "Pakistan v
 // India" are one question.
-async function fetchViaCricApi(teamA, teamB, links = []) {
+async function fetchViaCricApi(teamA, teamB, links = [], refresh = false) {
   const pairKey = [canon(teamA), canon(teamB)].sort().join('|')
     + (links.length ? `|${links.slice().sort().join(',')}` : '');
-  const { data, cached } = await cache.through('cricapi-pair', pairKey, cfg.cricapi.ttl.resolved, async () => {
-    const found = await cricapiFindLatest(teamA, teamB, links);
+  const { data, cached, age } = await cache.through('cricapi-pair', pairKey, cfg.cricapi.ttl.resolved, async () => {
+    const found = await cricapiFindLatest(teamA, teamB, links, refresh);
     const sc = await cricapiGet('match_scorecard', { id: found.id }, cfg.cricapi.ttl.scorecard);
     const m = normalizeCricApi(sc.data || {});
     m.matchId = found.id;
     return m;
-  });
-  return { ...clone(data), fromCache: cached };
+  }, refresh);
+  // Say so when the answer came from disk. An operator who cannot tell a cached
+  // answer from a live one has no way to know a re-search did nothing.
+  return { ...clone(data), fromCache: cached, cacheAgeMs: cached ? age : 0 };
 }
 
 // ---- provider registry ------------------------------------------------------
@@ -803,7 +890,7 @@ async function fetchMatch(opts = {}) {
     let quotaBlocked = false;
     if (o.teamA && o.teamB && cricapiKey()) {
       try {
-        return finish(await fetchViaCricApi(o.teamA, o.teamB, o.links || []));
+        return finish(await fetchViaCricApi(o.teamA, o.teamB, o.links || [], !!o.refresh));
       } catch (e) {
         quotaBlocked = e instanceof QuotaError;
         tried.push(`cricapi: ${e.message}`);
@@ -860,4 +947,6 @@ module.exports = {
   fetchMatch, providerName, MAX_LINKS, IND_ENG_3RD_ODI_2026,
   // Exported for the server's status line and for tests.
   quotaState, cricapiFindLatest, normalizeCricApi, teamMatches, linkHints, QuotaError,
+  clearCache: () => cache.clear(),
+  cacheStats: () => cache.stats(),
 };

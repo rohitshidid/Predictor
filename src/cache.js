@@ -58,19 +58,59 @@ function set(ns, key, data, ttl) {
   return data;
 }
 
-// Run `fn` only on a miss, then store its result.
-async function through(ns, key, ttl, fn) {
-  const hit = get(ns, key);
-  if (hit !== undefined) return { data: hit, cached: true };
+// When an entry was written, or null if it is not cached. Lets a caller tell the
+// operator "this answer is 40 minutes old" instead of presenting stale data as
+// if it were fresh.
+function ageOf(ns, key) {
+  const memKey = `${ns}::${key}`;
+  const hit = mem.get(memKey);
+  if (hit && Date.now() - hit.at < hit.ttl) return Date.now() - hit.at;
+  try {
+    const entry = JSON.parse(fs.readFileSync(fileFor(ns, key), 'utf8'));
+    if (!entry || typeof entry.at !== 'number') return null;
+    const age = Date.now() - entry.at;
+    return age < entry.ttl ? age : null;
+  } catch {
+    return null;
+  }
+}
+
+// Run `fn` only on a miss, then store its result. `bypass` forces a live call
+// and refreshes the entry — the escape hatch for "I know this is stale".
+async function through(ns, key, ttl, fn, bypass = false) {
+  if (!bypass) {
+    const age = ageOf(ns, key);
+    const hit = get(ns, key);
+    if (hit !== undefined) return { data: hit, cached: true, age };
+  }
   const data = await fn();
   set(ns, key, data, ttl);
-  return { data, cached: false };
+  return { data, cached: false, age: 0 };
 }
 
-// Drop everything. Used by tests, and by hand when a bad response got stored.
+// How many entries are stored, per namespace.
+function stats() {
+  const out = { total: 0, namespaces: {} };
+  try {
+    for (const ns of fs.readdirSync(ROOT)) {
+      const dir = path.join(ROOT, ns);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      const n = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).length;
+      out.namespaces[ns] = n;
+      out.total += n;
+    }
+  } catch { /* no cache directory yet */ }
+  return out;
+}
+
+// Drop everything, and report what was dropped. This is the operator's answer to
+// "the feed has moved on but I keep getting the stored result" — the next search
+// then runs completely cold.
 function clear() {
+  const before = stats();
   mem.clear();
   try { fs.rmSync(ROOT, { recursive: true, force: true }); } catch { /* nothing to drop */ }
+  return before;
 }
 
-module.exports = { get, set, through, clear, ROOT };
+module.exports = { get, set, through, clear, stats, ageOf, ROOT };

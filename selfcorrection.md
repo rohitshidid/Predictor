@@ -45,6 +45,20 @@ _Cumulative log of corrections._
   (now `node server.js` on port 4310, autoPort:false) runs the simulator. Use
   `rankings`, never `champhunt-ui`. Kill strays with `lsof -ti tcp:4310 | xargs kill -9`.
 
+- **[2026-07-25]** A cache must be visible and clearable. Storing responses to
+  protect a 100-call/day plan is right, but an operator who cannot tell a cached
+  answer from a live one, or force a fresh search, eventually gets lied to. Every
+  cached answer now states its age; `↻ Search again` bypasses it for one lookup
+  and `🗑 Clear all previous cache` drops everything.
+- **[2026-07-25]** Match search is FORMAT-AGNOSTIC. Only "what did these two play
+  last" matters — T20, ODI, Test or T10, decided purely by date. Never filter on
+  match type.
+- **[2026-07-25]** Weights are fitted, not asserted. When asked what a number
+  should be, derive it from data with a stated method, a held-out score, and the
+  caveat attached — do not hand back a plausible-looking guess. Where the fit
+  conflicts with what a published table must look like, encode that as an
+  explicit constraint and say what the constraint cost.
+
 ## Workflow Preferences
 _How the user wants tasks handled._
 

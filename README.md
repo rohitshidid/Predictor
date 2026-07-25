@@ -131,19 +131,32 @@ Predictor/
 
 The ranking engine scores every team on 9 factors and sorts them highest to lowest. All weights are tunable in `weights.config.json` without touching any code.
 
-| Factor | What it measures |
-|---|---|
-| **Win %** | Percentage of matches won this season |
-| **Win quality** | How convincingly — an 8-wicket win scores higher than a 1-run squeaker |
-| **Rolling NRR** | Net Run Rate over the last 5 games (not the whole season) |
-| **Form (momentum)** | Recent results, weighted so the latest game counts most |
-| **Powerplay** | Batting vs bowling dominance in overs 1–6 |
-| **Death overs** | Batting vs bowling performance in overs 16–20 |
-| **Str. of schedule** | Average Win% of opponents faced |
-| **Home/away** | Consistency at home vs. away venues |
-| **Key players** | Number of ICC top-30 ranked players available |
+| Factor | Weight | What it measures |
+|---|---|---|
+| **Win %** | 0.30 | Percentage of matches won this season |
+| **Death overs** | 0.18 | Batting vs bowling performance in overs 16–20 |
+| **Powerplay** | 0.16 | Batting vs bowling dominance in overs 1–6 |
+| **Rolling NRR** | 0.09 | Net Run Rate over the last 5 games (not the whole season) |
+| **Form (momentum)** | 0.08 | Recent results, weighted so the latest game counts most |
+| **Home/away** | 0.08 | Consistency at home vs. away venues |
+| **Key players** | 0.05 | Number of ICC top-30 ranked players available |
+| **Win quality** | 0.03 | How convincingly — an 8-wicket win scores higher than a 1-run squeaker |
+| **Str. of schedule** | 0.03 | Average Win% of opponents faced |
 
-See [`parameters.md`](parameters.md) for the full formula behind each metric.
+See [`parameters.md`](parameters.md) for the full formula behind each metric, and the [weights study](parameters.md#how-these-weights-were-derived) for how the numbers above were arrived at.
+
+### Where the weights come from
+
+They are fitted, not guessed. 300 independently seeded synthetic seasons are generated, each team carrying the latent `strength` the generator used to produce it; every metric is normalized exactly as the engine does it; then the weights that best make the ranking track true strength are solved for, subject to `w ≥ 0` and `Σw = 1`, fitted on two-thirds of the seasons and scored on the held-out third.
+
+| Weights | Held-out Spearman vs true strength | Correct #1 |
+|---|---|---|
+| Previous hand-set | 0.694 | 46% |
+| Current (fitted) | 0.760 | 50% |
+
+Floors and caps keep the table publishable — results must visibly drive it, and no single family may dominate. `weights.config.json` carries a per-metric note explaining each number.
+
+> **Caveat:** the only ground truth available today is the synthetic generator, so phase metrics score better here than they likely would against real cricket. Re-fit once a season of live CricAPI results has accumulated.
 
 ---
 
@@ -170,9 +183,26 @@ That is the real constraint on this feature, so the lookup is built around it:
 - **Repeat searches cost nothing.** Responses are cached on disk under `.cache/`, keyed so that "India v Pakistan" and "Pakistan v India" are one question. Series lists last a day, finished scorecards last a month — they cannot change.
 - **A blown quota stops immediately** rather than spending the rest of the allowance proving it is blown.
 
-The card shows `CricAPI quota: n/100 calls used today` after every fetch. The allowance resets at **midnight IST**. To clear cached responses and start fresh, delete the `.cache/` directory.
+The card shows `CricAPI quota: n/100 calls used today` after every fetch. The allowance resets at **midnight IST**.
 
 If you run out mid-session, paste a scorecard link into **Match links** — that gives the AI backup the page text to work from, so it can still answer without the feed.
+
+### When the cached answer is stale
+
+A cached answer always says so: the card reads *"Served from cache (stored 40 min ago)"*. A live one reads *"Live lookup — not from cache."* Two buttons sit under **Fetch match result**:
+
+| Button | What it does |
+|---|---|
+| **↻ Search again (ignore cache)** | Re-runs *this* lookup against the feed, ignoring every stored response. Use it when you have added a link, or when a new match has just finished. |
+| **🗑 Clear all previous cache** | Drops every stored response so the next search of any pair starts completely cold. |
+
+> Deleting the `.cache/` folder by hand only clears the disk copy — a running server still holds its in-memory mirror. Use the button, or restart the server after deleting.
+
+### Any format counts
+
+The resolver never filters by format. Whatever these two teams played most recently — T20, ODI, Test, T10 — is what comes back, chosen purely by date. A draw, tie or no-result reports its own status instead of naming a winner.
+
+Non-T20 results are still loaded into a T20 engine, so the card warns you: phase splits are estimated and the totals are read literally.
 
 ---
 

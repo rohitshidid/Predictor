@@ -244,6 +244,167 @@ test('a team query that resolves nothing returns notFound, never the offline sna
   assert.notEqual(m.home, 'England', 'must not hand back the India v England snapshot');
 });
 
+// The bug: the pair is named in an old bilateral tour's TITLE ("India tour of
+// West Indies 2025", +6 relevance) but not in the current tournament's ("ICC
+// Mens T20 World Cup 2026", +0). Probing stopped at the first series holding any
+// fixture, so the older match won and re-searching could never dislodge it.
+const TOUR_SERIES = { id: 'srs-tour', name: 'India tour of West Indies 2025', startDate: '2025-07-01', endDate: '2025-08-20', matches: 5 };
+const WC_SERIES = { id: 'srs-wc26', name: 'ICC Mens T20 World Cup 2026', startDate: '2026-02-07', endDate: '2026-03-08', matches: 55 };
+
+const twoSeriesRoutes = (path, params) => {
+  if (path === 'cricScore') return EMPTY_SCORE;
+  if (path === 'series') return { status: 'success', info: {}, data: [TOUR_SERIES, WC_SERIES] };
+  if (path === 'series_info') {
+    if (params.get('id') === 'srs-tour') {
+      return { status: 'success', info: {}, data: { matchList: [
+        { id: 'tour-3', teams: ['India', 'West Indies'], dateTimeGMT: '2025-08-12T14:00:00', status: 'India won by 4 wickets', matchEnded: true },
+      ] } };
+    }
+    return { status: 'success', info: {}, data: { matchList: [
+      { id: 'wc-19', teams: ['West Indies', 'India'], dateTimeGMT: '2026-02-22T09:00:00', status: 'India won by 2 wickets', matchEnded: true },
+    ] } };
+  }
+  if (path === 'match_scorecard') return SCORECARD;
+  throw new Error(`unmocked path ${path}`);
+};
+
+test('picks the newest match across ALL probed series, not the first series that has one', async () => {
+  mockFeed(twoSeriesRoutes);
+  const found = await live.cricapiFindLatest('India', 'West Indies', []);
+  assert.equal(found.id, 'wc-19', 'the Feb 2026 World Cup match beats the Aug 2025 tour match');
+});
+
+test('skips a series that ended before the best match already found', async () => {
+  // A pasted link ranks the World Cup series first, so it is probed first and
+  // yields a Feb 2026 match. The 2025 tour ended long before that date, so
+  // opening it is a paid call that cannot change the answer.
+  const calls = mockFeed(twoSeriesRoutes);
+  const found = await live.cricapiFindLatest('India', 'West Indies', [
+    'https://www.espncricinfo.com/series/icc-mens-t20-world-cup-2026-1502138/west-indies-vs-india-19th-match-1512745/full-scorecard',
+  ]);
+  assert.equal(found.id, 'wc-19');
+  assert.ok(!calls.includes('series_info?id=srs-tour'), `spent a call on a series that cannot win: ${calls.join(', ')}`);
+});
+
+// CricAPI writes endDate without a year ("Mar 08"), which Date.parse resolves
+// to 2001 — backdating a current tournament by 25 years. That made the 2026
+// World Cup look older than a 2025 tour, so it was skipped as unable to hold
+// anything newer and the India v West Indies Test from Oct 2025 won.
+const YEARLESS_TOUR = { id: 'srs-tour25', name: 'West Indies tour of India, 2025', startDate: '2025-10-02', endDate: 'Oct 14', matches: 5 };
+const YEARLESS_WC = { id: 'srs-wc26', name: "ICC Men's T20 World Cup 2026", startDate: '2026-02-07', endDate: 'Mar 08', matches: 55 };
+
+const yearlessRoutes = (path, params) => {
+  if (path === 'cricScore') return EMPTY_SCORE;
+  if (path === 'series') return { status: 'success', info: {}, data: [YEARLESS_TOUR, YEARLESS_WC] };
+  if (path === 'series_info') {
+    if (params.get('id') === 'srs-tour25') {
+      return { status: 'success', info: {}, data: { matchList: [
+        { id: 'test-2', teams: ['India', 'West Indies'], dateTimeGMT: '2025-10-10T04:00:00', status: 'Match drawn', matchEnded: true },
+      ] } };
+    }
+    return { status: 'success', info: {}, data: { matchList: [
+      { id: 'wc-ind-wi', teams: ['India', 'West Indies'], dateTimeGMT: '2026-03-01T00:00:00', status: 'India won by 5 wkts', matchEnded: true },
+    ] } };
+  }
+  if (path === 'match_scorecard') return SCORECARD;
+  throw new Error(`unmocked path ${path}`);
+};
+
+test('a year-less series endDate does not backdate a current tournament to 2001', async () => {
+  mockFeed(yearlessRoutes);
+  const found = await live.cricapiFindLatest('India', 'West Indies', []);
+  assert.equal(found.id, 'wc-ind-wi', 'the Mar 2026 World Cup match must beat the Oct 2025 Test');
+});
+
+test('a tournament naming neither team outranks a tour naming only one', async () => {
+  mockFeed(yearlessRoutes);
+  const found = await live.cricapiFindLatest('India', 'West Indies', []);
+  assert.equal(found.id, 'wc-ind-wi');
+  // India and Pakistan never play bilaterals, so this ordering is the only way
+  // that pair can ever resolve at all.
+  const ipRoutes = (path, params) => {
+    if (path === 'cricScore') return EMPTY_SCORE;
+    if (path === 'series') {
+      return { status: 'success', info: {}, data: [
+        { id: 'srs-zim', name: 'India tour of Zimbabwe 2026', startDate: '2026-07-23', endDate: 'Jul 26', matches: 3 },
+        YEARLESS_WC,
+      ] };
+    }
+    if (path === 'series_info') {
+      if (params.get('id') === 'srs-zim') return { status: 'success', info: {}, data: { matchList: [] } };
+      return { status: 'success', info: {}, data: { matchList: [
+        { id: 'wc-ind-pak', teams: ['India', 'Pakistan'], dateTimeGMT: '2026-02-15T09:00:00', status: 'India won by 61 runs', matchEnded: true },
+      ] } };
+    }
+    if (path === 'match_scorecard') return SCORECARD;
+    throw new Error(`unmocked ${path}`);
+  };
+  cache.clear();
+  const calls = mockFeed(ipRoutes);
+  const ip = await live.cricapiFindLatest('India', 'Pakistan', []);
+  assert.equal(ip.id, 'wc-ind-pak');
+  assert.ok(calls.indexOf('series_info?id=srs-wc26') < calls.indexOf('series_info?id=srs-zim') || !calls.includes('series_info?id=srs-zim'),
+    `the World Cup must be probed before an unrelated tour: ${calls.join(', ')}`);
+});
+
+test('refresh bypasses the cache and re-searches the feed', async () => {
+  mockFeed(twoSeriesRoutes);
+  const first = await live.fetchMatch({ teamA: 'India', teamB: 'West Indies' });
+  assert.equal(first.fromCache, false);
+
+  const cachedRun = await live.fetchMatch({ teamA: 'India', teamB: 'West Indies' });
+  assert.equal(cachedRun.fromCache, true, 'second identical search is served from cache');
+
+  const calls = mockFeed(twoSeriesRoutes);
+  const fresh = await live.fetchMatch({ teamA: 'India', teamB: 'West Indies', refresh: true });
+  assert.equal(fresh.fromCache, false, 'refresh must not be served from cache');
+  assert.ok(calls.length > 0, 'refresh must actually hit the feed');
+});
+
+test('clearing the cache makes the next search cold again', async () => {
+  mockFeed(twoSeriesRoutes);
+  await live.fetchMatch({ teamA: 'Australia', teamB: 'West Indies' });
+  assert.ok(live.cacheStats().total > 0, 'something was cached');
+
+  const dropped = live.clearCache();
+  assert.ok(dropped.total > 0, 'clear reports what it removed');
+  assert.equal(live.cacheStats().total, 0);
+
+  const calls = mockFeed(twoSeriesRoutes);
+  await live.fetchMatch({ teamA: 'Australia', teamB: 'West Indies' });
+  assert.ok(calls.length > 0, 'the next search hit the feed again');
+});
+
+test('a cached answer reports its age so it cannot pass as live', async () => {
+  mockFeed(twoSeriesRoutes);
+  await live.fetchMatch({ teamA: 'India', teamB: 'West Indies' });
+  const again = await live.fetchMatch({ teamA: 'India', teamB: 'West Indies' });
+  assert.equal(again.fromCache, true);
+  assert.equal(typeof again.cacheAgeMs, 'number');
+});
+
+test('any format counts — the latest match is the latest match', () => {
+  // A drawn Test is a real result and must render as one. CricAPI answers
+  // matchWinner "No Winner" here, which used to surface as
+  // "No Winner won by Day 4: 2nd Session - scores level".
+  const drawn = live.normalizeCricApi({
+    ...SCORECARD.data,
+    matchType: 'test',
+    matchWinner: 'No Winner',
+    status: 'Day 4: 2nd Session - scores level',
+    date: '2025-10-10',
+  });
+  assert.equal(drawn.format, 'TEST');
+  assert.equal(drawn.winner, '', 'a draw names no winner');
+  assert.equal(drawn.margin, '', 'and carries no margin');
+  assert.equal(drawn.status, 'Day 4: 2nd Session - scores level', 'the raw status is kept so the UI can state the outcome');
+
+  const won = live.normalizeCricApi({ ...SCORECARD.data, matchType: 'odi' });
+  assert.equal(won.format, 'ODI');
+  assert.equal(won.winner, 'India');
+  assert.equal(won.margin, '7 wickets');
+});
+
 test('a stale result is rejected rather than pushed into the table', () => {
   const m = live.normalizeCricApi({
     ...SCORECARD.data, date: '2024-06-09', status: 'India won by 6 runs',
