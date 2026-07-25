@@ -325,26 +325,55 @@ function cricapiKey() {
   return (process.env.CRICAPI_KEY || '').trim();
 }
 
+// The free plan allows only ~100 calls/day and one resolve costs several, so
+// responses are cached in memory. Series lists and finished scorecards do not
+// change, which makes repeat lookups free.
+const CACHE_TTL_MS = num(process.env.CRICAPI_CACHE_MS, 6 * 3600 * 1000);
+const cricapiCache = new Map();
+
 async function cricapiGet(path, params) {
   const key = cricapiKey();
   if (!key) throw new Error('CRICAPI_KEY not set');
   const qs = new URLSearchParams({ apikey: key, ...params }).toString();
+  const cacheKey = `${path}?${new URLSearchParams(params).toString()}`;
+  const hit = cricapiCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
+
   const res = await fetch(`${CRICAPI}/${path}?${qs}`, { signal: AbortSignal.timeout(cfg.llm.timeoutMs) });
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch {
+    // A proxy/gateway error page is not JSON — report it as the transport
+    // failure it is instead of letting it look like an empty result.
+    throw new Error(`cricapi ${path}: HTTP ${res.status} non-JSON response (${text.slice(0, 80)})`);
+  }
   if (!res.ok) throw new Error(`cricapi ${path}: HTTP ${res.status}`);
   if (data.status && data.status !== 'success') throw new Error(`cricapi ${path}: ${data.status}${data.reason ? ' — ' + data.reason : ''}`);
+  cricapiCache.set(cacheKey, { at: Date.now(), data });
   return data;
 }
 
 const canon = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-// Loose team match so "India" matches "India", and "West Indies" matches
-// "West Indies" / "Windies" without matching unrelated sides.
+const ALIAS = {
+  windies: 'westindies', westindies: 'windies',
+  uae: 'unitedarabemirates', unitedarabemirates: 'uae',
+  usa: 'unitedstatesofamerica', unitedstatesofamerica: 'usa',
+};
+// A squad qualifier makes it a DIFFERENT team: "India" must never match
+// "India Women", "India A" or "India U19" — that mismatch is how a request for
+// the men's India v Pakistan game resolved to the Women's World Cup fixture.
+const SQUAD_QUALIFIER = /(women|womens|u1[6-9]|under\s?1[6-9]|emerging|legends|masters|development|\bxi\b|\ba\b|\bb\b)/i;
+
 function teamMatches(candidate, wanted) {
+  const cRaw = String(candidate || '').toLowerCase().trim();
+  const wRaw = String(wanted || '').toLowerCase().trim();
   const c = canon(candidate), w = canon(wanted);
   if (!c || !w) return false;
-  if (c === w || c.includes(w) || w.includes(c)) return true;
-  const alias = { windies: 'westindies', westindies: 'windies' };
-  return alias[w] === c || alias[c] === w;
+  if (c === w) return true;
+  if (ALIAS[w] === c || ALIAS[c] === w) return true;
+  // One side carrying a squad qualifier the other lacks = not the same team.
+  if (SQUAD_QUALIFIER.test(cRaw) !== SQUAD_QUALIFIER.test(wRaw)) return false;
+  return c.includes(w) || w.includes(c);
 }
 
 const isFinished = (m) => {
@@ -353,31 +382,139 @@ const isFinished = (m) => {
   return m.matchEnded === true || /won by|won the|tied|draw/.test(s);
 };
 
-// Scan CricAPI's match index for the most recent COMPLETED match between the
-// two teams. Pages through the index; all filtering/sorting happens here in code.
-async function cricapiFindLatest(teamA, teamB, maxPages = 5) {
-  const seen = [];
-  for (let page = 0; page < maxPages; page++) {
-    let data;
-    try {
-      data = await cricapiGet('matches', { offset: String(page * 25) });
-    } catch (e) {
-      if (page === 0) throw e;
-      break;
+// Find the most recent COMPLETED match between two teams.
+//
+// NOTE ON WHY THIS IS SERIES-BASED: CricAPI's /v1/matches index is grouped by
+// series, NOT globally sorted by date (offsets jump Jun -> Apr -> Aug across
+// pages), and it lists future fixtures first. Paging it therefore never reaches
+// an older match, which is why a naive scan missed the 15 Feb 2026 India v
+// Pakistan game. Series lookup is exact and cheap instead.
+// Does a series NAME mention this team? (looser than teamMatches, which compares
+// two team names to each other.)
+const teamMatchesName = (name, team) => {
+  const t = String(team || '').toLowerCase().trim();
+  return t.length > 2 && String(name || '').toLowerCase().includes(t);
+};
+
+const matchesPair = (m, a, b) => {
+  const teams = Array.isArray(m.teams) ? m.teams : [];
+  return teams.length >= 2
+    && teams.some((t) => teamMatches(t, a))
+    && teams.some((t) => teamMatches(t, b));
+};
+
+// Turn pasted links into series-search terms. The URL slug alone names the
+// tournament (".../series/icc-men-s-t20-world-cup-2025-26-1502138/..."), so we
+// parse the STRING and never fetch it — which also sidesteps Cricinfo's 403s.
+function linkHints(links) {
+  const terms = [];
+  for (const raw of links || []) {
+    let path;
+    try { path = new URL(raw).pathname; } catch { continue; }
+    const segs = path.split('/').filter(Boolean);
+    const i = segs.findIndex((s) => s === 'series');
+    const slug = i >= 0 && segs[i + 1] ? segs[i + 1] : segs[0];
+    if (!slug) continue;
+    const tokens = slug.split('-').filter((t) => t.length > 1 && !/^\d+$/.test(t));
+    for (let start = 0; start < Math.min(tokens.length, 3); start++) {
+      const t = tokens.slice(start).join(' ');
+      if (t.length > 4) terms.push(t);
     }
-    const list = Array.isArray(data.data) ? data.data : [];
-    if (!list.length) break;
-    for (const m of list) {
-      const teams = Array.isArray(m.teams) ? m.teams : [];
-      if (teams.length < 2) continue;
-      const hitsA = teams.some((t) => teamMatches(t, teamA));
-      const hitsB = teams.some((t) => teamMatches(t, teamB));
-      if (hitsA && hitsB && isFinished(m)) seen.push(m);
-    }
+    if (tokens.length >= 3) terms.push(tokens.slice(-3).join(' '));
   }
-  if (!seen.length) throw new Error(`no completed match found between "${teamA}" and "${teamB}" in the CricAPI index`);
-  seen.sort((a, b) => new Date(b.dateTimeGMT || b.date || 0) - new Date(a.dateTimeGMT || a.date || 0));
-  return seen[0];
+  return terms;
+}
+
+async function cricapiFindLatest(teamA, teamB, links = []) {
+  const found = [];
+  // Transport/API errors must never masquerade as "no such match" — that is what
+  // hid a proxy failure behind a misleading "not found" during development.
+  const errors = [];
+
+  // 1. cricScore — the current window. Covers the production case (a fixture
+  //    that just ended) in a single cheap call.
+  try {
+    const cs = await cricapiGet('cricScore', {});
+    for (const m of cs.data || []) {
+      const teams = [m.t1, m.t2].map((t) => String(t || '').replace(/\s*\[.*?\]\s*/g, '').trim());
+      const norm = { ...m, teams, dateTimeGMT: m.dateTimeGMT, status: m.status, id: m.id };
+      if (matchesPair(norm, teamA, teamB) && isFinished(norm)) found.push(norm);
+    }
+  } catch (e) { errors.push(`cricScore: ${e.message}`); }
+
+  // 2. Series lookup. Link slugs first (most specific), then the team names for
+  //    bilateral tours. Series are then probed newest-first.
+  const hints = linkHints(links);
+  // Searching series by team name only finds BILATERAL tours ("Pakistan tour of
+  // India"). Multi-team tournaments are named after the event, so a men's World
+  // Cup fixture is invisible to a "India"/"Pakistan" search. These fallbacks let
+  // the two-team form work without a pasted link.
+  const TOURNAMENTS = (process.env.MATCH_TOURNAMENTS
+    || 't20 world cup,cricket world cup,asia cup,champions trophy,premier league,tri-series,tri nation')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const terms = [...hints, teamA, teamB, ...(hints.length ? [] : TOURNAMENTS)].filter(Boolean);
+  // Tokens from the link slug let us tell the real tournament from its
+  // qualifiers: "ICC Men's T20 World Cup 2026" matches every slug token with no
+  // spare words, while "...Europe Sub Regional Qualifier B 2026" carries many.
+  const hintTokens = [...new Set(hints.flatMap((h) => h.split(' ')).filter((t) => t.length > 1))];
+  // Compare WHOLE WORDS, not substrings: "men" appears inside "womens", so a
+  // substring test scored the Women's World Cup as a perfect match for a men's
+  // fixture. Tokenising both sides keeps them distinct.
+  const wordsOf = (s) => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const relevance = (s) => {
+    const nameWords = wordsOf(s.name);
+    const set = new Set(nameWords);
+    let score = 0;
+    if (hintTokens.length) {
+      const hit = hintTokens.filter((t) => set.has(t)).length;
+      score += (hit / hintTokens.length) * 10;           // how much of the slug it covers
+      if (hit === hintTokens.length) score += 4;          // covers all of it
+      score -= Math.max(0, nameWords.length - hintTokens.length) * 0.5; // extra words = qualifier
+    }
+    if (teamMatchesName(s.name, teamA)) score += 3;
+    if (teamMatchesName(s.name, teamB)) score += 3;
+    return score;
+  };
+
+  const seenTerm = new Set();
+  const series = [];
+  for (const term of terms) {
+    const key = term.toLowerCase();
+    if (seenTerm.has(key) || seenTerm.size >= 8) continue;
+    seenTerm.add(key);
+    try {
+      const r = await cricapiGet('series', { offset: '0', search: term });
+      for (const s of r.data || []) {
+        if (!s.id || series.some((x) => x.id === s.id)) continue;
+        if (Number(s.matches) === 0) continue;
+        series.push(s);
+      }
+    } catch (e) { errors.push(`series("${term}"): ${e.message}`); }
+  }
+  const started = (s) => Date.parse(s.startDate) || 0;
+  const now = Date.now();
+  const candidates = series.filter((x) => started(x) <= now);
+  // Most relevant first, then most recent — so the real tournament beats both
+  // its qualifiers and any newer but unrelated series.
+  candidates.sort((a, b) => (relevance(b) - relevance(a)) || (started(b) - started(a)));
+
+  for (const s of candidates.slice(0, 8)) {
+    try {
+      const info = await cricapiGet('series_info', { id: s.id });
+      const list = (info.data && info.data.matchList) || [];
+      for (const m of list) if (matchesPair(m, teamA, teamB) && isFinished(m)) found.push(m);
+    } catch (e) { errors.push(`series_info(${s.name}): ${e.message}`); }
+    if (found.length) break; // ranked order — the first hit is the right series
+  }
+
+  if (!found.length) {
+    // If every lookup errored, this is an API/transport failure, not an empty result.
+    if (errors.length && !series.length) throw new Error(`CricAPI unreachable — ${errors[0]}`);
+    const detail = errors.length ? ` (${errors.length} lookup error(s): ${errors[0]})` : '';
+    throw new Error(`no completed match found between "${teamA}" and "${teamB}"${detail} — try adding a link to the match or series`);
+  }
+  found.sort((a, b) => new Date(b.dateTimeGMT || b.date || 0) - new Date(a.dateTimeGMT || a.date || 0));
+  return found[0];
 }
 
 // Map a CricAPI scorecard document onto the normalized shape.
@@ -387,11 +524,13 @@ function normalizeCricApi(d) {
   const cards = Array.isArray(d.scorecard) ? d.scorecard : [];
   if (scores.length < 2 && cards.length < 2) throw new Error('cricapi: scorecard incomplete');
 
-  // Which side batted in each innings — read from the innings label.
+  // Which side batted in each innings — read from the innings label, preferring
+  // the LONGEST team name that matches so "India" can't win over "India Women".
   const inningTeam = (label, idx) => {
-    const l = String(label || '');
-    const hit = teams.find((t) => l.toLowerCase().includes(String(t).toLowerCase()));
-    return hit || teams[idx] || `Team ${idx + 1}`;
+    const l = String(label || '').toLowerCase();
+    const hits = teams.filter((t) => t && l.includes(String(t).toLowerCase()))
+      .sort((a, b) => String(b).length - String(a).length);
+    return hits[0] || teams[idx] || `Team ${idx + 1}`;
   };
 
   const build = (idx) => {
@@ -421,6 +560,12 @@ function normalizeCricApi(d) {
   };
 
   const innings = [build(0), build(1)];
+  // Guard: the same side cannot bat both innings. If the labels were ambiguous,
+  // force the second innings onto the other team.
+  if (innings[0].batting === innings[1].batting) {
+    const other = teams.find((t) => t !== innings[0].batting);
+    if (other) { innings[1].batting = other; innings[1].bowling = innings[0].batting; }
+  }
   const topBat = (idx) => (Array.isArray((cards[idx] || {}).batting) ? cards[idx].batting : [])
     .map((b) => ({ name: (b.batsman && b.batsman.name) || b.name || '', runs: Number(b.r) || 0 }))
     .filter((b) => b.name && b.runs > 0).sort((a, b) => b.runs - a.runs).slice(0, 4);
@@ -450,8 +595,8 @@ function normalizeCricApi(d) {
 }
 
 // Resolve "latest A v B" end to end through CricAPI.
-async function fetchViaCricApi(teamA, teamB) {
-  const found = await cricapiFindLatest(teamA, teamB);
+async function fetchViaCricApi(teamA, teamB, links = []) {
+  const found = await cricapiFindLatest(teamA, teamB, links);
   const sc = await cricapiGet('match_scorecard', { id: found.id });
   const m = normalizeCricApi(sc.data || {});
   m.matchId = found.id;
@@ -541,7 +686,7 @@ async function fetchMatch(opts = {}) {
     //    filtering + sorting a real index in code, so it cannot be hallucinated.
     if (o.teamA && o.teamB && cricapiKey()) {
       try {
-        return finish(await fetchViaCricApi(o.teamA, o.teamB));
+        return finish(await fetchViaCricApi(o.teamA, o.teamB, o.links || []));
       } catch (e) { tried.push(`cricapi: ${e.message}`); }
     } else if (o.teamA && o.teamB) {
       tried.push('cricapi: CRICAPI_KEY not set');
