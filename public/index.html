@@ -495,6 +495,45 @@
       line-height: 1.45;
     }
 
+    .fwarn {
+      margin: 6px 0 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      font-weight: 600;
+      color: #7a5b00;
+      background: color-mix(in srgb, #f5a623 18%, transparent);
+      border: 1px solid color-mix(in srgb, #f5a623 45%, transparent);
+    }
+
+    .fwarn.bad {
+      color: var(--down);
+      background: color-mix(in srgb, var(--down) 14%, transparent);
+      border-color: color-mix(in srgb, var(--down) 45%, transparent);
+    }
+
+    .fwarn div {
+      font-weight: 400;
+      margin-top: 3px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .fwarn {
+        color: #ffcf6b;
+      }
+    }
+
+    .fok {
+      margin: 6px 0 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--up);
+      background: color-mix(in srgb, var(--up) 14%, transparent);
+    }
+
     .linkchip {
       display: flex;
       align-items: center;
@@ -1233,6 +1272,13 @@
       try {
         const teamA = $('teamAName').value.trim(), teamB = $('teamBName').value.trim();
         const { provider, match } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks });
+        // A rejected match (wrong teams, or too old to be "the latest") must NEVER
+        // silently populate the table — show why and stop.
+        if (match.rejected) {
+          renderFetchPreview(provider, match, $('teamX').value, $('teamY').value);
+          $('err').textContent = 'Fetch rejected — see the reason below. Nothing was filled in.';
+          return;
+        }
         const names = STATE.teams.map(t => t.name);
         if (names.includes(match.home) && names.includes(match.away)) {
           $('teamX').value = match.home; $('teamY').value = match.away; syncMatchSelects();
@@ -1281,8 +1327,9 @@
         return `<div class="fteam"><span>${esc(inn.batting)}${w}<br><span style="color:var(--muted)">${top}</span></span>` +
           `<b style="text-align:right">${inn.runs}${inn.wktsLost >= 10 ? ' a.o.' : ''}<br><span style="color:var(--muted);font-weight:400">${inn.overs} ov</span></b></div>`;
       };
-      const srcLabel = match.source === 'espn' ? 'ESPN (live)'
-        : match.source === 'gemini' ? 'Gemini (grounded search)' : 'offline snapshot';
+      const srcLabel = match.source === 'cricapi' ? 'CricAPI (structured feed)'
+        : match.source === 'espn' ? 'ESPN (live)'
+        : match.source === 'gemini' ? 'Gemini (grounded search — backup)' : 'offline snapshot';
       let src = `Source: <b>${esc(srcLabel)}</b>`;
       if (match.source === 'stub' && match.fallbackReason) src += ` — ${esc(match.fallbackReason)}`;
       const req = match.requested && (match.requested.teamA || match.requested.teamB)
@@ -1295,13 +1342,19 @@
       }
       const fmtNote = match.format && match.format !== 'T20'
         ? `<br>Note: this is an <b>${esc(match.format)}</b> fixture — phase splits are estimated and the T20 engine reads the totals literally.` : '';
+      const warnHtml = (match.warnings || []).length
+        ? `<div class="fwarn${match.rejected ? ' bad' : ''}">${match.rejected ? '✕ REJECTED' : '⚠ CHECK'}${(match.warnings || []).map(w => `<div>${esc(w)}</div>`).join('')}</div>`
+        : (match.verified ? `<div class="fok">✓ verified — teams and date check out</div>` : '');
+      const triedHtml = (match.tried || []).length
+        ? `<br>Resolver chain: ${(match.tried || []).map(t => esc(t)).join(' → ')}` : '';
       $('fetchPreview').innerHTML =
         `<div class="fetchcard">
           <h3>Fetched: ${esc(match.home)} v ${esc(match.away)}</h3>
+          ${warnHtml}
           <div class="fmeta">${esc(match.competition)} · ${esc(match.venue)} · ${esc(match.date)}<br>
             Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(match.winner)} won by ${esc(match.margin)}</b></div>
           ${line(match.innings[0])}${line(match.innings[1])}
-          <div class="fnote">${src}${req}${linksLine}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
+          <div class="fnote">${src}${req}${triedHtml}${linksLine}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
         </div>`;
     }
 

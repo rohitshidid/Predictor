@@ -313,26 +313,207 @@ Where top4 = combined runs of that innings' top-4 batting positions, and bowlTop
   return normalizeGemini(extractJson(g.text), g.sources);
 }
 
+// ---- CricAPI (structured feed — the authoritative resolver) ------------------
+// Why this is primary: it exposes a queryable MATCH INDEX (teams + date +
+// status), so "latest match between A and B" is resolved by filtering and
+// sorting in CODE. A language model can never invent a match here — which is
+// exactly the failure mode we hit when Gemini answered a "latest India v
+// Pakistan" query with the famous 2024 T20 World Cup game.
+const CRICAPI = 'https://api.cricapi.com/v1';
+
+function cricapiKey() {
+  return (process.env.CRICAPI_KEY || '').trim();
+}
+
+async function cricapiGet(path, params) {
+  const key = cricapiKey();
+  if (!key) throw new Error('CRICAPI_KEY not set');
+  const qs = new URLSearchParams({ apikey: key, ...params }).toString();
+  const res = await fetch(`${CRICAPI}/${path}?${qs}`, { signal: AbortSignal.timeout(cfg.llm.timeoutMs) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`cricapi ${path}: HTTP ${res.status}`);
+  if (data.status && data.status !== 'success') throw new Error(`cricapi ${path}: ${data.status}${data.reason ? ' — ' + data.reason : ''}`);
+  return data;
+}
+
+const canon = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+// Loose team match so "India" matches "India", and "West Indies" matches
+// "West Indies" / "Windies" without matching unrelated sides.
+function teamMatches(candidate, wanted) {
+  const c = canon(candidate), w = canon(wanted);
+  if (!c || !w) return false;
+  if (c === w || c.includes(w) || w.includes(c)) return true;
+  const alias = { windies: 'westindies', westindies: 'windies' };
+  return alias[w] === c || alias[c] === w;
+}
+
+const isFinished = (m) => {
+  const s = String(m.status || '').toLowerCase();
+  if (!s || s.includes('not started') || s.includes('abandon') || s.includes('no result')) return false;
+  return m.matchEnded === true || /won by|won the|tied|draw/.test(s);
+};
+
+// Scan CricAPI's match index for the most recent COMPLETED match between the
+// two teams. Pages through the index; all filtering/sorting happens here in code.
+async function cricapiFindLatest(teamA, teamB, maxPages = 5) {
+  const seen = [];
+  for (let page = 0; page < maxPages; page++) {
+    let data;
+    try {
+      data = await cricapiGet('matches', { offset: String(page * 25) });
+    } catch (e) {
+      if (page === 0) throw e;
+      break;
+    }
+    const list = Array.isArray(data.data) ? data.data : [];
+    if (!list.length) break;
+    for (const m of list) {
+      const teams = Array.isArray(m.teams) ? m.teams : [];
+      if (teams.length < 2) continue;
+      const hitsA = teams.some((t) => teamMatches(t, teamA));
+      const hitsB = teams.some((t) => teamMatches(t, teamB));
+      if (hitsA && hitsB && isFinished(m)) seen.push(m);
+    }
+  }
+  if (!seen.length) throw new Error(`no completed match found between "${teamA}" and "${teamB}" in the CricAPI index`);
+  seen.sort((a, b) => new Date(b.dateTimeGMT || b.date || 0) - new Date(a.dateTimeGMT || a.date || 0));
+  return seen[0];
+}
+
+// Map a CricAPI scorecard document onto the normalized shape.
+function normalizeCricApi(d) {
+  const teams = Array.isArray(d.teams) ? d.teams : [];
+  const scores = Array.isArray(d.score) ? d.score : [];
+  const cards = Array.isArray(d.scorecard) ? d.scorecard : [];
+  if (scores.length < 2 && cards.length < 2) throw new Error('cricapi: scorecard incomplete');
+
+  // Which side batted in each innings — read from the innings label.
+  const inningTeam = (label, idx) => {
+    const l = String(label || '');
+    const hit = teams.find((t) => l.toLowerCase().includes(String(t).toLowerCase()));
+    return hit || teams[idx] || `Team ${idx + 1}`;
+  };
+
+  const build = (idx) => {
+    const sc = scores[idx] || {};
+    const card = cards[idx] || {};
+    const batting = inningTeam(sc.inning || card.inning, idx);
+    const bowling = teams.find((t) => t !== batting) || teams[1 - idx] || '';
+    const overs = Number(sc.o) || 0;
+    const balls = Math.round(overs * 6) || 0;
+
+    // top4 = combined runs of the first four batting positions in this innings.
+    const bats = Array.isArray(card.batting) ? card.batting : [];
+    const top4 = bats.slice(0, 4).reduce((s, b) => s + (Number(b.r) || 0), 0);
+
+    // bowlTop2 = wickets taken by the OPPOSITION's two leading bowlers in this innings.
+    const bowls = Array.isArray(card.bowling) ? card.bowling : [];
+    const wkts = bowls.map((b) => Number(b.w) || 0).sort((a, b) => b - a);
+    const bowlTop2 = (wkts[0] || 0) + (wkts[1] || 0);
+
+    return {
+      batting, bowling,
+      runs: Number(sc.r) || 0, balls, overs: +overs.toFixed(1),
+      wktsLost: Number(sc.w) || 0,
+      top4, bowlTop2,
+      ppRuns: null, deathRuns: null, deathBalls: null,
+    };
+  };
+
+  const innings = [build(0), build(1)];
+  const topBat = (idx) => (Array.isArray((cards[idx] || {}).batting) ? cards[idx].batting : [])
+    .map((b) => ({ name: (b.batsman && b.batsman.name) || b.name || '', runs: Number(b.r) || 0 }))
+    .filter((b) => b.name && b.runs > 0).sort((a, b) => b.runs - a.runs).slice(0, 4);
+  const topBowl = (idx) => (Array.isArray((cards[idx] || {}).bowling) ? cards[idx].bowling : [])
+    .map((b) => ({ name: (b.bowler && b.bowler.name) || b.name || '', wkts: Number(b.w) || 0 }))
+    .filter((b) => b.name && b.wkts > 0).sort((a, b) => b.wkts - a.wkts).slice(0, 3);
+
+  const winner = d.matchWinner || (String(d.status || '').match(/^(.+?)\s+won/) || [])[1] || '';
+  const margin = (String(d.status || '').match(/won by\s+(.+)$/i) || [])[1] || String(d.status || '');
+
+  return {
+    source: 'cricapi',
+    competition: d.name || d.series || 'Match',
+    format: (d.matchType || '').toUpperCase() || 'T20',
+    date: String(d.date || (d.dateTimeGMT || '')).slice(0, 10),
+    venue: d.venue || 'Unknown venue',
+    home: teams[0] || innings[0].batting,
+    away: teams[1] || innings[1].batting,
+    battingFirst: innings[0].batting,
+    tossWinner: d.tossWinner || innings[0].batting,
+    tossDecision: d.tossChoice || 'bat',
+    winner, margin,
+    innings,
+    batters: { [innings[0].batting]: topBat(0), [innings[1].batting]: topBat(1) },
+    bowlers: { [innings[0].batting]: topBowl(1), [innings[1].batting]: topBowl(0) },
+  };
+}
+
+// Resolve "latest A v B" end to end through CricAPI.
+async function fetchViaCricApi(teamA, teamB) {
+  const found = await cricapiFindLatest(teamA, teamB);
+  const sc = await cricapiGet('match_scorecard', { id: found.id });
+  const m = normalizeCricApi(sc.data || {});
+  m.matchId = found.id;
+  return m;
+}
+
 // ---- provider registry ------------------------------------------------------
 const PROVIDERS = {
   espn: fetchEspn,
   stub: async (_id) => clone(IND_ENG_3RD_ODI_2026),
-
-  // Example CricAPI adapter — inert until CRICAPI_KEY is set. Left as a seam.
   cricapi: async (id) => {
-    const key = (process.env.CRICAPI_KEY || '').trim();
-    if (!key) throw new Error('CRICAPI_KEY not set');
-    const url = `https://api.cricapi.com/v1/match_scorecard?apikey=${encodeURIComponent(key)}&id=${encodeURIComponent(id)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(cfg.llm.timeoutMs) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.status !== 'success') throw new Error(`cricapi ${res.status}: ${(data && data.status) || 'error'}`);
-    throw new Error('CricAPI normalizer not implemented yet — wire field mapping when a key is available');
+    const sc = await cricapiGet('match_scorecard', { id });
+    return normalizeCricApi(sc.data || {});
   },
 };
 
 // Default to live ESPN; MATCH_PROVIDER can force stub/cricapi.
 function providerName() {
   return (process.env.MATCH_PROVIDER || 'espn').trim();
+}
+
+// ---- verification gate ------------------------------------------------------
+// The check that would have caught the bad answer: a "latest India v Pakistan"
+// query that resolves to a 2024 match is not a near miss, it is a wrong answer.
+// Nothing enters the ranking table without passing these, and every failure is
+// surfaced to the operator instead of silently applied.
+const STALE_DAYS = num(process.env.MATCH_STALE_DAYS, 90);
+const MAX_AGE_DAYS = num(process.env.MATCH_MAX_AGE_DAYS, 365);
+
+function verify(match, requested) {
+  const warnings = [];
+  let rejected = false;
+
+  const ts = Date.parse(match.date);
+  if (!Number.isFinite(ts)) {
+    warnings.push('resolved match has no usable date — cannot confirm it is the latest');
+  } else {
+    const ageDays = Math.floor((Date.now() - ts) / 86400000);
+    match.ageDays = ageDays;
+    if (ageDays > MAX_AGE_DAYS) {
+      rejected = true;
+      warnings.push(`resolved match is ${ageDays} days old (${match.date}) — too old to be "the latest", so it was REJECTED`);
+    } else if (ageDays > STALE_DAYS) {
+      warnings.push(`resolved match is ${ageDays} days old (${match.date}) — confirm this is really the latest`);
+    }
+  }
+
+  // The teams that came back must be the teams that were asked for.
+  if (requested && requested.teamA && requested.teamB) {
+    const sides = [match.home, match.away, ...(match.innings || []).map((i) => i.batting)];
+    const okA = sides.some((s) => teamMatches(s, requested.teamA));
+    const okB = sides.some((s) => teamMatches(s, requested.teamB));
+    if (!okA || !okB) {
+      rejected = true;
+      warnings.push(`resolved match (${match.home} v ${match.away}) does not match the requested teams (${requested.teamA} v ${requested.teamB}) — REJECTED`);
+    }
+  }
+
+  match.warnings = warnings;
+  match.rejected = rejected;
+  match.verified = !rejected && warnings.length === 0;
+  return match;
 }
 
 // Fetch + normalize one finished match.
@@ -349,26 +530,38 @@ async function fetchMatch(opts = {}) {
     const linksRead = (Array.isArray(o.links) && o.links.length) ? await readLinks(o.links) : [];
     const linkSummary = linksRead.map((l) => ({ url: l.url, ok: l.ok, chars: l.text ? l.text.length : 0, error: l.error || null }));
     const requested = { teamA: o.teamA || null, teamB: o.teamB || null };
+    const tried = [];
 
+    const finish = (m) => {
+      m.linksRead = linkSummary; m.requested = requested; m.tried = tried;
+      return verify(m, requested);
+    };
+
+    // 1. CricAPI — the structured feed. Authoritative: the match is chosen by
+    //    filtering + sorting a real index in code, so it cannot be hallucinated.
+    if (o.teamA && o.teamB && cricapiKey()) {
+      try {
+        return finish(await fetchViaCricApi(o.teamA, o.teamB));
+      } catch (e) { tried.push(`cricapi: ${e.message}`); }
+    } else if (o.teamA && o.teamB) {
+      tried.push('cricapi: CRICAPI_KEY not set');
+    }
+
+    // 2. Gemini + Google Search — backup only. Can read the pasted links, but is
+    //    prone to answering with a famous older match, so it is never preferred
+    //    over the feed and its result is still date/team verified below.
     if (cfg.isConfigured()) {
       try {
-        const m = await fetchViaGemini(o, linksRead);
-        m.linksRead = linkSummary; m.requested = requested;
-        return m;
-      } catch (e) {
-        const m = await PROVIDERS.stub();
-        m.source = 'stub'; m.fallbackReason = e.message;
-        m.linksRead = linkSummary; m.requested = requested;
-        return m;
-      }
+        return finish(await fetchViaGemini(o, linksRead));
+      } catch (e) { tried.push(`gemini: ${e.message}`); }
+    } else {
+      tried.push('gemini: GEMINI_API_KEY not set');
     }
-    // No Gemini key: the links were still physically fetched (linksRead proves
-    // it), but resolution/extraction needs the model — return the snapshot, flagged.
+
     const m = await PROVIDERS.stub();
     m.source = 'stub';
-    m.fallbackReason = 'team search + link reading need GEMINI_API_KEY (set it in .env)';
-    m.linksRead = linkSummary; m.requested = requested;
-    return m;
+    m.fallbackReason = tried.join(' · ') || 'no resolver available';
+    return finish(m);
   }
 
   const name = providerName();
