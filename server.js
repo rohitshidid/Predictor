@@ -17,7 +17,7 @@ const { rank } = require('./src/engine');
 const { blurbForTeam } = require('./src/blurbs');
 const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
-const { fetchMatch, providerName } = require('./src/liveMatch');
+const { fetchMatch, providerName, quotaState } = require('./src/liveMatch');
 
 const PORT = Number(process.env.PORT || 4310);
 const BASE_WEIGHTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'weights.config.json'), 'utf8'));
@@ -49,6 +49,10 @@ function buildState(rows) {
     league: sim.getData().league,
     season: sim.getData().season,
     aiConfigured: cfg.isConfigured(),
+    // Without this key the match search falls back to grounded model search,
+    // which is materially less reliable — the UI says so up front rather than
+    // letting the operator discover it from a rejected fetch.
+    cricapiConfigured: cfg.hasCricApi(),
     grounding: cfg.blurb.grounding,
     minScore: cfg.blurb.minScore,
     weights: config.weights,
@@ -162,7 +166,12 @@ const server = http.createServer(async (req, res) => {
       const teamB = String(body.teamB || '').trim().slice(0, 60);
       const links = Array.isArray(body.links) ? body.links.map((l) => String(l).trim()).filter(Boolean).slice(0, 10) : [];
       const match = await fetchMatch({ id, teamA, teamB, links });
-      return send(res, 200, { provider: providerName(), match });
+      return send(res, 200, {
+        provider: providerName(),
+        cricapiConfigured: cfg.hasCricApi(),
+        quota: quotaState(),
+        match,
+      });
     }
 
     // Serve licensed team logo files dropped into public/logos/. path.basename
@@ -243,6 +252,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`[server] Power-Ranking simulator on http://localhost:${PORT}`);
   console.log(`[server] AI ${cfg.isConfigured() ? 'ENABLED' : 'DISABLED (no GEMINI_API_KEY)'} · grounding=${cfg.blurb.grounding}`);
+  console.log(`[server] match search: CricAPI ${cfg.hasCricApi() ? 'ENABLED' : 'DISABLED (no CRICAPI_KEY — set it in .env)'}`);
   // Seed the baseline snapshot so the first render shows a stable order.
   sim.snapshot(currentRanking());
 });

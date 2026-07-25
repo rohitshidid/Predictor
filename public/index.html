@@ -834,7 +834,7 @@
         <label>Something significant — Team Y <span id="sigYteam" style="color:var(--accent)"></span></label>
         <textarea id="sigY" placeholder="e.g. Collapsed from 90/1 to 140 all out"></textarea>
 
-        <label style="margin-top:14px;">Fetch latest match between</label>
+        <label style="margin-top:14px;">Fetch latest match between <span id="feedPill" style="color:var(--muted);font-weight:400;"></span></label>
         <div class="row">
           <input type="text" id="teamAName" placeholder="Team A — e.g. India">
           <input type="text" id="teamBName" placeholder="Team B — e.g. West Indies">
@@ -1157,6 +1157,11 @@
       $('modePill').textContent = data.mode;
       $('aiPill').textContent = data.aiConfigured ? `AI ✓ (${data.grounding})` : 'AI off';
       $('aiPill').className = 'pill ' + (data.aiConfigured ? 'on' : 'off');
+      // Say up front which resolver is in play. Without the feed key the search
+      // falls back to grounded model search, which is the weaker path.
+      $('feedPill').textContent = data.cricapiConfigured
+        ? '— CricAPI feed ✓'
+        : '— no CRICAPI_KEY, using AI search (less reliable)';
       $('sub').textContent = `Season ${data.season} · ${data.matchCount} matches · min blurb score ${data.minScore}`;
       $('modeNote').textContent = data.mode === 'baseline'
         ? 'Seeded from the 90-match snapshot. Simulated matches append on top.'
@@ -1271,7 +1276,14 @@
       overlay(true, 'Fetching latest result…');
       try {
         const teamA = $('teamAName').value.trim(), teamB = $('teamBName').value.trim();
-        const { provider, match } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks });
+        const { provider, match, quota } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks });
+        // Nothing resolved at all — there is no scorecard to show, so render the
+        // reason and the resolver chain instead of a half-empty match card.
+        if (match.notFound) {
+          renderFetchFailure(match, quota);
+          $('err').textContent = match.error || 'No match found.';
+          return;
+        }
         // A rejected match (wrong teams, or too old to be "the latest") must NEVER
         // silently populate the table — show why and stop.
         if (match.rejected) {
@@ -1319,6 +1331,39 @@
       return `${inn.batting} ${inn.runs}${inn.wktsLost >= 10 ? ' all out' : ''} (${inn.overs} ov)${top ? ' — ' + top : ''}${won}`.slice(0, 200);
     }
 
+    // Shared tail for both cards: what was searched, which resolvers ran, which
+    // links were readable. This is the part an operator actually acts on when a
+    // fetch does not go their way.
+    function fetchDiagnostics(match, quota) {
+      const req = match.requested && (match.requested.teamA || match.requested.teamB)
+        ? `<br>Searched: <b>${esc(match.requested.teamA || '?')}</b> v <b>${esc(match.requested.teamB || '?')}</b>` : '';
+      const tried = (match.tried || []).length
+        ? `<br>Resolver chain: ${(match.tried || []).map(t => esc(t)).join(' → ')}` : '';
+      let links = '';
+      if (Array.isArray(match.linksRead) && match.linksRead.length) {
+        const ok = match.linksRead.filter(l => l.ok).length;
+        links = `<br>Links read: <b>${ok}/${match.linksRead.length}</b> reachable`
+          + match.linksRead.map(l => `<br>&nbsp;&nbsp;${l.ok ? '✓' : '✕'} <span style="opacity:.8">${esc(l.url)}</span>${l.ok ? ` (${l.chars} chars)` : ` — ${esc(l.error || 'failed')}`}`).join('');
+      }
+      const q = (quota || match.quota);
+      const quotaLine = q && q.limit
+        ? `<br>CricAPI quota: <b>${q.used}/${q.limit}</b> calls used today${q.used >= q.limit ? ' — exhausted, resets at midnight IST' : ''}` : '';
+      return req + tried + links + quotaLine;
+    }
+
+    function renderFetchFailure(match, quota) {
+      const hint = match.quotaBlocked
+        ? 'The daily CricAPI allowance is spent. It resets at midnight IST — or paste a scorecard link and try again, which lets the search backup work from the page itself.'
+        : 'Check the spelling of both team names, or paste a scorecard/series link above to point the search at the right tournament.';
+      $('fetchPreview').innerHTML =
+        `<div class="fetchcard">
+          <h3>No match found</h3>
+          <div class="fwarn bad"><div>${esc(match.error || 'Nothing resolved.')}</div></div>
+          <div class="fmeta">${esc(hint)}</div>
+          <div class="fnote">${fetchDiagnostics(match, quota)}</div>
+        </div>`;
+    }
+
     function renderFetchPreview(provider, match, x, y) {
       const line = (inn) => {
         const bat = (match.batters && match.batters[inn.batting]) || [];
@@ -1332,21 +1377,12 @@
         : match.source === 'gemini' ? 'Gemini (grounded search — backup)' : 'offline snapshot';
       let src = `Source: <b>${esc(srcLabel)}</b>`;
       if (match.source === 'stub' && match.fallbackReason) src += ` — ${esc(match.fallbackReason)}`;
-      const req = match.requested && (match.requested.teamA || match.requested.teamB)
-        ? `<br>Searched: <b>${esc(match.requested.teamA || '?')}</b> v <b>${esc(match.requested.teamB || '?')}</b>` : '';
-      let linksLine = '';
-      if (Array.isArray(match.linksRead) && match.linksRead.length) {
-        const ok = match.linksRead.filter(l => l.ok).length;
-        linksLine = `<br>Links read: <b>${ok}/${match.linksRead.length}</b> reachable`
-          + match.linksRead.map(l => `<br>&nbsp;&nbsp;${l.ok ? '✓' : '✕'} <span style="opacity:.8">${esc(l.url)}</span>${l.ok ? ` (${l.chars} chars)` : ` — ${esc(l.error || 'failed')}`}`).join('');
-      }
+      const diag = fetchDiagnostics(match);
       const fmtNote = match.format && match.format !== 'T20'
         ? `<br>Note: this is an <b>${esc(match.format)}</b> fixture — phase splits are estimated and the T20 engine reads the totals literally.` : '';
       const warnHtml = (match.warnings || []).length
         ? `<div class="fwarn${match.rejected ? ' bad' : ''}">${match.rejected ? '✕ REJECTED' : '⚠ CHECK'}${(match.warnings || []).map(w => `<div>${esc(w)}</div>`).join('')}</div>`
         : (match.verified ? `<div class="fok">✓ verified — teams and date check out</div>` : '');
-      const triedHtml = (match.tried || []).length
-        ? `<br>Resolver chain: ${(match.tried || []).map(t => esc(t)).join(' → ')}` : '';
       $('fetchPreview').innerHTML =
         `<div class="fetchcard">
           <h3>Fetched: ${esc(match.home)} v ${esc(match.away)}</h3>
@@ -1354,7 +1390,7 @@
           <div class="fmeta">${esc(match.competition)} · ${esc(match.venue)} · ${esc(match.date)}<br>
             Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(match.winner)} won by ${esc(match.margin)}</b></div>
           ${line(match.innings[0])}${line(match.innings[1])}
-          <div class="fnote">${src}${req}${triedHtml}${linksLine}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
+          <div class="fnote">${src}${diag}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
         </div>`;
     }
 

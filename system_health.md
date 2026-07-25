@@ -3,7 +3,7 @@
 > Tracks the active state and trajectory of the project.
 > Updated after **every** interaction.
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-25_
 
 ---
 
@@ -35,6 +35,15 @@ _Current development guidelines in effect._
 ## Current Tasks
 _The macro-level task currently being worked on._
 
+- **MATCH SEARCH FIXED (2026-07-25).** "Fetch latest match between A and B" was
+  returning the June 2024 T20 World Cup game for India v Pakistan and rejecting
+  it as 776 days old, so the operator got nothing. Two causes, both now fixed:
+  (1) `CRICAPI_KEY` was never set, so the authoritative feed was skipped entirely
+  and the Gemini backup — which has no clock — answered with the most
+  *written-about* fixture; (2) one lookup cost up to 18 CricAPI calls against a
+  100/day plan, which is how the key ended up exhausted (110 hits) in the first
+  place. See "Match search" below.
+
 - **INTERACTIVE SIMULATOR BUILT + verified.** Upgraded the static POC into a live
   match simulator: dependency-free Node HTTP server (`server.js`) + single-page
   app (`public/index.html`). Right-hand menu drives everything; deterministic
@@ -55,6 +64,23 @@ toggled per-session in the UI): expectedWins (Pythagorean xW) · tossLeverage
 New per-innings data fields: `top4`, `wktsLost`, `bowlTop2`. Every metric derived
 from raw match data → math stays defensible. NOTE: keyPlayer/star availability is
 still SYNTHETIC (squadStars), not a live ICC top-30 feed.
+
+## Match search (locked 2026-07-25)
+- **Resolver order:** CricAPI structured feed (authoritative — the match is chosen
+  by filtering/sorting a real index in code) → Gemini grounded search (backup,
+  date-pinned) → explicit `notFound`. It NEVER falls back to the offline snapshot
+  for a team query; handing back an unrelated fixture stamped REJECTED reads as a
+  bug in the search rather than as "we could not find it".
+- **The model has no clock.** The Gemini prompt now pins today's date and a
+  freshness window, accepts `{"notFound": true}` as a correct answer, and retries
+  once with the rejection reason when it returns something stale.
+- **Quota is the real constraint.** Free plan = 100 calls/day, resets midnight IST.
+  Live-window hit = 1 call; cold new pair ≤ 9; repeat search = 0 (disk cache under
+  `.cache/`, pair-keyed and order-insensitive). A blown quota raises `QuotaError`
+  and stops immediately — it is never reported as "no such match".
+- **Verification gate unchanged and non-negotiable:** wrong teams or age >
+  `MATCH_MAX_AGE_DAYS` = rejected, nothing enters the table.
+- **Tests:** `npm test` — 12 cases on recorded payloads, spends no API calls.
 
 ## Simulator behaviour
 - Modes: **From Baseline** (90-match snapshot) / **Fresh Start** (empty); toggling
@@ -98,8 +124,12 @@ _Granular checklist of the immediate next steps._
 - [x] Multi-select "Extra metrics (optional)" panel + list chips + Randomize button
       (fills all params, no auto-simulate). Verified in browser, console clean.
 - [ ] Review output + tune weights via the live sliders (or `weights.config.json`).
-- [ ] Decide: wire live CricAPI (`matches.js` pattern) + `BLURB_GROUNDING=web` +
-      REAL ICC top-30 feed for key-player availability (currently synthetic).
+- [x] Wire live CricAPI as the primary match resolver, with a disk cache, an
+      explicit call budget and quota-aware error reporting.
+- [ ] Decide: `BLURB_GROUNDING=web` + REAL ICC top-30 feed for key-player
+      availability (currently synthetic).
+- [ ] Consider a paid CricAPI plan if match search becomes a daily workflow —
+      100 calls/day is roughly 10 cold lookups, and the cache only helps repeats.
 - [ ] Decide: weekly scheduler + editor review screen; persist sim state across restarts.
 
 ## Upcoming Goals

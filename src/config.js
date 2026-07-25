@@ -36,6 +36,26 @@ module.exports = {
       process.env.GEMINI_INGEST_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite',
     timeoutMs: num(process.env.LLM_TIMEOUT_MS, 90000),
   },
+  // Structured cricket feed. This is the authoritative match resolver — the
+  // language model is only a backup. The free plan is 100 calls/day, and one
+  // lookup costs several, so every knob that limits fan-out lives here.
+  cricapi: {
+    key: (process.env.CRICAPI_KEY || '').trim(),
+    // How many distinct series-search terms one lookup may spend calls on.
+    maxSeriesTerms: num(process.env.CRICAPI_MAX_SERIES_TERMS, 4),
+    // How many candidate series may be opened before giving up.
+    maxSeriesProbe: num(process.env.CRICAPI_MAX_SERIES_PROBE, 4),
+    ttl: {
+      // The live window moves; everything else is effectively immutable.
+      score: num(process.env.CRICAPI_TTL_SCORE_MS, 10 * 60 * 1000),
+      series: num(process.env.CRICAPI_TTL_SERIES_MS, 24 * 3600 * 1000),
+      seriesInfo: num(process.env.CRICAPI_TTL_SERIES_INFO_MS, 6 * 3600 * 1000),
+      // A finished scorecard never changes again.
+      scorecard: num(process.env.CRICAPI_TTL_SCORECARD_MS, 30 * 86400 * 1000),
+      // A resolved "latest A v B" answer, so repeat searches are free.
+      resolved: num(process.env.CRICAPI_TTL_RESOLVED_MS, 3 * 3600 * 1000),
+    },
+  },
   blurb: {
     // Minimum critic score (0-10) a blurb must reach to publish as-is.
     minScore: num(process.env.BLURB_MIN_SCORE, 8),
@@ -46,5 +66,8 @@ module.exports = {
   },
   isConfigured() {
     return Boolean(this.llm.geminiKey);
+  },
+  hasCricApi() {
+    return Boolean(this.cricapi.key);
   },
 };

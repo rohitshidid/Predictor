@@ -29,13 +29,15 @@ Copy the example env file and fill in your Gemini API key:
 cp .env.example .env
 ```
 
-Open `.env` and set your key:
+Open `.env` and set your keys:
 
 ```
-GEMINI_API_KEY=your_key_here
+CRICAPI_KEY=your_cricapi_key_here
+GEMINI_API_KEY=your_gemini_key_here
 ```
 
-> **No key?** That's fine. The app runs in template mode — rankings are fully computed, AI blurbs are replaced with auto-generated text from the stats.
+- **`CRICAPI_KEY`** powers the *"Fetch latest match between A and B"* search. Get one free at [cricapi.com](https://cricapi.com). Set this if you want match search to work — see [Match search](#match-search) below.
+- **`GEMINI_API_KEY`** powers the AI blurbs. Without it the app runs in template mode: rankings are still fully computed, blurbs are auto-generated from the stats.
 
 ### 3. Start the server
 
@@ -72,6 +74,7 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 |---|---|
 | `npm start` | Start the interactive ranking server on port 3000 |
 | `node server.js` | Same as above |
+| `npm test` | Run the match-resolution test suite (offline — spends no API calls) |
 | `node src/generateSeason.js` | Regenerate the synthetic IPL season data in `data/` |
 
 ---
@@ -82,6 +85,12 @@ All settings live in `.env`. Copy `.env.example` to get started.
 
 | Variable | Default | Description |
 |---|---|---|
+| `CRICAPI_KEY` | *(empty)* | Your [CricAPI](https://cricapi.com) key. **Required for the "Fetch latest match between A and B" box to work properly.** Without it the search falls back to grounded AI search, which reliably answers "latest India v Pakistan" with a famous *old* match. |
+| `CRICAPI_MAX_SERIES_TERMS` | `4` | How many series searches one lookup may spend. Lower it to stretch a free plan, raise it for better coverage. |
+| `CRICAPI_MAX_SERIES_PROBE` | `4` | How many candidate series one lookup may open. |
+| `MATCH_TOURNAMENTS` | *(see `.env.example`)* | Extra series-search terms for multi-team events. A World Cup series is named after the event, not the teams, so a plain "India"/"Pakistan" search cannot see it. |
+| `MATCH_STALE_DAYS` | `90` | Older than this, a resolved match is shown with a "confirm this is really the latest" warning. |
+| `MATCH_MAX_AGE_DAYS` | `365` | Older than this, a resolved match is **rejected** — it cannot be "the latest". |
 | `GEMINI_API_KEY` | *(empty)* | Your Google Gemini API key. Without this, AI blurbs are disabled and template blurbs are used instead. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Model used for grounded verification and the critic step. |
 | `GEMINI_INGEST_MODEL` | `gemini-2.5-flash-lite` | Model used for prose generation (cheaper, high volume). |
@@ -135,6 +144,35 @@ The ranking engine scores every team on 9 factors and sorts them highest to lowe
 | **Key players** | Number of ICC top-30 ranked players available |
 
 See [`parameters.md`](parameters.md) for the full formula behind each metric.
+
+---
+
+## Match search
+
+Type two team names into **Fetch latest match between** and press **Fetch match result**. The app resolves the most recent *completed* fixture between them and fills the simulate form with the real scorecard.
+
+### How a match is resolved
+
+Two resolvers run in order, and the answer is verified before it can touch the table.
+
+1. **CricAPI (the structured feed)** — authoritative. The match is picked by filtering and sorting a real match index *in code*, so it cannot be invented. Requires `CRICAPI_KEY`.
+2. **Gemini + Google Search** — backup only, used when the feed is unavailable. The prompt pins today's date and an explicit freshness window, and an out-of-window answer is thrown back at the model once before being given up on.
+3. **Verification gate** — whatever comes back must be *these two teams* and must be recent. A match older than `MATCH_MAX_AGE_DAYS` is rejected outright, and a squad qualifier counts as a different team, so a request for India never resolves to India Women, India A or India U19.
+
+If nothing resolves, the card says so and shows the resolver chain. It never falls back to an unrelated fixture.
+
+### The free plan is 100 calls a day
+
+That is the real constraint on this feature, so the lookup is built around it:
+
+- **A completed match in the live window costs one call.** That is the common case — a fixture that just ended.
+- **A cold lookup for a brand-new team pair costs at most 9 calls** (`1 + CRICAPI_MAX_SERIES_TERMS + CRICAPI_MAX_SERIES_PROBE + 1`).
+- **Repeat searches cost nothing.** Responses are cached on disk under `.cache/`, keyed so that "India v Pakistan" and "Pakistan v India" are one question. Series lists last a day, finished scorecards last a month — they cannot change.
+- **A blown quota stops immediately** rather than spending the rest of the allowance proving it is blown.
+
+The card shows `CricAPI quota: n/100 calls used today` after every fetch. The allowance resets at **midnight IST**. To clear cached responses and start fresh, delete the `.cache/` directory.
+
+If you run out mid-session, paste a scorecard link into **Match links** — that gives the AI backup the page text to work from, so it can still answer without the feed.
 
 ---
 
@@ -267,6 +305,15 @@ Hard-refresh the browser (`Cmd+Shift+R` on Mac).
 
 **AI blurbs not generating?**
 Check that `GEMINI_API_KEY` is set in `.env` (not `.env.example`) and the server was restarted after editing the file.
+
+**Match search returns an old match, or says "REJECTED"?**
+The label under *Fetch latest match between* tells you which resolver is in play. If it reads `no CRICAPI_KEY, using AI search`, set `CRICAPI_KEY` in `.env` and restart — grounded search alone tends to return the most *written-about* fixture rather than the most recent one, which is exactly what the rejection is catching.
+
+**Match search says the quota is exhausted?**
+The free CricAPI plan is 100 calls/day and resets at midnight IST. The fetch card shows the current count. Until it resets, paste a scorecard link into **Match links** so the AI backup has a page to read.
+
+**Match search says "no completed match found"?**
+Check both team names are spelled as the feed names them, then paste a link to the match or its series — the series slug in the URL is used as a search term and usually pins it down immediately.
 
 **Cloudflare Tunnel not connecting?**
 Make sure the server is running first (`node server.js`), then start the tunnel. If `cloudflared` is not found, run `brew install cloudflare/cloudflare/cloudflared`.

@@ -3,7 +3,7 @@
 > The definitive map of the codebase: architectural overview, a per-file index,
 > and line-number anchors linking documentation to exact code.
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-25_
 
 ---
 
@@ -49,7 +49,8 @@ _Registry of what each file in this repository does and where it lives._
 | `build.js` | repo root | Legacy static orchestrator: data → rank → AI blurbs → `rankings.html` + `audit.json`. |
 | `weights.config.json` | repo root | The 9 metric weights + form(α)/NRR/powerplay/death normalization bounds. Config, not code. |
 | `public/index.html` | `public/` | **Single-page simulator UI.** Ranking list + right-hand parameter menu, sig-event boxes, live weight sliders. |
-| `.env` / `.env.example` | repo root | Secrets (gitignored) + template. `GEMINI_API_KEY`, models, `BLURB_GROUNDING`. |
+| `.env` / `.env.example` | repo root | Secrets (gitignored) + template. `CRICAPI_KEY`, `GEMINI_API_KEY`, models, call budgets, freshness gate. |
+| `.cache/` | repo root | **Generated** (gitignored): cached provider responses. Safe to delete; costs API calls to rebuild. |
 | `.claude/launch.json` | `.claude/` | Preview config for the standalone page (superseded by ROOT launch.json's `rankings` entry). |
 | `generateSeason.js` | `src/` | Seeded generator → self-consistent synthetic IPL season. |
 | `config.js` | `src/` | Env-driven config + dependency-free `.env` loader. Mirrors `predictionGame/config.js`. |
@@ -57,6 +58,9 @@ _Registry of what each file in this repository does and where it lives._
 | `simState.js` | `src/` | In-memory simulator state: baseline/fresh season, append match, mode switch, prev-rank snapshot. |
 | `templates.js` | `src/` | Deterministic blurb templates + fact sheets (fallback + grounding source of truth). |
 | `blurbs.js` | `src/` | **AI blurb layer.** Gemini generate + grounded critic; accepts per-team significant-event context. Ports `llm.js` + `searchLLM.js`. |
+| `liveMatch.js` | `src/` | **Match fetch + resolution.** CricAPI feed (primary) → Gemini grounded search (backup) → verification gate. Normalizes any provider onto one match shape. |
+| `cache.js` | `src/` | Disk-backed TTL cache under `.cache/`. Exists because CricAPI's free plan is 100 calls/day and in-memory caching dies with every restart. |
+| `liveMatch.test.js` | `test/` | Match-resolution suite (`npm test`). Runs on recorded payloads — spends no API calls. |
 | `render.js` | `src/` | Renders ranked table → self-contained, theme-aware `rankings.html`. |
 | `data/ipl_2024.json` | `data/` | Generated season snapshot (90 matches, 10 teams). |
 | `data/lastweek.json` | `data/` | Previous-week ranks → the ▲/▼ movement deltas. |
@@ -75,6 +79,17 @@ _Anchors linking documentation to exact lines of code / doc._
 - **L109–121** — Suggested build order.
 - **L125–136** — Open questions to resolve before scoping.
 - **L140–155** — Orientation: where to look first in the Champhunt repos.
+
+### `src/liveMatch.js` — match resolution
+- **L~316–430** — CricAPI transport: quota counters lifted from every response,
+  `QuotaError` as its own condition, TTL-per-document-kind caching.
+- **L~455–545** — `cricapiFindLatest`: live-window short-circuit (1 call), then a
+  budgeted series sweep. Quota failure stops the sweep instead of spending it.
+- **L~291–345** — Gemini backup prompt: today's date + freshness window pinned in,
+  `{"notFound": true}` accepted as a valid answer, one corrective retry on a
+  stale result.
+- **L~745–790** — `verify()`: the gate. Rejects on age > `MATCH_MAX_AGE_DAYS` and
+  on a team mismatch (squad qualifiers count as different teams).
 
 ### Reuse map (external Champhunt repos — anchors pending source access)
 | Component | File |

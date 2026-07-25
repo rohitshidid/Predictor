@@ -4,7 +4,7 @@
 > to avoid repeating past mistakes. Log any correction or preference the moment
 > it is issued in chat.
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-25_
 
 ---
 
@@ -18,6 +18,19 @@ _Specific stylistic and structural choices the user prefers._
 
 ## Corrections Issued
 _Cumulative log of corrections._
+
+- **[2026-07-25]** Typing two team names must just work — fetch the latest match
+  they played. Two rules fell out of fixing it, both now enforced in code:
+  **(a)** a language model is never the primary resolver for "the latest X",
+  because it has no clock and returns the most written-about match, not the most
+  recent one; the structured feed decides, the model only backs it up;
+  **(b)** a paid-quota failure must never be reported as "no match found" —
+  they are different answers and conflating them sends the operator hunting for
+  a bug that is not there.
+- **[2026-07-25]** Respect the API budget as a first-class design constraint,
+  not an afterthought. The CricAPI free plan is 100 calls/day; the original
+  lookup spent up to 18 per search and exhausted the key. Cache to disk (survives
+  restarts), cap fan-out explicitly, and short-circuit as early as the data allows.
 
 - **[2026-07-23]** Do not work on the auto-generated feature branch. Work
   directly on the `main` branch until explicitly told to use a different one.
