@@ -63,7 +63,7 @@ Also reported: `trend = rolling − season`, positive meaning improving.
 
 **5. Momentum** — exponentially weighted update over **every** match played, seeded at 0.5:
 ```
-mₜ = α·(win ? 1 : 0) + (1 − α)·mₜ₋₁ ,  α = 0.35
+m_t = α·(win ? 1 : 0) + (1 − α)·m_{t-1} ,  α = 0.35
 ```
 Match weights decay 0.350, 0.228, 0.148, 0.096, 0.063… — a **half-life of ≈1.6 matches**.
 
@@ -84,7 +84,7 @@ chasing       : (120 − balls used) / 120 × 100
 Each raw metric maps onto [0,1] via `norm(x) = clamp((x − min)/(max − min))`. Ratios (1, 6, 7, 9) are already 0–1; the rest use configured bounds — **death net ±60**, **powerplay ±3.00 rpo**, **rNRR ±2.00**, win quality ÷100. Then:
 
 ```
-score = 100 × Σ ( wₖ · nₖ )
+score = 100 × Σ ( w_k · n_k )
 ```
 weights `0.30, 0.18, 0.16, 0.09, 0.08, 0.08, 0.05, 0.03, 0.03`, summing to exactly 1.00. **Ties** break on win% then rolling NRR. **Delta** = previous rank − current rank.
 
