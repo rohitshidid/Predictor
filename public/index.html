@@ -245,10 +245,57 @@
       margin: 7px 0 9px;
     }
 
-    .stats {
+    /* Headline strip — the only numbers on the card by default. Everything
+       else lives in the Details drawer so the row stays readable at a glance. */
+    .headline {
       display: flex;
+      align-items: baseline;
       flex-wrap: wrap;
-      gap: 10px 14px;
+      gap: 4px 16px;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .headline b {
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .headline .score {
+      margin-left: auto;
+      font-size: 10px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .headline .score b {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .det {
+      margin-top: 8px;
+      border-top: 1px dashed var(--line);
+      padding-top: 7px;
+    }
+
+    .det>summary {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .det[open]>summary {
+      margin-bottom: 8px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 7px 14px;
       font-size: 11.5px;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
@@ -446,6 +493,22 @@
       font-size: 12px;
       font-weight: 700;
       letter-spacing: .02em;
+    }
+
+    .exportbar .bgopt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .exportbar .bgopt input {
+      width: auto;
+      margin: 0;
     }
 
     #fetchPreview {
@@ -705,6 +768,9 @@
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
         <button id="dlPdf" title="Download the current table as a PDF">PDF</button>
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
+        <label class="bgopt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
+          <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
+        </label>
       </div>
       <ol id="list"></ol>
     </div>
@@ -974,17 +1040,22 @@
           ${logoHtml(r.name)}<span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
         </div>
         <p class="blurb">${esc(b.text)}</p>
-        <div class="stats">
+        <div class="headline">
           <span><b>${r.won}-${r.lost}</b> W-L</span>
           <span><b>${Math.round(r.winPct * 100)}%</b> win</span>
-          <span><b>${fmtSigned(r.rollingNRR, 2)}</b> rNRR</span>
-          <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
           <span><b>${r.formRecord.wins}/${r.formRecord.of}</b> form</span>
-          <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
-          <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
-          <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
-          <span><b>${r.score.toFixed(1)}</b> score</span>
+          <span class="score"><b>${r.score.toFixed(1)}</b> score</span>
         </div>
+        <details class="det">
+          <summary>Details — all ranking metrics</summary>
+          <div class="stats">
+            <span><b>${fmtSigned(r.rollingNRR, 2)}</b> rNRR</span>
+            <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
+            <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
+            <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
+            <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
+          </div>
+        </details>
       </div>`;
         ol.appendChild(li);
       }
@@ -1444,32 +1515,43 @@
       return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p}" stroke="${sec}" stroke-width="3"/>` +
         `<text x="${cx}" y="${cy}" font-size="${fs}" font-weight="800" fill="${textOn(p)}" text-anchor="middle" dominant-baseline="central">${esc(sh)}</text>`;
     }
-    function tableSvg() {
+    // The exported table is a broadcast graphic: it sits over a live feed, so it
+    // carries one line per team — rank, crest, name, three headline numbers,
+    // score — and nothing else. The prose blurbs and the long-tail metrics stay
+    // in the app; on screen at 1080p they are unreadable clutter anyway.
+    // transparent = no page background and a translucent dark row plate, so the
+    // feed shows through between and behind the rows.
+    function tableSvg(opts) {
+      const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      const W = 940, pad = 20, headerH = 78, rh = 80, footerH = 40;
+      const W = 940, pad = 20, headerH = 74, rh = 58, footerH = 34;
       const H = headerH + n * rh + footerH;
-      const A = '#0b5cff', ink = '#12151a', muted = '#5b6472', line = '#e4e8ee', up = '#12864f', down = '#c0392b', card = '#ffffff', bg = '#f4f6f9';
+      const P = transparent
+        ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
+        : { A: '#0b5cff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee', up: '#12864f', down: '#c0392b', card: '#ffffff' };
+      const colScore = W - pad - 20, colMv = W - pad - 96, colStats = W - pad - 150;
+      // Header and footer sit outside the row plates, straight on the feed —
+      // a drawn-behind stroke keeps them legible over a bright pitch too.
+      const halo = transparent
+        ? ' stroke="rgba(6,9,14,.75)" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round"' : '';
       let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
-      s += `<rect width="${W}" height="${H}" fill="${bg}"/>`;
-      s += `<text x="${pad}" y="40" font-size="26" font-weight="800" fill="${ink}">${esc(st.league)} — Power Rankings</text>`;
-      s += `<text x="${pad}" y="63" font-size="13" fill="${muted}">Season ${esc(st.season)} · ${st.matchCount} matches · generated ${new Date().toISOString().slice(0, 10)}</text>`;
+      if (!transparent) s += `<rect width="${W}" height="${H}" fill="#f4f6f9"/>`;
+      s += `<text x="${pad}" y="36" font-size="26" font-weight="800" fill="${P.ink}"${halo}>${esc(st.league)} — Power Rankings</text>`;
+      s += `<text x="${pad}" y="58" font-size="13" fill="${P.muted}"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
       rows.forEach((r, i) => {
-        const y = headerH + i * rh, ch = rh - 12, cyc = y + ch / 2;
-        s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="12" fill="${card}" stroke="${line}"/>`;
-        s += `<text x="${pad + 30}" y="${cyc + 9}" font-size="26" font-weight="800" fill="${A}" text-anchor="middle">${r.rank}</text>`;
-        s += crestSvgAt(r.name, pad + 82, cyc, 17);
-        s += `<text x="${pad + 112}" y="${y + 28}" font-size="15" font-weight="700" fill="${ink}">${esc(r.name)} <tspan font-size="11" font-weight="400" fill="${muted}">${esc(r.short)}</tspan></text>`;
+        const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
+        s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
+        s += `<text x="${pad + 30}" y="${cyc}" font-size="24" font-weight="800" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += crestSvgAt(r.name, pad + 80, cyc, 16);
+        s += `<text x="${pad + 108}" y="${cyc}" font-size="16" font-weight="700" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 26))} <tspan font-size="11" font-weight="400" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% · ${r.formRecord.wins}/${r.formRecord.of} form`;
+        s += `<text x="${colStats}" y="${cyc}" font-size="12" fill="${P.muted}" text-anchor="end" dominant-baseline="central">${esc(stats)}</text>`;
         const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
-        const mvc = r.movement === 'up' ? up : r.movement === 'down' ? down : muted;
-        s += `<text x="${W - pad - 92}" y="${y + 28}" font-size="13" font-weight="700" fill="${mvc}">${mv}</text>`;
-        s += `<text x="${W - pad - 20}" y="${y + 30}" font-size="22" font-weight="800" fill="${ink}" text-anchor="end">${r.score.toFixed(1)}</text>`;
-        s += `<text x="${W - pad - 20}" y="${y + 46}" font-size="10" fill="${muted}" text-anchor="end">score</text>`;
-        const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% win · ${fmtSigned(r.rollingNRR, 2)} rNRR · ${r.formRecord.wins}/${r.formRecord.of} form`;
-        s += `<text x="${pad + 112}" y="${y + 46}" font-size="11.5" fill="${muted}">${esc(stats)}</text>`;
-        const b = (st.blurbs[r.name] || {}).text || '';
-        s += `<text x="${pad + 112}" y="${y + 63}" font-size="12" fill="${ink}">${esc(truncate(b, 100))}</text>`;
+        const mvc = r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.muted;
+        s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
+        s += `<text x="${colScore}" y="${cyc}" font-size="22" font-weight="800" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
       });
-      s += `<text x="${pad}" y="${H - 16}" font-size="11" fill="${muted}">Ranking computed deterministically from match data — win%, NRR, form, phase splits, strength of schedule. The model writes only the prose.</text>`;
+      s += `<text x="${pad}" y="${H - 12}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
       s += `</svg>`;
       return s;
     }
@@ -1479,7 +1561,10 @@
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     }
-    function rasterize(svg, scale) {
+    // opaque=true paints a white plate under the graphic (PDF has no alpha
+    // channel). Left false, the PNG keeps its alpha so it can be keyed over the
+    // live feed straight from the vision mixer.
+    function rasterize(svg, scale, opaque) {
       return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         const img = new Image();
@@ -1487,7 +1572,7 @@
           const c = document.createElement('canvas');
           c.width = img.width * scale; c.height = img.height * scale;
           const ctx = c.getContext('2d');
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+          if (opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); }
           ctx.setTransform(scale, 0, 0, scale, 0, 0);
           ctx.drawImage(img, 0, 0);
           URL.revokeObjectURL(url); resolve(c);
@@ -1497,13 +1582,18 @@
       });
     }
     function exportName(ext) { return `${(STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}-power-rankings.${ext}`; }
-    function downloadSvg() { saveBlob(new Blob([tableSvg()], { type: 'image/svg+xml' }), exportName('svg')); }
+    function isTransparent() { const cb = $('bgTransparent'); return !cb || cb.checked; }
+    function downloadSvg() {
+      saveBlob(new Blob([tableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
+    }
     async function downloadPng() {
-      const c = await rasterize(tableSvg(), 2);
+      const tr = isTransparent();
+      const c = await rasterize(tableSvg({ transparent: tr }), 2, !tr);
       c.toBlob(b => saveBlob(b, exportName('png')), 'image/png');
     }
+    // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
-      const c = await rasterize(tableSvg(), 2);
+      const c = await rasterize(tableSvg({ transparent: false }), 2, true);
       const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.92));
       saveBlob(new Blob([buildPdf(jpeg, c.width, c.height)], { type: 'application/pdf' }), exportName('pdf'));
     }
