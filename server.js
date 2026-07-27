@@ -18,6 +18,7 @@ const { blurbForTeam } = require('./src/blurbs');
 const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
 const { fetchMatch, providerName, quotaState, clearCache, cacheStats } = require('./src/liveMatch');
+const store = require('./src/checkpoints');
 
 const PORT = Number(process.env.PORT || 4310);
 const BASE_WEIGHTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'weights.config.json'), 'utf8'));
@@ -141,6 +142,51 @@ async function regenerate(teamNames, significantMap = {}) {
   return ranking;
 }
 
+// ---- checkpoints ------------------------------------------------------------
+// Everything needed to reproduce today's table. The match list is the source of
+// truth — the engine re-derives every figure from it — so a checkpoint cannot
+// drift from the table it was taken from.
+function buildCheckpoint() {
+  const ranking = currentRanking();
+  return {
+    kind: 'power-rankings-checkpoint',
+    version: 1,
+    savedAt: new Date().toISOString(),
+    league: sim.getData().league,
+    leagueShort: sim.getData().leagueShort,
+    season: sim.getData().season,
+    mode: sim.getMode(),
+    matchCount: sim.getData().matches.length,
+    data: sim.getData(),
+    config: { weights: config.weights, optionalWeights: config.optionalWeights, enabled: config.enabled },
+    blurbs: blurbCache,
+    prevRanks: sim.getPrevRanks(),
+    // Read-only copy of the table as it stood — for audit, not for restore.
+    ranking: ranking.map((r) => ({ rank: r.rank, team: r.name, score: +r.score.toFixed(2), won: r.won, lost: r.lost })),
+  };
+}
+
+function restoreCheckpoint(cp) {
+  if (!cp || !cp.data) throw new Error('not a checkpoint file — expected a "data" object');
+  if (cp.kind && cp.kind !== 'power-rankings-checkpoint') throw new Error(`unrecognised file kind: ${cp.kind}`);
+  sim.loadData(cp.data, cp.mode, cp.prevRanks);
+  if (cp.config && typeof cp.config === 'object') {
+    if (cp.config.weights) for (const k of Object.keys(config.weights)) {
+      if (typeof cp.config.weights[k] === 'number') config.weights[k] = cp.config.weights[k];
+    }
+    if (cp.config.optionalWeights) for (const k of Object.keys(config.optionalWeights || {})) {
+      if (typeof cp.config.optionalWeights[k] === 'number') config.optionalWeights[k] = cp.config.optionalWeights[k];
+    }
+    if (cp.config.enabled) for (const k of Object.keys(config.enabled || {})) {
+      if (typeof cp.config.enabled[k] === 'boolean') config.enabled[k] = cp.config.enabled[k];
+    }
+  }
+  blurbCache = (cp.blurbs && typeof cp.blurbs === 'object') ? cp.blurbs : {};
+  // buildState renders the arrows against the checkpoint's saved prevRanks, then
+  // snapshots the restored order so the NEXT action diffs against it.
+  return buildState();
+}
+
 // ---- routes -----------------------------------------------------------------
 const server = http.createServer(async (req, res) => {
   try {
@@ -216,47 +262,38 @@ const server = http.createServer(async (req, res) => {
     // POST restores one. The match list is the source of truth; the engine
     // re-derives every figure from it, so a restored checkpoint cannot drift
     // from the table that produced it.
+    // List what the server has kept.
+    if (req.method === 'GET' && url.pathname === '/api/checkpoints') {
+      return send(res, 200, { dir: store.dir(), items: store.list() });
+    }
+
+    // Save to disk AND hand the same document back for download.
+    if (req.method === 'POST' && url.pathname === '/api/checkpoint/save') {
+      const cp = buildCheckpoint();
+      const file = store.save(cp);
+      return send(res, 200, { file, dir: store.dir(), checkpoint: cp });
+    }
+
+    // Restore one the server already holds.
+    if (req.method === 'POST' && url.pathname === '/api/checkpoint/restore') {
+      const { file } = await readBody(req);
+      if (!file) throw new Error('missing "file"');
+      return send(res, 200, restoreCheckpoint(store.read(file)));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/checkpoint/delete') {
+      const { file } = await readBody(req);
+      if (!file) throw new Error('missing "file"');
+      store.remove(file);
+      return send(res, 200, { ok: true, items: store.list() });
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/checkpoint') {
-      const ranking = currentRanking();
-      return send(res, 200, {
-        kind: 'power-rankings-checkpoint',
-        version: 1,
-        savedAt: new Date().toISOString(),
-        league: sim.getData().league,
-        leagueShort: sim.getData().leagueShort,
-        season: sim.getData().season,
-        mode: sim.getMode(),
-        matchCount: sim.getData().matches.length,
-        data: sim.getData(),
-        config: { weights: config.weights, optionalWeights: config.optionalWeights, enabled: config.enabled },
-        blurbs: blurbCache,
-        prevRanks: sim.getPrevRanks(),
-        // Read-only copy of the table as it stood — for audit, not for restore.
-        ranking: ranking.map((r) => ({ rank: r.rank, team: r.name, score: +r.score.toFixed(2), won: r.won, lost: r.lost })),
-      });
+      return send(res, 200, buildCheckpoint());
     }
 
     if (req.method === 'POST' && url.pathname === '/api/checkpoint') {
-      const body = await readBody(req);
-      const cp = body && body.data ? body : null;
-      if (!cp) throw new Error('not a checkpoint file — expected a "data" object');
-      if (cp.kind && cp.kind !== 'power-rankings-checkpoint') throw new Error(`unrecognised file kind: ${cp.kind}`);
-      sim.loadData(cp.data, cp.mode, cp.prevRanks);
-      if (cp.config && typeof cp.config === 'object') {
-        if (cp.config.weights) for (const k of Object.keys(config.weights)) {
-          if (typeof cp.config.weights[k] === 'number') config.weights[k] = cp.config.weights[k];
-        }
-        if (cp.config.optionalWeights) for (const k of Object.keys(config.optionalWeights || {})) {
-          if (typeof cp.config.optionalWeights[k] === 'number') config.optionalWeights[k] = cp.config.optionalWeights[k];
-        }
-        if (cp.config.enabled) for (const k of Object.keys(config.enabled || {})) {
-          if (typeof cp.config.enabled[k] === 'boolean') config.enabled[k] = cp.config.enabled[k];
-        }
-      }
-      blurbCache = (cp.blurbs && typeof cp.blurbs === 'object') ? cp.blurbs : {};
-      // buildState renders the arrows against the checkpoint's saved prevRanks,
-      // then snapshots the restored order so the NEXT action diffs against it.
-      return send(res, 200, buildState());
+      return send(res, 200, restoreCheckpoint(await readBody(req)));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/reset') {

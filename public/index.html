@@ -815,6 +815,11 @@
           <button id="btnLoad" class="ghost" style="flex:1;" title="Load a saved checkpoint and carry on from there">📂 Load checkpoint</button>
         </div>
         <input type="file" id="cpFile" accept="application/json,.json" style="display:none">
+        <label style="margin-top:10px;">Saved on this server <span id="cpCount" style="color:var(--muted);font-weight:400;"></span></label>
+        <div style="display:flex;gap:8px;">
+          <select id="cpList" style="flex:1;"></select>
+          <button id="btnRestore" class="ghost" style="flex:0 0 auto;">Restore</button>
+        </div>
         <div class="note" id="cpNote"></div>
       </div>
 
@@ -1666,11 +1671,12 @@
       $('err').textContent = '';
       overlay(true, 'Saving checkpoint…');
       try {
-        const cp = await api('/api/checkpoint');
-        const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const name = `${league}-checkpoint-${stamp(new Date(cp.savedAt))}.json`;
-        saveBlob(new Blob([JSON.stringify(cp, null, 2)], { type: 'application/json' }), name);
-        $('cpNote').textContent = `Saved ${name} — ${cp.matchCount} matches.`;
+        // Written to the server's checkpoints/ folder AND downloaded, so there
+        // is a history on the machine regardless of what the browser kept.
+        const { file, checkpoint } = await api('/api/checkpoint/save', {});
+        saveBlob(new Blob([JSON.stringify(checkpoint, null, 2)], { type: 'application/json' }), file);
+        $('cpNote').textContent = `Saved ${file} — ${checkpoint.matchCount} matches, on the server and downloaded.`;
+        await refreshCheckpoints();
       } catch (e) { $('err').textContent = 'Save failed: ' + e.message; }
       finally { overlay(false); }
     }
@@ -1685,6 +1691,33 @@
         $('cpNote').textContent = `Loaded ${file.name} — ${STATE.matchCount} matches`
           + (cp.savedAt ? `, saved ${new Date(cp.savedAt).toLocaleString()}.` : '.');
       } catch (e) { $('err').textContent = 'Load failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+
+    async function refreshCheckpoints() {
+      try {
+        const { items } = await api('/api/checkpoints');
+        const sel = $('cpList');
+        sel.innerHTML = items.length
+          ? items.map(i => {
+              const when = i.savedAt ? new Date(i.savedAt).toLocaleString() : i.file;
+              return `<option value="${esc(i.file)}">${esc(when)} · ${i.matchCount != null ? i.matchCount + ' matches' : '?'}</option>`;
+            }).join('')
+          : '<option value="">— none saved yet —</option>';
+        $('cpCount').textContent = items.length ? `(${items.length})` : '';
+      } catch { /* listing is non-critical */ }
+    }
+    async function restoreCheckpoint() {
+      const file = $('cpList').value;
+      if (!file) { $('err').textContent = 'No checkpoint selected.'; return; }
+      $('err').textContent = '';
+      overlay(true, 'Restoring checkpoint…');
+      try {
+        const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+        applyState(await api('/api/checkpoint/restore', { file }), prev);
+        fillTeamSelects();
+        $('cpNote').textContent = `Restored ${file} — ${STATE.matchCount} matches.`;
+      } catch (e) { $('err').textContent = 'Restore failed: ' + e.message; }
       finally { overlay(false); }
     }
 
@@ -1794,6 +1827,7 @@
     $('dlSvg').addEventListener('click', downloadSvg);
     $('btnFinish').addEventListener('click', finishMatch);
     $('btnSave').addEventListener('click', saveCheckpoint);
+    $('btnRestore').addEventListener('click', restoreCheckpoint);
     $('btnLoad').addEventListener('click', () => $('cpFile').click());
     $('cpFile').addEventListener('change', e => {
       const f = e.target.files && e.target.files[0];
@@ -1814,6 +1848,7 @@
       overlay(true, 'Loading…');
       try {
         await loadBrand();
+        await refreshCheckpoints();
         const data = await api('/api/state');
         applyState(data);
         fillTeamSelects();
