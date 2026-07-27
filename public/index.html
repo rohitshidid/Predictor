@@ -810,6 +810,12 @@
           <button id="btnReset" class="ghost" style="flex:1;">Reset current</button>
           <button id="btnAiAll" class="ghost" style="flex:1;">AI-write all</button>
         </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btnSave" class="ghost" style="flex:1;" title="Download today's checkpoint: every match, weight and summary as one JSON file">💾 Save the file</button>
+          <button id="btnLoad" class="ghost" style="flex:1;" title="Load a saved checkpoint and carry on from there">📂 Load checkpoint</button>
+        </div>
+        <input type="file" id="cpFile" accept="application/json,.json" style="display:none">
+        <div class="note" id="cpNote"></div>
       </div>
 
       <div class="panel">
@@ -1552,7 +1558,7 @@
     function tableSvg(opts) {
       const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      const W = 940, pad = 20, headerH = 88, rh = 58, footerH = 34;
+      const W = 940, pad = 20, headerH = 88, rh = 58, footerH = 86;
       const H = headerH + n * rh + footerH;
       const P = transparent
         ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
@@ -1581,6 +1587,15 @@
       // may be a bright sky or a sightscreen — the header stays white, since a
       // light tint on a light background is the one thing that vanishes on air.
       s += `<text x="${pad}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
+      // "Powered by" + partner mark, top right. Falls back to a wordmark until
+      // public/logos/champhunt.png is present, so the graphic is never broken.
+      const logoH = 26, logoW = 92, logoX = W - pad - logoW, logoY = 16;
+      s += `<text x="${logoX - 8}" y="${logoY + logoH / 2}" font-size="11.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
+      if (BRAND.logo) {
+        s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
+      } else {
+        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing=".3" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+      }
       s += `<text x="${W - pad}" y="64" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
       s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="${transparent ? '#ffffff' : P.A}" opacity="${transparent ? '.8' : '.55'}"${halo}/>`;
       rows.forEach((r, i) => {
@@ -1596,7 +1611,16 @@
         s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
         s += `<text x="${colScore}" y="${cyc}" font-family="${DISP}" font-size="28" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
       });
-      s += `<text x="${pad}" y="${H - 12}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += `<text x="${pad}" y="${H - 14}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      // Bottom-right: how to find the methodology. The QR sits flush right with
+      // the two-line explainer to its left.
+      const qrS = 54, qrX = W - pad - qrS, qrY = H - footerH + 12;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, qrY, qrS);
+      const tx = qrX - 10, ty = qrY + 18;
+      s += `<text x="${tx}" y="${ty}" font-size="11" fill="${P.muted}" text-anchor="end"${halo}>For more information about how the score is calculated,</text>`;
+      s += `<text x="${tx}" y="${ty + 14}" font-size="11" fill="${P.muted}" text-anchor="end"${halo}>please scan the QR code or visit</text>`;
+      s += `<text x="${tx}" y="${ty + 30}" font-size="12" font-weight="700" fill="${P.ink}" text-anchor="end"${halo}>www.champhunt.in/powerranking</text>`;
       s += `</svg>`;
       return s;
     }
@@ -1630,6 +1654,79 @@
       });
     }
     function exportName(ext) { return `${(STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}-power-rankings.${ext}`; }
+
+    // ---- daily checkpoints ----
+    // One JSON per day holding the whole working season, so the table can be
+    // rebuilt exactly as it stood and the next day's patch continues from there.
+    const two = (n) => String(n).padStart(2, '0');
+    function stamp(d) {
+      return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}_${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}`;
+    }
+    async function saveCheckpoint() {
+      $('err').textContent = '';
+      overlay(true, 'Saving checkpoint…');
+      try {
+        const cp = await api('/api/checkpoint');
+        const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const name = `${league}-checkpoint-${stamp(new Date(cp.savedAt))}.json`;
+        saveBlob(new Blob([JSON.stringify(cp, null, 2)], { type: 'application/json' }), name);
+        $('cpNote').textContent = `Saved ${name} — ${cp.matchCount} matches.`;
+      } catch (e) { $('err').textContent = 'Save failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+    async function loadCheckpoint(file) {
+      $('err').textContent = '';
+      overlay(true, 'Loading checkpoint…');
+      try {
+        const cp = JSON.parse(await file.text());
+        const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+        applyState(await api('/api/checkpoint', cp), prev);
+        fillTeamSelects();
+        $('cpNote').textContent = `Loaded ${file.name} — ${STATE.matchCount} matches`
+          + (cp.savedAt ? `, saved ${new Date(cp.savedAt).toLocaleString()}.` : '.');
+      } catch (e) { $('err').textContent = 'Load failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+
+    // ---- broadcast branding assets ----
+    // The exported SVG is rasterized through an <img>, which cannot fetch
+    // anything external, so both marks must be inlined as data URIs.
+    let BRAND = { logo: null, qr: null };
+    function toDataUri(url) {
+      return fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error('missing')))
+        .then(b => new Promise((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b);
+        })).catch(() => null);
+    }
+    async function loadBrand() {
+      const [logo, qr] = await Promise.all([
+        toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
+        toDataUri('/logos/qr.png').then(v => v || toDataUri('/logos/qr.svg')),
+      ]);
+      BRAND = { logo, qr };
+    }
+    // Placeholder QR: correct finder squares and a deterministic module field so
+    // it reads as a QR in layout. It does NOT scan — drop a real
+    // public/logos/qr.png in and it is used instead, no code change.
+    function placeholderQr(x, y, size) {
+      const N = 21, m = size / N;
+      let g = `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="#ffffff"/>`;
+      const finder = (fx, fy) => {
+        g += `<rect x="${x + fx * m}" y="${y + fy * m}" width="${7 * m}" height="${7 * m}" fill="#0b0e14"/>`;
+        g += `<rect x="${x + (fx + 1) * m}" y="${y + (fy + 1) * m}" width="${5 * m}" height="${5 * m}" fill="#ffffff"/>`;
+        g += `<rect x="${x + (fx + 2) * m}" y="${y + (fy + 2) * m}" width="${3 * m}" height="${3 * m}" fill="#0b0e14"/>`;
+      };
+      finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+      const inFinder = (r, c) => (r < 8 && c < 8) || (r < 8 && c >= N - 8) || (r >= N - 8 && c < 8);
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        if (inFinder(r, c)) continue;
+        if (((r * 7 + c * 13 + ((r * c) % 5)) % 3) === 0) {
+          g += `<rect x="${x + c * m}" y="${y + r * m}" width="${m}" height="${m}" fill="#0b0e14"/>`;
+        }
+      }
+      return g;
+    }
     function isTransparent() { const cb = $('bgTransparent'); return !cb || cb.checked; }
     // The graphic is authored 940 units wide; the PNG is rendered out to a real
     // broadcast raster width (3840 = 4K by default) so it is sharp when the
@@ -1696,6 +1793,13 @@
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
     $('btnFinish').addEventListener('click', finishMatch);
+    $('btnSave').addEventListener('click', saveCheckpoint);
+    $('btnLoad').addEventListener('click', () => $('cpFile').click());
+    $('cpFile').addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (f) loadCheckpoint(f);
+      e.target.value = '';                     // allow re-loading the same file
+    });
     $('btnReset').addEventListener('click', async () => { overlay(true, 'Resetting…'); try { applyState(await api('/api/reset', {})); } finally { overlay(false); } });
     $('btnBaseline').addEventListener('click', async () => { overlay(true, 'Loading baseline…'); try { applyState(await api('/api/mode', { mode: 'baseline' })); } finally { overlay(false); } });
     $('btnFresh').addEventListener('click', async () => { overlay(true, 'Fresh season…'); try { applyState(await api('/api/mode', { mode: 'fresh' })); } finally { overlay(false); } });
@@ -1709,6 +1813,7 @@
     (async function init() {
       overlay(true, 'Loading…');
       try {
+        await loadBrand();
         const data = await api('/api/state');
         applyState(data);
         fillTeamSelects();

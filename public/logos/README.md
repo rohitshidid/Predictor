@@ -27,3 +27,16 @@ Name each file by the team's short code (lowercase), matching the `logo` field i
   (and in `src/generateSeason.js` if you regenerate the season).
 
 > These are third-party trademarks. Only add logo files you are licensed to use.
+
+## Branding assets for the exported graphic
+
+Two extra files are picked up automatically by the PNG/SVG/PDF export:
+
+| File | Used for | Fallback if absent |
+|---|---|---|
+| `champhunt.png` (or `.svg`) | The **"Powered by"** mark, top right | a plain `champhunt` wordmark |
+| `qr.png` (or `.svg`) | The QR code, bottom right | a drawn placeholder that does **not** scan |
+
+Drop the files in and they appear on the next page load — no code change. The
+logo is drawn into a 92×26 box and is right-aligned, so a transparent-background
+PNG with a wide aspect ratio works best. The QR is drawn into a 54×54 box.

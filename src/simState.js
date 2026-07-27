@@ -62,6 +62,25 @@ const state = {
     return this.setMode(mode);
   },
 
+  // Restore a season saved in a checkpoint. The match list is the source of
+  // truth — every ranking figure is re-derived from it by the engine — so a
+  // checkpoint reproduces the exact table it was taken from.
+  loadData(nextData, nextMode, nextPrevRanks) {
+    if (!nextData || !Array.isArray(nextData.teams) || !Array.isArray(nextData.matches)) {
+      throw new Error('checkpoint is missing teams[] or matches[]');
+    }
+    data = {
+      season: nextData.season,
+      league: nextData.league,
+      leagueShort: nextData.leagueShort,
+      teams: clone(nextData.teams),
+      matches: clone(nextData.matches),
+    };
+    if (nextMode === 'baseline' || nextMode === 'fresh') mode = nextMode;
+    prevRanks = nextPrevRanks && typeof nextPrevRanks === 'object' ? { ...nextPrevRanks } : {};
+    return data;
+  },
+
   // Append one simulated match. Assigns an id + timestamp after the latest match.
   appendMatch(match) {
     const lastDate = data.matches.length
