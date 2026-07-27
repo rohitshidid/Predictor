@@ -10,7 +10,8 @@
     "build": "node build.js",
     "serve": "node server.js",
     "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "doc": "node tools/build-doc.js"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>How the T20 Power Rankings Are Calculated</title>
+<style>
+@page { size: Letter; margin: 11mm 12mm; }
+* { box-sizing: border-box; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 8.55pt; line-height: 1.36; color: #1e293b; margin: 0; }
+h1 { font-size: 15.5pt; line-height: 1.14; color: #0f172a; margin: 0 0 5px;
+  letter-spacing: -.01em; border-bottom: 2.2px solid #2563eb; padding-bottom: 5px; }
+h2 { font-size: 10.8pt; color: #2563eb; margin: 10px 0 5px; padding-bottom: 2.5px;
+  border-bottom: 1px solid #dbe3ee; break-after: avoid; page-break-after: avoid; }
+h3 { font-size: 9.1pt; color: #0f172a; margin: 7px 0 3px; break-after: avoid; page-break-after: avoid; }
+p { margin: 0 0 4.5px; }
+strong { color: #0f172a; font-weight: 700; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 7px 0; }
+ul { margin: 0 0 5px; padding-left: 14px; }
+li { margin-bottom: 2px; }
+code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 7.7pt;
+  background: #f1f5f9; color: #0f172a; padding: 0.5px 2.5px; border-radius: 3px; }
+pre { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #2563eb;
+  border-radius: 4px; padding: 4px 8px; margin: 3px 0 5px;
+  break-inside: avoid; page-break-inside: avoid; }
+pre code { background: none; padding: 0; font-size: 7.8pt; line-height: 1.36; white-space: pre-wrap; }
+.note { color: #475569; font-size: 8.1pt; }
+/* fixed layout stops the narrow "#" column claiming an equal share */
+table { width: 100%; border-collapse: collapse; table-layout: fixed;
+  margin: 6px 0 7px; break-inside: avoid; page-break-inside: avoid; }
+th, td { border: 1px solid #d7dee8; padding: 3px 6.5px; text-align: left;
+  font-size: 8pt; line-height: 1.32; vertical-align: top; }
+th { background: #eef2f8; color: #0f172a; font-weight: 700; font-size: 7.4pt;
+  text-transform: uppercase; letter-spacing: .03em; }
+tbody tr:nth-child(even) { background: #fafbfd; }
+td.c0, th.c0 { text-align: center; color: #64748b; }
+td.c3, th.c3 { text-align: center; white-space: nowrap; }
+td.c3 { font-weight: 700; color: #0f172a; }
+</style></head><body>
+<h1>How the T20 Power Rankings Are Calculated</h1>
+<p class="note"><em>A power ranking answers a different question from the league table. The table asks <strong>"who has earned the most points?"</strong> The power ranking asks <strong>"who is playing the best cricket right now?"</strong> — so a team can sit fourth in the table and still top this list.</em></p>
+<p><strong>The founding rule: the maths decides the order, the AI does not.</strong> Every position is computed by fixed formulas from match data. The language model is only allowed to write the sentence explaining a team's position — it never sees, chooses, or influences the rank. Every ranking is reproducible, and every place is answerable with a number.</p>
+<hr>
+<h2>Part 1 — In plain English</h2>
+<p>Think of it as a <strong>school report card</strong>. Instead of one exam, each team is graded on nine subjects. Every subject is marked out of 100, some subjects count more than others, and the marks are combined into one final score. Sort by that score, and you have the rankings.</p>
+<table><colgroup><col style="width:4.5%"><col style="width:25.0%"><col style="width:56.5%"><col style="width:14.0%"></colgroup><thead><tr><th class="c0">#</th><th class="c1">What we measure</th><th class="c2">What it tells you</th><th class="c3">Counts for</th></tr></thead><tbody><tr><td class="c0">1</td><td class="c1"><strong>Win %</strong></td><td class="c2">How often they win. The foundation.</td><td class="c3"><strong>30%</strong></td></tr><tr><td class="c0">2</td><td class="c1"><strong>Death overs (16–20)</strong></td><td class="c2">The closing overs, where T20 games are decided: their hitting versus their bowling.</td><td class="c3"><strong>18%</strong></td></tr><tr><td class="c0">3</td><td class="c1"><strong>Powerplay (overs 1–6)</strong></td><td class="c2">Command of the opening burst — runs scored there minus runs conceded.</td><td class="c3"><strong>16%</strong></td></tr><tr><td class="c0">4</td><td class="c1"><strong>Rolling Net Run Rate</strong></td><td class="c2">Whether they out-score opponents, over the <strong>last 5 games only</strong>, so one early thrashing doesn't flatter them all season.</td><td class="c3"><strong>9%</strong></td></tr><tr><td class="c0">5</td><td class="c1"><strong>Momentum (form)</strong></td><td class="c2">Are they hot <em>right now</em>? The latest match counts most.</td><td class="c3"><strong>8%</strong></td></tr><tr><td class="c0">6</td><td class="c1"><strong>Home / away</strong></td><td class="c2">Teams that only win at home are flattered; travelling well counts.</td><td class="c3"><strong>8%</strong></td></tr><tr><td class="c0">7</td><td class="c1"><strong>Key players</strong></td><td class="c2">A side missing its stars is not the same side, whatever last week's results say.</td><td class="c3"><strong>5%</strong></td></tr><tr><td class="c0">8</td><td class="c1"><strong>Win quality</strong></td><td class="c2"><em>How</em> they win — a 60-run rout versus a last-ball escape.</td><td class="c3"><strong>3%</strong></td></tr><tr><td class="c0">9</td><td class="c1"><strong>Strength of schedule</strong></td><td class="c2">Whether the opponents beaten were any good.</td><td class="c3"><strong>3%</strong></td></tr></tbody></table>
+<p><strong>These weights were measured, not chosen.</strong> Rather than arguing about how much the powerplay "should" be worth, we built 300 simulated seasons in which each team's true strength was known in advance, then searched for the weights that best recovered that true order. We tuned on two-thirds of those seasons and scored on the third we had not touched. The fitted weights rank teams noticeably better than our original hand-picked ones (rank correlation with true strength improved from <strong>0.69 to 0.76</strong>).</p>
+<p><strong>The two subjects worth only 3%.</strong> Honesty matters more than a tidy table. That same test showed <strong>win quality</strong> carried almost no signal as we currently compute it, and <strong>strength of schedule</strong> actively worked <em>backwards</em> in a full round-robin — where everyone plays everyone, your opponents' average win rate is essentially the mirror of your own. Both were cut to a token weight rather than quietly dropped, and both need rebuilding before they earn it back.</p>
+<p><strong>Why momentum isn't simply "the last five".</strong> Recent matches count far more than old ones, fading smoothly rather than stopping dead at a cut-off. In practice the most recent match carries about 35% of this grade, and the last five together about 88%.</p>
+<p><strong>The score and the arrows.</strong> The nine graded subjects combine into a score out of 100; teams typically land between about <strong>30 and 70</strong>. Nobody scores 100 — that would mean leading every category at once. The <strong>▲/▼ arrows</strong> show movement against the previous published ranking: ▲2 means two places gained.</p>
+<p><strong>Nothing here is opinion.</strong> Most published power rankings are a writer's judgement call. This one is arithmetic: run the same matches through it twice and you get the same table, every time.</p>
+<hr>
+<h2>Part 2 — The technical method</h2>
+<p><strong>Pipeline.</strong> <code>data → collect() → nine metrics → normalise to [0,1] → weighted sum × 100 → sort</code>. Weights and bounds live in <code>weights.config.json</code>, never in code. Implementation: <code>src/engine.js</code>.</p>
+<p><strong>Notation.</strong> For team <em>t</em>: <code>W/P</code> = wins/played; <code>RF, OF</code> = runs scored and overs faced; <code>RA, OA</code> = runs and overs conceded. Every metric derives from raw per-innings data — nothing is hand-entered.</p>
+<h3>The nine components</h3>
+<p><strong>1. Win percentage</strong> — <code>W / P</code></p>
+<p><strong>2. Death-overs net</strong> <em>(overs 16–20)</em></p>
+<pre><code>net = deathBatSR − deathBowlEcon × 16.67</code></pre>
+<p>The factor <code>100/6 = 16.67</code> converts bowling economy (runs/over) onto the batting strike-rate scale (runs per 100 balls), making the two dimensionally comparable.</p>
+<p><strong>3. Powerplay dominance</strong> <em>(overs 1–6, i.e. 6 overs per innings per match)</em></p>
+<pre><code>PP = (ppRunsFor / 6P) − (ppRunsAgainst / 6P)        [runs per over]</code></pre>
+<p><strong>4. Rolling NRR</strong> <em>(last 5 matches)</em></p>
+<pre><code>rNRR = (Σ RF / Σ OF) − (Σ RA / Σ OA)</code></pre>
+<p>Also reported: <code>trend = rolling − season</code>, positive meaning improving.</p>
+<p><strong>5. Momentum</strong> — exponentially weighted update over <strong>every</strong> match played, seeded at 0.5:</p>
+<pre><code>m_t = α·(win ? 1 : 0) + (1 − α)·m_{t-1} ,  α = 0.35</code></pre>
+<p>Match weights decay 0.350, 0.228, 0.148, 0.096, 0.063… — a <strong>half-life of ≈1.6 matches</strong>.</p>
+<p><strong>6. Home/away</strong> — <code>0.6·awayWin% + 0.4·homeWin%</code>, deliberately over-weighting away form.</p>
+<p><strong>7. Key-player availability</strong> — <code>starsAvailable / squadStars</code>, taken <strong>as of the most recent match</strong>.</p>
+<p><strong>8. Win quality</strong> <em>(mean over wins only, each clamped to 0–100)</em></p>
+<pre><code>batting first : (own − opp) / own × 100
+chasing       : (120 − balls used) / 120 × 100</code></pre>
+<p><strong>9. Strength of schedule</strong> — mean current win% of all opponents faced (repeat fixtures counted each time).</p>
+<h3>Normalisation and the final score</h3>
+<p>Each raw metric maps onto [0,1] via <code>norm(x) = clamp((x − min)/(max − min))</code>. Ratios (1, 6, 7, 9) are already 0–1; the rest use configured bounds — <strong>death net ±60</strong>, <strong>powerplay ±3.00 rpo</strong>, <strong>rNRR ±2.00</strong>, win quality ÷100. Then:</p>
+<pre><code>score = 100 × Σ ( w_k · n_k )</code></pre>
+<p>weights <code>0.30, 0.18, 0.16, 0.09, 0.08, 0.08, 0.05, 0.03, 0.03</code>, summing to exactly 1.00. <strong>Ties</strong> break on win% then rolling NRR. <strong>Delta</strong> = previous rank − current rank.</p>
+<p><strong>Fitting method.</strong> Weights maximise <code>corr(score, latent strength)</code> subject to <code>w ≥ 0, Σw = 1</code>, over 300 seeded synthetic seasons, trained on 66% and evaluated on the held-out 34% (held-out Spearman 0.694 → 0.760; correct #1 46% → 50%). The unconstrained optimum (0.892) was <strong>rejected</strong>: it loaded ~75% of the table onto the two phase metrics and dropped Win% to 0.05, which would let a team win every match and not rank first.</p>
+<h3>Optional metrics (off by default)</h3>
+<p>Five extras can be enabled per session: <strong>expected wins</strong> (Pythagorean <code>RF²/(RF²+RA²)</code>), <strong>toss independence</strong> (win% when <em>losing</em> the toss), <strong>chase/set versatility</strong>, <strong>top-4 consistency</strong>, and <strong>bowling spread</strong> (inverse share of wickets taken by the top two bowlers). Enabling them pushes total weight above 1.0, so scores scale up while the ordering stays valid.</p>
+<h3>Known limitations — stated deliberately</h3>
+<ul><li><strong>Ground truth is synthetic.</strong> Weights are fitted against a generator, not real results, so the phase metrics are probably over-credited. Re-fitting on a full season of live data is the priority; the method transfers unchanged.</li><li><strong>NRR convention.</strong> ICC rules charge a side bowled out with its <strong>full quota</strong> of overs; this engine divides by overs actually faced, slightly flattering teams dismissed early.</li><li><strong>Win quality (3%)</strong> measured <code>r ≈ +0.01</code> — no signal as computed. It averages only over wins, and its batting-first and chasing scales are not calibrated to each other.</li><li><strong>Strength of schedule (3%)</strong> measured <code>r = −1.00</code> in a complete round robin and is added <em>positively</em>, so it currently penalises the best teams. The sign needs fixing, or the metric restricting to unbalanced schedules.</li><li><strong>T20-shaped.</strong> 120 balls and a 6-over powerplay are assumed; rain-shortened games and other formats are not modelled.</li><li><strong>Key players</strong> is a supplied figure, not yet a live ICC top-30 feed.</li></ul>
+<hr>
+<p class="note"><em>Computed by <code>src/engine.js</code>; weights tunable in <code>weights.config.json</code> without code changes. Full fitting write-up in <code>parameters.md</code>. Every generated blurb is fact-checked against these numbers and logged with its sources for editorial review.</em></p>
+</body></html>
