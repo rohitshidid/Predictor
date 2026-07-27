@@ -811,6 +811,10 @@
           <button id="btnAiAll" class="ghost" style="flex:1;">AI-write all</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btnUndo" class="ghost" style="flex:1;" title="Remove the last match that was added — use this if a result was entered wrongly">↩︎ Undo last match</button>
+          <button id="btnClear" class="ghost" style="flex:1;" title="Remove every match, keeping the teams. Restore a checkpoint afterwards to start from that point.">🧹 Clear matches</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="btnSave" class="ghost" style="flex:1;" title="Download today's checkpoint: every match, weight and summary as one JSON file">💾 Save the file</button>
           <button id="btnLoad" class="ghost" style="flex:1;" title="Load a saved checkpoint and carry on from there">📂 Load checkpoint</button>
         </div>
@@ -1826,6 +1830,30 @@
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
     $('btnFinish').addEventListener('click', finishMatch);
+    $('btnUndo').addEventListener('click', async () => {
+      $('err').textContent = '';
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      overlay(true, 'Removing last match…');
+      try {
+        const data = await api('/api/undo-match', {});
+        applyState(data, prev);
+        const u = data.undone;
+        $('cpNote').textContent = `Removed ${u.home} v ${u.away} — now ${data.matchCount} matches.`;
+      } catch (e) { $('err').textContent = e.message; }
+      finally { overlay(false); }
+    });
+    $('btnClear').addEventListener('click', async () => {
+      if (!confirm(`Remove all ${STATE.matchCount} matches? The teams stay; restore a checkpoint afterwards to start from that point.`)) return;
+      $('err').textContent = '';
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      overlay(true, 'Clearing matches…');
+      try {
+        const data = await api('/api/clear-matches', {});
+        applyState(data, prev);
+        $('cpNote').textContent = `Cleared ${data.cleared} matches — now ${data.matchCount}.`;
+      } catch (e) { $('err').textContent = e.message; }
+      finally { overlay(false); }
+    });
     $('btnSave').addEventListener('click', saveCheckpoint);
     $('btnRestore').addEventListener('click', restoreCheckpoint);
     $('btnLoad').addEventListener('click', () => $('cpFile').click());
