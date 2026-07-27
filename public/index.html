@@ -245,10 +245,57 @@
       margin: 7px 0 9px;
     }
 
-    .stats {
+    /* Headline strip — the only numbers on the card by default. Everything
+       else lives in the Details drawer so the row stays readable at a glance. */
+    .headline {
       display: flex;
+      align-items: baseline;
       flex-wrap: wrap;
-      gap: 10px 14px;
+      gap: 4px 16px;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .headline b {
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .headline .score {
+      margin-left: auto;
+      font-size: 10px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .headline .score b {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .det {
+      margin-top: 8px;
+      border-top: 1px dashed var(--line);
+      padding-top: 7px;
+    }
+
+    .det>summary {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .det[open]>summary {
+      margin-bottom: 8px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 7px 14px;
       font-size: 11.5px;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
@@ -446,6 +493,22 @@
       font-size: 12px;
       font-weight: 700;
       letter-spacing: .02em;
+    }
+
+    .exportbar .bgopt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .exportbar .bgopt input {
+      width: auto;
+      margin: 0;
     }
 
     #fetchPreview {
@@ -705,6 +768,9 @@
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
         <button id="dlPdf" title="Download the current table as a PDF">PDF</button>
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
+        <label class="bgopt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
+          <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
+        </label>
       </div>
       <ol id="list"></ol>
     </div>
@@ -834,7 +900,7 @@
         <label>Something significant — Team Y <span id="sigYteam" style="color:var(--accent)"></span></label>
         <textarea id="sigY" placeholder="e.g. Collapsed from 90/1 to 140 all out"></textarea>
 
-        <label style="margin-top:14px;">Fetch latest match between</label>
+        <label style="margin-top:14px;">Fetch latest match between <span id="feedPill" style="color:var(--muted);font-weight:400;"></span></label>
         <div class="row">
           <input type="text" id="teamAName" placeholder="Team A — e.g. India">
           <input type="text" id="teamBName" placeholder="Team B — e.g. West Indies">
@@ -847,6 +913,11 @@
         </div>
 
         <button id="btnFetch" class="ghost" style="width:100%;margin-top:12px;">⤓ Fetch match result (API)</button>
+        <div class="row" style="margin-top:6px;">
+          <button id="btnRefetch" class="ghost" style="flex:1;" title="Ignore every stored response and search the feed again">↻ Search again (ignore cache)</button>
+          <button id="btnClearCache" class="ghost" style="flex:1;" title="Delete all stored provider responses">🗑 Clear all previous cache</button>
+        </div>
+        <div id="cacheNote" style="color:var(--muted);font-size:11px;margin-top:4px;"></div>
         <div id="fetchPreview"></div>
         <button id="btnFinish" class="primary" style="width:100%;margin-top:8px;">Simulate Match</button>
         <div class="err" id="err"></div>
@@ -969,17 +1040,22 @@
           ${logoHtml(r.name)}<span class="name">${esc(r.name)}</span><span class="short">${esc(r.short)}</span>${mv}${srcBadge}
         </div>
         <p class="blurb">${esc(b.text)}</p>
-        <div class="stats">
+        <div class="headline">
           <span><b>${r.won}-${r.lost}</b> W-L</span>
           <span><b>${Math.round(r.winPct * 100)}%</b> win</span>
-          <span><b>${fmtSigned(r.rollingNRR, 2)}</b> rNRR</span>
-          <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
           <span><b>${r.formRecord.wins}/${r.formRecord.of}</b> form</span>
-          <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
-          <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
-          <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
-          <span><b>${r.score.toFixed(1)}</b> score</span>
+          <span class="score"><b>${r.score.toFixed(1)}</b> score</span>
         </div>
+        <details class="det">
+          <summary>Details — all ranking metrics</summary>
+          <div class="stats">
+            <span><b>${fmtSigned(r.rollingNRR, 2)}</b> rNRR</span>
+            <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
+            <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
+            <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
+            <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
+          </div>
+        </details>
       </div>`;
         ol.appendChild(li);
       }
@@ -1157,6 +1233,11 @@
       $('modePill').textContent = data.mode;
       $('aiPill').textContent = data.aiConfigured ? `AI ✓ (${data.grounding})` : 'AI off';
       $('aiPill').className = 'pill ' + (data.aiConfigured ? 'on' : 'off');
+      // Say up front which resolver is in play. Without the feed key the search
+      // falls back to grounded model search, which is the weaker path.
+      $('feedPill').textContent = data.cricapiConfigured
+        ? '— CricAPI feed ✓'
+        : '— no CRICAPI_KEY, using AI search (less reliable)';
       $('sub').textContent = `Season ${data.season} · ${data.matchCount} matches · min blurb score ${data.minScore}`;
       $('modeNote').textContent = data.mode === 'baseline'
         ? 'Seeded from the 90-match snapshot. Simulated matches append on top.'
@@ -1266,12 +1347,34 @@
       matchLinks.push(v); inp.value = ''; renderLinks(); inp.focus();
     }
 
-    async function fetchMatchResult() {
+    async function clearMatchCache() {
       $('err').textContent = '';
-      overlay(true, 'Fetching latest result…');
+      overlay(true, 'Clearing cache…');
+      try {
+        const r = await api('/api/cache/clear', {});
+        $('cacheNote').textContent = r.cleared
+          ? `Cleared ${r.cleared} cached response${r.cleared === 1 ? '' : 's'} — the next search runs cold.`
+          : 'Cache was already empty.';
+        $('fetchPreview').innerHTML = '';
+      } catch (e) {
+        $('err').textContent = 'Could not clear cache: ' + e.message;
+      } finally { overlay(false); }
+    }
+
+    async function fetchMatchResult(refresh) {
+      $('err').textContent = '';
+      $('cacheNote').textContent = '';
+      overlay(true, refresh ? 'Searching the feed again…' : 'Fetching latest result…');
       try {
         const teamA = $('teamAName').value.trim(), teamB = $('teamBName').value.trim();
-        const { provider, match } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks });
+        const { provider, match, quota } = await api('/api/fetch-match', { teamA, teamB, links: matchLinks, refresh: !!refresh });
+        // Nothing resolved at all — there is no scorecard to show, so render the
+        // reason and the resolver chain instead of a half-empty match card.
+        if (match.notFound) {
+          renderFetchFailure(match, quota);
+          $('err').textContent = match.error || 'No match found.';
+          return;
+        }
         // A rejected match (wrong teams, or too old to be "the latest") must NEVER
         // silently populate the table — show why and stop.
         if (match.rejected) {
@@ -1315,8 +1418,63 @@
     function leadLine(match, inn) {
       const bat = (match.batters && match.batters[inn.batting]) || [];
       const top = bat.slice(0, 2).map(b => `${b.name} ${b.runs}`).join(', ');
-      const won = match.winner === inn.batting ? ` — won by ${match.margin}` : '';
+      const won = (match.winner && match.winner === inn.batting)
+        ? (match.margin ? ` — won by ${match.margin}` : ' — won') : '';
       return `${inn.batting} ${inn.runs}${inn.wktsLost >= 10 ? ' all out' : ''} (${inn.overs} ov)${top ? ' — ' + top : ''}${won}`.slice(0, 200);
+    }
+
+    // Shared tail for both cards: what was searched, which resolvers ran, which
+    // links were readable. This is the part an operator actually acts on when a
+    // fetch does not go their way.
+    function fetchDiagnostics(match, quota) {
+      const req = match.requested && (match.requested.teamA || match.requested.teamB)
+        ? `<br>Searched: <b>${esc(match.requested.teamA || '?')}</b> v <b>${esc(match.requested.teamB || '?')}</b>` : '';
+      const tried = (match.tried || []).length
+        ? `<br>Resolver chain: ${(match.tried || []).map(t => esc(t)).join(' → ')}` : '';
+      let links = '';
+      if (Array.isArray(match.linksRead) && match.linksRead.length) {
+        const ok = match.linksRead.filter(l => l.ok).length;
+        links = `<br>Links read: <b>${ok}/${match.linksRead.length}</b> reachable`
+          + match.linksRead.map(l => `<br>&nbsp;&nbsp;${l.ok ? '✓' : '✕'} <span style="opacity:.8">${esc(l.url)}</span>${l.ok ? ` (${l.chars} chars)` : ` — ${esc(l.error || 'failed')}`}`).join('');
+      }
+      const q = (quota || match.quota);
+      const quotaLine = q && q.limit
+        ? `<br>CricAPI quota: <b>${q.used}/${q.limit}</b> calls used today${q.used >= q.limit ? ' — exhausted, resets at midnight IST' : ''}` : '';
+      // A cached answer that looks identical to a live one is how a stale result
+      // survives three re-searches without the operator noticing.
+      const cacheLine = match.fromCache
+        ? `<br><b>Served from cache</b> (stored ${humanAge(match.cacheAgeMs)} ago) — press <b>Search again</b> or <b>Clear all previous cache</b> to force a live lookup.`
+        : (match.source === 'cricapi' ? '<br>Live lookup — not from cache.' : '');
+      return req + tried + links + quotaLine + cacheLine;
+    }
+
+    function humanAge(ms) {
+      const m = Math.round((ms || 0) / 60000);
+      if (m < 1) return 'less than a minute';
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60);
+      return `${h}h ${m % 60}m`;
+    }
+
+    function renderFetchFailure(match, quota) {
+      const hint = match.quotaBlocked
+        ? 'The daily CricAPI allowance is spent. It resets at midnight IST — or paste a scorecard link and try again, which lets the search backup work from the page itself.'
+        : 'Check the spelling of both team names, or paste a scorecard/series link above to point the search at the right tournament.';
+      $('fetchPreview').innerHTML =
+        `<div class="fetchcard">
+          <h3>No match found</h3>
+          <div class="fwarn bad"><div>${esc(match.error || 'Nothing resolved.')}</div></div>
+          <div class="fmeta">${esc(hint)}</div>
+          <div class="fnote">${fetchDiagnostics(match, quota)}</div>
+        </div>`;
+    }
+
+    // A draw, a tie or a no-result has no winner to name — say what happened
+    // instead of rendering "No Winner won by <status>".
+    function resultText(match) {
+      if (match.winner && match.margin) return `${match.winner} won by ${match.margin}`;
+      if (match.winner) return `${match.winner} won`;
+      return match.status || 'No result';
     }
 
     function renderFetchPreview(provider, match, x, y) {
@@ -1332,29 +1490,20 @@
         : match.source === 'gemini' ? 'Gemini (grounded search — backup)' : 'offline snapshot';
       let src = `Source: <b>${esc(srcLabel)}</b>`;
       if (match.source === 'stub' && match.fallbackReason) src += ` — ${esc(match.fallbackReason)}`;
-      const req = match.requested && (match.requested.teamA || match.requested.teamB)
-        ? `<br>Searched: <b>${esc(match.requested.teamA || '?')}</b> v <b>${esc(match.requested.teamB || '?')}</b>` : '';
-      let linksLine = '';
-      if (Array.isArray(match.linksRead) && match.linksRead.length) {
-        const ok = match.linksRead.filter(l => l.ok).length;
-        linksLine = `<br>Links read: <b>${ok}/${match.linksRead.length}</b> reachable`
-          + match.linksRead.map(l => `<br>&nbsp;&nbsp;${l.ok ? '✓' : '✕'} <span style="opacity:.8">${esc(l.url)}</span>${l.ok ? ` (${l.chars} chars)` : ` — ${esc(l.error || 'failed')}`}`).join('');
-      }
+      const diag = fetchDiagnostics(match);
       const fmtNote = match.format && match.format !== 'T20'
         ? `<br>Note: this is an <b>${esc(match.format)}</b> fixture — phase splits are estimated and the T20 engine reads the totals literally.` : '';
       const warnHtml = (match.warnings || []).length
         ? `<div class="fwarn${match.rejected ? ' bad' : ''}">${match.rejected ? '✕ REJECTED' : '⚠ CHECK'}${(match.warnings || []).map(w => `<div>${esc(w)}</div>`).join('')}</div>`
         : (match.verified ? `<div class="fok">✓ verified — teams and date check out</div>` : '');
-      const triedHtml = (match.tried || []).length
-        ? `<br>Resolver chain: ${(match.tried || []).map(t => esc(t)).join(' → ')}` : '';
       $('fetchPreview').innerHTML =
         `<div class="fetchcard">
           <h3>Fetched: ${esc(match.home)} v ${esc(match.away)}</h3>
           ${warnHtml}
           <div class="fmeta">${esc(match.competition)} · ${esc(match.venue)} · ${esc(match.date)}<br>
-            Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(match.winner)} won by ${esc(match.margin)}</b></div>
+            Toss: ${esc(match.tossWinner)} (${esc(match.tossDecision)}) · Result: <b>${esc(resultText(match))}</b></div>
           ${line(match.innings[0])}${line(match.innings[1])}
-          <div class="fnote">${src}${req}${triedHtml}${linksLine}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
+          <div class="fnote">${src}${diag}<br>Numbers applied to <b>${esc(short(x))}</b> (batting first) and <b>${esc(short(y))}</b>. Click <b>Simulate Match</b> to push it into the table and rewrite their AI summaries.${fmtNote}</div>
         </div>`;
     }
 
@@ -1366,32 +1515,43 @@
       return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p}" stroke="${sec}" stroke-width="3"/>` +
         `<text x="${cx}" y="${cy}" font-size="${fs}" font-weight="800" fill="${textOn(p)}" text-anchor="middle" dominant-baseline="central">${esc(sh)}</text>`;
     }
-    function tableSvg() {
+    // The exported table is a broadcast graphic: it sits over a live feed, so it
+    // carries one line per team — rank, crest, name, three headline numbers,
+    // score — and nothing else. The prose blurbs and the long-tail metrics stay
+    // in the app; on screen at 1080p they are unreadable clutter anyway.
+    // transparent = no page background and a translucent dark row plate, so the
+    // feed shows through between and behind the rows.
+    function tableSvg(opts) {
+      const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      const W = 940, pad = 20, headerH = 78, rh = 80, footerH = 40;
+      const W = 940, pad = 20, headerH = 74, rh = 58, footerH = 34;
       const H = headerH + n * rh + footerH;
-      const A = '#0b5cff', ink = '#12151a', muted = '#5b6472', line = '#e4e8ee', up = '#12864f', down = '#c0392b', card = '#ffffff', bg = '#f4f6f9';
+      const P = transparent
+        ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
+        : { A: '#0b5cff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee', up: '#12864f', down: '#c0392b', card: '#ffffff' };
+      const colScore = W - pad - 20, colMv = W - pad - 96, colStats = W - pad - 150;
+      // Header and footer sit outside the row plates, straight on the feed —
+      // a drawn-behind stroke keeps them legible over a bright pitch too.
+      const halo = transparent
+        ? ' stroke="rgba(6,9,14,.75)" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round"' : '';
       let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
-      s += `<rect width="${W}" height="${H}" fill="${bg}"/>`;
-      s += `<text x="${pad}" y="40" font-size="26" font-weight="800" fill="${ink}">${esc(st.league)} — Power Rankings</text>`;
-      s += `<text x="${pad}" y="63" font-size="13" fill="${muted}">Season ${esc(st.season)} · ${st.matchCount} matches · generated ${new Date().toISOString().slice(0, 10)}</text>`;
+      if (!transparent) s += `<rect width="${W}" height="${H}" fill="#f4f6f9"/>`;
+      s += `<text x="${pad}" y="36" font-size="26" font-weight="800" fill="${P.ink}"${halo}>${esc(st.league)} — Power Rankings</text>`;
+      s += `<text x="${pad}" y="58" font-size="13" fill="${P.muted}"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
       rows.forEach((r, i) => {
-        const y = headerH + i * rh, ch = rh - 12, cyc = y + ch / 2;
-        s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="12" fill="${card}" stroke="${line}"/>`;
-        s += `<text x="${pad + 30}" y="${cyc + 9}" font-size="26" font-weight="800" fill="${A}" text-anchor="middle">${r.rank}</text>`;
-        s += crestSvgAt(r.name, pad + 82, cyc, 17);
-        s += `<text x="${pad + 112}" y="${y + 28}" font-size="15" font-weight="700" fill="${ink}">${esc(r.name)} <tspan font-size="11" font-weight="400" fill="${muted}">${esc(r.short)}</tspan></text>`;
+        const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
+        s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
+        s += `<text x="${pad + 30}" y="${cyc}" font-size="24" font-weight="800" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += crestSvgAt(r.name, pad + 80, cyc, 16);
+        s += `<text x="${pad + 108}" y="${cyc}" font-size="16" font-weight="700" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 26))} <tspan font-size="11" font-weight="400" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% · ${r.formRecord.wins}/${r.formRecord.of} form`;
+        s += `<text x="${colStats}" y="${cyc}" font-size="12" fill="${P.muted}" text-anchor="end" dominant-baseline="central">${esc(stats)}</text>`;
         const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
-        const mvc = r.movement === 'up' ? up : r.movement === 'down' ? down : muted;
-        s += `<text x="${W - pad - 92}" y="${y + 28}" font-size="13" font-weight="700" fill="${mvc}">${mv}</text>`;
-        s += `<text x="${W - pad - 20}" y="${y + 30}" font-size="22" font-weight="800" fill="${ink}" text-anchor="end">${r.score.toFixed(1)}</text>`;
-        s += `<text x="${W - pad - 20}" y="${y + 46}" font-size="10" fill="${muted}" text-anchor="end">score</text>`;
-        const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% win · ${fmtSigned(r.rollingNRR, 2)} rNRR · ${r.formRecord.wins}/${r.formRecord.of} form`;
-        s += `<text x="${pad + 112}" y="${y + 46}" font-size="11.5" fill="${muted}">${esc(stats)}</text>`;
-        const b = (st.blurbs[r.name] || {}).text || '';
-        s += `<text x="${pad + 112}" y="${y + 63}" font-size="12" fill="${ink}">${esc(truncate(b, 100))}</text>`;
+        const mvc = r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.muted;
+        s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
+        s += `<text x="${colScore}" y="${cyc}" font-size="22" font-weight="800" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
       });
-      s += `<text x="${pad}" y="${H - 16}" font-size="11" fill="${muted}">Ranking computed deterministically from match data — win%, NRR, form, phase splits, strength of schedule. The model writes only the prose.</text>`;
+      s += `<text x="${pad}" y="${H - 12}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
       s += `</svg>`;
       return s;
     }
@@ -1401,7 +1561,10 @@
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     }
-    function rasterize(svg, scale) {
+    // opaque=true paints a white plate under the graphic (PDF has no alpha
+    // channel). Left false, the PNG keeps its alpha so it can be keyed over the
+    // live feed straight from the vision mixer.
+    function rasterize(svg, scale, opaque) {
       return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         const img = new Image();
@@ -1409,7 +1572,7 @@
           const c = document.createElement('canvas');
           c.width = img.width * scale; c.height = img.height * scale;
           const ctx = c.getContext('2d');
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+          if (opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); }
           ctx.setTransform(scale, 0, 0, scale, 0, 0);
           ctx.drawImage(img, 0, 0);
           URL.revokeObjectURL(url); resolve(c);
@@ -1419,13 +1582,18 @@
       });
     }
     function exportName(ext) { return `${(STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}-power-rankings.${ext}`; }
-    function downloadSvg() { saveBlob(new Blob([tableSvg()], { type: 'image/svg+xml' }), exportName('svg')); }
+    function isTransparent() { const cb = $('bgTransparent'); return !cb || cb.checked; }
+    function downloadSvg() {
+      saveBlob(new Blob([tableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
+    }
     async function downloadPng() {
-      const c = await rasterize(tableSvg(), 2);
+      const tr = isTransparent();
+      const c = await rasterize(tableSvg({ transparent: tr }), 2, !tr);
       c.toBlob(b => saveBlob(b, exportName('png')), 'image/png');
     }
+    // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
-      const c = await rasterize(tableSvg(), 2);
+      const c = await rasterize(tableSvg({ transparent: false }), 2, true);
       const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.92));
       saveBlob(new Blob([buildPdf(jpeg, c.width, c.height)], { type: 'application/pdf' }), exportName('pdf'));
     }
@@ -1466,7 +1634,9 @@
     ['runsX', 'runsY', 'battingFirst', 'winner', 'ballsX', 'ballsY'].forEach(id => $(id).addEventListener('change', fillDefaults));
     $('btnAddLink').addEventListener('click', addLink);
     $('linkInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } });
-    $('btnFetch').addEventListener('click', fetchMatchResult);
+    $('btnFetch').addEventListener('click', () => fetchMatchResult(false));
+    $('btnRefetch').addEventListener('click', () => fetchMatchResult(true));
+    $('btnClearCache').addEventListener('click', clearMatchCache);
     $('dlPng').addEventListener('click', () => downloadPng().catch(e => $('err').textContent = e.message));
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);

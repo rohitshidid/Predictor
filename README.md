@@ -29,13 +29,15 @@ Copy the example env file and fill in your Gemini API key:
 cp .env.example .env
 ```
 
-Open `.env` and set your key:
+Open `.env` and set your keys:
 
 ```
-GEMINI_API_KEY=your_key_here
+CRICAPI_KEY=your_cricapi_key_here
+GEMINI_API_KEY=your_gemini_key_here
 ```
 
-> **No key?** That's fine. The app runs in template mode — rankings are fully computed, AI blurbs are replaced with auto-generated text from the stats.
+- **`CRICAPI_KEY`** powers the *"Fetch latest match between A and B"* search. Get one free at [cricapi.com](https://cricapi.com). Set this if you want match search to work — see [Match search](#match-search) below.
+- **`GEMINI_API_KEY`** powers the AI blurbs. Without it the app runs in template mode: rankings are still fully computed, blurbs are auto-generated from the stats.
 
 ### 3. Start the server
 
@@ -72,6 +74,7 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 |---|---|
 | `npm start` | Start the interactive ranking server on port 3000 |
 | `node server.js` | Same as above |
+| `npm test` | Run the match-resolution test suite (offline — spends no API calls) |
 | `node src/generateSeason.js` | Regenerate the synthetic IPL season data in `data/` |
 
 ---
@@ -82,6 +85,12 @@ All settings live in `.env`. Copy `.env.example` to get started.
 
 | Variable | Default | Description |
 |---|---|---|
+| `CRICAPI_KEY` | *(empty)* | Your [CricAPI](https://cricapi.com) key. **Required for the "Fetch latest match between A and B" box to work properly.** Without it the search falls back to grounded AI search, which reliably answers "latest India v Pakistan" with a famous *old* match. |
+| `CRICAPI_MAX_SERIES_TERMS` | `4` | How many series searches one lookup may spend. Lower it to stretch a free plan, raise it for better coverage. |
+| `CRICAPI_MAX_SERIES_PROBE` | `4` | How many candidate series one lookup may open. |
+| `MATCH_TOURNAMENTS` | *(see `.env.example`)* | Extra series-search terms for multi-team events. A World Cup series is named after the event, not the teams, so a plain "India"/"Pakistan" search cannot see it. |
+| `MATCH_STALE_DAYS` | `90` | Older than this, a resolved match is shown with a "confirm this is really the latest" warning. |
+| `MATCH_MAX_AGE_DAYS` | `365` | Older than this, a resolved match is **rejected** — it cannot be "the latest". |
 | `GEMINI_API_KEY` | *(empty)* | Your Google Gemini API key. Without this, AI blurbs are disabled and template blurbs are used instead. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Model used for grounded verification and the critic step. |
 | `GEMINI_INGEST_MODEL` | `gemini-2.5-flash-lite` | Model used for prose generation (cheaper, high volume). |
@@ -122,19 +131,78 @@ Predictor/
 
 The ranking engine scores every team on 9 factors and sorts them highest to lowest. All weights are tunable in `weights.config.json` without touching any code.
 
-| Factor | What it measures |
-|---|---|
-| **Win %** | Percentage of matches won this season |
-| **Win quality** | How convincingly — an 8-wicket win scores higher than a 1-run squeaker |
-| **Rolling NRR** | Net Run Rate over the last 5 games (not the whole season) |
-| **Form (momentum)** | Recent results, weighted so the latest game counts most |
-| **Powerplay** | Batting vs bowling dominance in overs 1–6 |
-| **Death overs** | Batting vs bowling performance in overs 16–20 |
-| **Str. of schedule** | Average Win% of opponents faced |
-| **Home/away** | Consistency at home vs. away venues |
-| **Key players** | Number of ICC top-30 ranked players available |
+| Factor | Weight | What it measures |
+|---|---|---|
+| **Win %** | 0.30 | Percentage of matches won this season |
+| **Death overs** | 0.18 | Batting vs bowling performance in overs 16–20 |
+| **Powerplay** | 0.16 | Batting vs bowling dominance in overs 1–6 |
+| **Rolling NRR** | 0.09 | Net Run Rate over the last 5 games (not the whole season) |
+| **Form (momentum)** | 0.08 | Recent results, weighted so the latest game counts most |
+| **Home/away** | 0.08 | Consistency at home vs. away venues |
+| **Key players** | 0.05 | Number of ICC top-30 ranked players available |
+| **Win quality** | 0.03 | How convincingly — an 8-wicket win scores higher than a 1-run squeaker |
+| **Str. of schedule** | 0.03 | Average Win% of opponents faced |
 
-See [`parameters.md`](parameters.md) for the full formula behind each metric.
+See [`parameters.md`](parameters.md) for the full formula behind each metric, and the [weights study](parameters.md#how-these-weights-were-derived) for how the numbers above were arrived at.
+
+### Where the weights come from
+
+They are fitted, not guessed. 300 independently seeded synthetic seasons are generated, each team carrying the latent `strength` the generator used to produce it; every metric is normalized exactly as the engine does it; then the weights that best make the ranking track true strength are solved for, subject to `w ≥ 0` and `Σw = 1`, fitted on two-thirds of the seasons and scored on the held-out third.
+
+| Weights | Held-out Spearman vs true strength | Correct #1 |
+|---|---|---|
+| Previous hand-set | 0.694 | 46% |
+| Current (fitted) | 0.760 | 50% |
+
+Floors and caps keep the table publishable — results must visibly drive it, and no single family may dominate. `weights.config.json` carries a per-metric note explaining each number.
+
+> **Caveat:** the only ground truth available today is the synthetic generator, so phase metrics score better here than they likely would against real cricket. Re-fit once a season of live CricAPI results has accumulated.
+
+---
+
+## Match search
+
+Type two team names into **Fetch latest match between** and press **Fetch match result**. The app resolves the most recent *completed* fixture between them and fills the simulate form with the real scorecard.
+
+### How a match is resolved
+
+Two resolvers run in order, and the answer is verified before it can touch the table.
+
+1. **CricAPI (the structured feed)** — authoritative. The match is picked by filtering and sorting a real match index *in code*, so it cannot be invented. Requires `CRICAPI_KEY`.
+2. **Gemini + Google Search** — backup only, used when the feed is unavailable. The prompt pins today's date and an explicit freshness window, and an out-of-window answer is thrown back at the model once before being given up on.
+3. **Verification gate** — whatever comes back must be *these two teams* and must be recent. A match older than `MATCH_MAX_AGE_DAYS` is rejected outright, and a squad qualifier counts as a different team, so a request for India never resolves to India Women, India A or India U19.
+
+If nothing resolves, the card says so and shows the resolver chain. It never falls back to an unrelated fixture.
+
+### The free plan is 100 calls a day
+
+That is the real constraint on this feature, so the lookup is built around it:
+
+- **A completed match in the live window costs one call.** That is the common case — a fixture that just ended.
+- **A cold lookup for a brand-new team pair costs at most 9 calls** (`1 + CRICAPI_MAX_SERIES_TERMS + CRICAPI_MAX_SERIES_PROBE + 1`).
+- **Repeat searches cost nothing.** Responses are cached on disk under `.cache/`, keyed so that "India v Pakistan" and "Pakistan v India" are one question. Series lists last a day, finished scorecards last a month — they cannot change.
+- **A blown quota stops immediately** rather than spending the rest of the allowance proving it is blown.
+
+The card shows `CricAPI quota: n/100 calls used today` after every fetch. The allowance resets at **midnight IST**.
+
+If you run out mid-session, paste a scorecard link into **Match links** — that gives the AI backup the page text to work from, so it can still answer without the feed.
+
+### When the cached answer is stale
+
+A cached answer always says so: the card reads *"Served from cache (stored 40 min ago)"*. A live one reads *"Live lookup — not from cache."* Two buttons sit under **Fetch match result**:
+
+| Button | What it does |
+|---|---|
+| **↻ Search again (ignore cache)** | Re-runs *this* lookup against the feed, ignoring every stored response. Use it when you have added a link, or when a new match has just finished. |
+| **🗑 Clear all previous cache** | Drops every stored response so the next search of any pair starts completely cold. |
+
+> Deleting the `.cache/` folder by hand only clears the disk copy — a running server still holds its in-memory mirror. Use the button, or restart the server after deleting.
+
+### Any format counts
+
+The resolver never filters by format. Whatever these two teams played most recently — T20, ODI, Test, T10 — is what comes back, chosen purely by date. A draw, tie or no-result reports its own status instead of naming a winner.
+
+Non-T20 results are still loaded into a T20 engine, so the card warns you: phase splits are estimated and the totals are read literally.
 
 ---
 
@@ -267,6 +335,15 @@ Hard-refresh the browser (`Cmd+Shift+R` on Mac).
 
 **AI blurbs not generating?**
 Check that `GEMINI_API_KEY` is set in `.env` (not `.env.example`) and the server was restarted after editing the file.
+
+**Match search returns an old match, or says "REJECTED"?**
+The label under *Fetch latest match between* tells you which resolver is in play. If it reads `no CRICAPI_KEY, using AI search`, set `CRICAPI_KEY` in `.env` and restart — grounded search alone tends to return the most *written-about* fixture rather than the most recent one, which is exactly what the rejection is catching.
+
+**Match search says the quota is exhausted?**
+The free CricAPI plan is 100 calls/day and resets at midnight IST. The fetch card shows the current count. Until it resets, paste a scorecard link into **Match links** so the AI backup has a page to read.
+
+**Match search says "no completed match found"?**
+Check both team names are spelled as the feed names them, then paste a link to the match or its series — the series slug in the URL is used as a search term and usually pins it down immediately.
 
 **Cloudflare Tunnel not connecting?**
 Make sure the server is running first (`node server.js`), then start the tunnel. If `cloudflared` is not found, run `brew install cloudflare/cloudflare/cloudflared`.

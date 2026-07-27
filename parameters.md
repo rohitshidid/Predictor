@@ -1,8 +1,12 @@
 # parameters.md — T20 Power Ranking: Additional Parameters
 
-> **Current state:** 4 metrics, all pure team-level counting stats.
+> **Original state (2026-07-23):** 4 metrics, all pure team-level counting stats.
 > `Win% (0.45) | NRR (0.25) | Recent Form/last-5 (0.20) | Strength of Schedule (0.10)`
 > The goal is to make the math more deterministic, less mystic, and more predictive.
+>
+> **Current state (2026-07-25):** all 12 parameters below are implemented — 9
+> always-on, 5 optional. The weights are no longer hand-set; see
+> [How these weights were derived](#how-these-weights-were-derived).
 
 ---
 
@@ -161,6 +165,61 @@ momentum_t = α × latest_result + (1 - α) × momentum_t-1
 Where `α` (0–1) controls how fast momentum decays. A configurable `alpha` in `weights.config.json`.
 
 > **Why:** This produces a continuous, smooth momentum signal rather than a hard 5-game window cutoff. A team that just won 3 straight is meaningfully different from one that won games 1, 3, and 5 of the last 5.
+
+---
+
+## How these weights were derived
+
+_Added 2026-07-25. Supersedes the suggested block below, which was a hand-set starting point._
+
+The weights are now **fitted**, not chosen by feel.
+
+### Method
+
+A power ranking's job is to estimate how good each team actually is, so the fit targets exactly that:
+
+1. Generate **300 independently seeded synthetic seasons**. Each season re-draws every team's latent `strength` — the number the generator uses to produce its results — so `strength` is ground truth the engine never sees.
+2. For each team in each season, compute the **normalized metric vector exactly as `engine.js` does**, giving 2,100 team-season observations across 14 metrics.
+3. Solve for the weights maximizing `corr(Σ wₖ·nₖ , strength)` subject to `w ≥ 0` and `Σw = 1` — projected-gradient ascent on the correlation, with a ridge term for the near-singular directions. Rank order is invariant to affine transforms, so correlation is the right objective for a ranking.
+4. Fit on 66% of seasons, score on the held-out 34%.
+
+### What the data said
+
+| Metric | corr. with true strength | spread across teams | verdict |
+|---|---|---|---|
+| **deathOversNet** | **+0.87** | 0.115 | strongest single correlate — as `parameters.md` predicted |
+| **powerplayDominance** | **+0.80** | 0.101 | second strongest |
+| homeAwayAdjustment | +0.68 | 0.198 | good, but 0.99 correlated with Win% |
+| winPct | +0.68 | 0.196 | strong, but noisy over ~12 games |
+| chaseSet | +0.65 | 0.207 | 0.95 correlated with Win% — adds nothing new |
+| expectedWins (xW) | +0.68 | 0.021 | 0.91 correlated with Win% — adds nothing new |
+| form | +0.53 | 0.263 | 0.76 correlated with Win%, 0.81 with rolling NRR |
+| rollingNRR | +0.49 | 0.174 | overlaps form heavily |
+| top4Consistency | +0.62 | 0.044 | the only optional metric with measurable marginal value |
+| keyPlayerAvailability | +0.08 | 0.099 | invisible in synthetic data — kept on domain grounds |
+| **marginAdjustedWin** | **+0.01** | 0.032 | **no signal as currently computed** |
+| bowlingConcentration | −0.02 | 0.038 | no signal |
+| **sos** | **−1.00** | 0.033 | **sign is inverted in a round robin** |
+
+### Two findings worth acting on
+
+**`marginAdjustedWin` carries no signal as implemented.** It averages only over matches *won*, and for a chase it reads `(120 − balls)/120`, so a side that cruises home and one that scrapes home score alike. It held 0.10 of the ranking — a tenth of the table spent on noise. Cut to 0.03 pending a rework of the metric itself; re-weight after, not before.
+
+**`sos` is inverted in a complete round robin.** Every team plays every other, so a team's opponents' average Win% is close to the mirror of its own — measured at r = −1.00 against strength. The engine adds it *positively*, so as implemented it **penalises the best teams**. Cut to a 0.03 floor. It only carries real information on an unbalanced schedule (internationals, or mid-season before the fixtures even out). Before raising it, either invert the sign or restrict it to unbalanced schedules.
+
+### Result
+
+| Weights | Held-out Spearman | Correct #1 | Top-3 contains true best |
+|---|---|---|---|
+| Previous hand-set | 0.694 | 46.1% | 85.3% |
+| **Current (fitted)** | **0.760** | **50.0%** | **90.2%** |
+| Unconstrained best fit | 0.892 | 76.5% | 99.0% |
+
+The unconstrained fit is *not* shipped: it puts ~75% of the ranking on the two phase metrics and drops Win% to 0.05. That wins on this simulator but would produce a table where a team can win every match and not rank first — unpublishable, and over-fitted to a generator that derives phase splits directly from `strength`.
+
+### Caveat, stated plainly
+
+The only ground truth available today is the synthetic generator. It maps `strength` onto phase shares by a clean linear law (`deathShare = 0.34 + (strength − 0.5)·0.08 ± 0.025`), so phase metrics read almost straight off team quality. Real teams have phase *styles* that do not reduce to one number, so these weights likely over-credit phase play. **Re-fit against real results once a season of live CricAPI data has accumulated** — the method above transfers unchanged, only the target changes from `strength` to actual match outcomes.
 
 ---
 

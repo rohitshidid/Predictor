@@ -288,13 +288,25 @@ function normalizeGemini(d, sources) {
   };
 }
 
-async function fetchViaGemini(o, linksRead) {
-  if (!cfg.isConfigured()) throw new Error('GEMINI_API_KEY not set');
-  const { generateGrounded } = require('./blurbs');
-  const excerpts = (linksRead || []).filter((l) => l.ok)
-    .map((l, i) => `SOURCE ${i + 1} (${l.url}):\n${l.text}`).join('\n\n').slice(0, 24000);
-  const who = (o.teamA && o.teamB) ? `the LATEST COMPLETED men's cricket match between "${o.teamA}" and "${o.teamB}"` : 'the cricket match described in the sources below';
-  const prompt = `You are a cricket data extractor. Identify ${who}. Use Google Search to confirm the most recent result and the exact scorecard.${excerpts ? `\n\nAlso use these page excerpts the user provided:\n${excerpts}` : ''}
+// The model has no clock. Left to itself it answers "latest India v Pakistan"
+// with the most WRITTEN-ABOUT fixture rather than the most recent one — which is
+// how a 2024 T20 World Cup game came back as the answer in 2026. Pinning today's
+// date and an explicit freshness window into the prompt, and rejecting anything
+// outside it, is what turns this from a coin flip into a usable backup.
+function buildGeminiPrompt(o, excerpts, correction) {
+  const today = new Date().toISOString().slice(0, 10);
+  const earliest = new Date(Date.now() - MAX_AGE_DAYS * 86400000).toISOString().slice(0, 10);
+  const who = (o.teamA && o.teamB)
+    ? `the LATEST COMPLETED men's senior international cricket match between "${o.teamA}" and "${o.teamB}"`
+    : 'the cricket match described in the sources below';
+  return `You are a cricket data extractor. Identify ${who}. Use Google Search to confirm the most recent result and the exact scorecard.
+
+TODAY'S DATE IS ${today}. This is not optional context — it is the whole question.
+- Return the most recent match that had ALREADY FINISHED on or before ${today}.
+- Its date MUST fall between ${earliest} and ${today}. A famous older match is a WRONG answer, however well documented it is.
+- Search for fixtures from the last few months FIRST. Do not answer from memory.
+- Exclude women's, Under-19, A-team and domestic-club fixtures unless explicitly asked.
+- If you cannot verify any completed match in that window, return exactly {"notFound": true, "reason": "<one sentence>"} and nothing else. An honest "not found" is correct; a stale match is not.${correction ? `\n\nCORRECTION — your previous answer was rejected: ${correction} Search again and return a match inside the window, or {"notFound": true}.` : ''}${excerpts ? `\n\nAlso use these page excerpts the user provided:\n${excerpts}` : ''}
 
 Return STRICT JSON ONLY (no prose, no markdown) in EXACTLY this schema. All numbers must be real from the scorecard; use null for a phase split you cannot find:
 {
@@ -309,8 +321,39 @@ Return STRICT JSON ONLY (no prose, no markdown) in EXACTLY this schema. All numb
  "bowlers": { "<team>": [ {"name": string, "wkts": number} ] }
 }
 Where top4 = combined runs of that innings' top-4 batting positions, and bowlTop2 = wickets taken by the OTHER team's two leading bowlers in that innings.`;
-  const g = await generateGrounded(prompt);
-  return normalizeGemini(extractJson(g.text), g.sources);
+}
+
+// How stale an answer may be before it is not "the latest" at all. Anything past
+// this is thrown back at the model once with the reason, because a grounded
+// search that was pointed at the wrong decade usually corrects when told so.
+function staleness(dateStr) {
+  const ts = Date.parse(dateStr);
+  if (!Number.isFinite(ts)) return null;
+  return Math.floor((Date.now() - ts) / 86400000);
+}
+
+async function fetchViaGemini(o, linksRead) {
+  if (!cfg.isConfigured()) throw new Error('GEMINI_API_KEY not set');
+  const { generateGrounded } = require('./blurbs');
+  const excerpts = (linksRead || []).filter((l) => l.ok)
+    .map((l, i) => `SOURCE ${i + 1} (${l.url}):\n${l.text}`).join('\n\n').slice(0, 24000);
+
+  let correction = null;
+  let lastStale = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const g = await generateGrounded(buildGeminiPrompt(o, excerpts, correction));
+    const raw = extractJson(g.text);
+    if (raw && raw.notFound) {
+      throw new Error(`no recent match found${raw.reason ? ` — ${String(raw.reason).slice(0, 160)}` : ''}`);
+    }
+    const m = normalizeGemini(raw, g.sources);
+    const age = staleness(m.date);
+    if (age == null || age <= MAX_AGE_DAYS) return m;
+    // Out of window. Say exactly what was wrong and let it search again.
+    lastStale = m;
+    correction = `you returned a match dated ${m.date}, which is ${age} days old and therefore not the latest.`;
+  }
+  throw new Error(`only found a stale match (${lastStale.date}) — Gemini could not confirm a recent ${o.teamA} v ${o.teamB} fixture`);
 }
 
 // ---- CricAPI (structured feed — the authoritative resolver) ------------------
@@ -320,25 +363,28 @@ Where top4 = combined runs of that innings' top-4 batting positions, and bowlTop
 // exactly the failure mode we hit when Gemini answered a "latest India v
 // Pakistan" query with the famous 2024 T20 World Cup game.
 const CRICAPI = 'https://api.cricapi.com/v1';
+const cache = require('./cache');
 
 function cricapiKey() {
-  return (process.env.CRICAPI_KEY || '').trim();
+  return cfg.cricapi.key;
 }
 
-// The free plan allows only ~100 calls/day and one resolve costs several, so
-// responses are cached in memory. Series lists and finished scorecards do not
-// change, which makes repeat lookups free.
-const CACHE_TTL_MS = num(process.env.CRICAPI_CACHE_MS, 6 * 3600 * 1000);
-const cricapiCache = new Map();
+// Quota counters, lifted from the envelope every response carries. They are
+// surfaced to the operator because an exhausted plan and a genuinely unplayed
+// fixture look identical from the UI otherwise — and the first is what actually
+// happens on a 100-calls-a-day plan.
+let quota = null;
+function quotaState() { return quota; }
 
-async function cricapiGet(path, params) {
+// A blown daily allowance is its own condition: the answer is "come back later",
+// not "these two never played". It must not be swallowed into a not-found.
+class QuotaError extends Error {}
+const QUOTA_RE = /hits?\s+(today\s+)?exceed|limit\s+exceed|quota|too many requests/i;
+
+async function cricapiCall(path, params) {
   const key = cricapiKey();
   if (!key) throw new Error('CRICAPI_KEY not set');
   const qs = new URLSearchParams({ apikey: key, ...params }).toString();
-  const cacheKey = `${path}?${new URLSearchParams(params).toString()}`;
-  const hit = cricapiCache.get(cacheKey);
-  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
-
   const res = await fetch(`${CRICAPI}/${path}?${qs}`, { signal: AbortSignal.timeout(cfg.llm.timeoutMs) });
   const text = await res.text();
   let data;
@@ -347,9 +393,28 @@ async function cricapiGet(path, params) {
     // failure it is instead of letting it look like an empty result.
     throw new Error(`cricapi ${path}: HTTP ${res.status} non-JSON response (${text.slice(0, 80)})`);
   }
+  const info = data && data.info;
+  if (info && Number.isFinite(Number(info.hitsToday))) {
+    quota = { used: Number(info.hitsToday), limit: Number(info.hitsLimit) || null, at: Date.now() };
+  }
   if (!res.ok) throw new Error(`cricapi ${path}: HTTP ${res.status}`);
-  if (data.status && data.status !== 'success') throw new Error(`cricapi ${path}: ${data.status}${data.reason ? ' — ' + data.reason : ''}`);
-  cricapiCache.set(cacheKey, { at: Date.now(), data });
+  if (data.status && data.status !== 'success') {
+    const reason = String(data.reason || data.status);
+    if (QUOTA_RE.test(reason)) {
+      const n = quota && quota.limit ? `${quota.used}/${quota.limit}` : 'all';
+      throw new QuotaError(`CricAPI daily quota exhausted (${n} calls used today) — it resets at midnight IST`);
+    }
+    throw new Error(`cricapi ${path}: ${data.status}${data.reason ? ' — ' + data.reason : ''}`);
+  }
+  return data;
+}
+
+// Cached GET. `ttl` says how long this KIND of document stays fresh: the live
+// window is minutes, a series list is a day, a finished scorecard is forever.
+// Only successful responses are stored, so a quota failure is never cached.
+async function cricapiGet(path, params, ttl, refresh = false) {
+  const key = `${path}?${new URLSearchParams(params).toString()}`;
+  const { data } = await cache.through('cricapi', key, ttl, () => cricapiCall(path, params), refresh);
   return data;
 }
 
@@ -374,6 +439,34 @@ function teamMatches(candidate, wanted) {
   // One side carrying a squad qualifier the other lacks = not the same team.
   if (SQUAD_QUALIFIER.test(cRaw) !== SQUAD_QUALIFIER.test(wRaw)) return false;
   return c.includes(w) || w.includes(c);
+}
+
+// CricAPI writes series dates in two different shapes: `startDate` is usually a
+// full ISO date, but `endDate` is routinely year-less ("Mar 08", "Oct 14").
+// Date.parse resolves those against year 2001, which silently backdates a
+// current tournament by 25 years — enough to make a 2026 World Cup look older
+// than a 2025 tour and be skipped as unable to hold anything newer.
+//
+// `reference` supplies the year a year-less date belongs to. `rollForward` is
+// for end dates, which must never precede their own start — a range that wraps
+// the new year ("Dec 13" -> "Jan 07") belongs to the following year. Anything
+// unparseable returns 0, which every caller reads as "unknown, do not skip"
+// rather than as a real date.
+function seriesDate(raw, reference, rollForward = false) {
+  const s = String(raw || '').trim();
+  if (!s) return 0;
+  const direct = Date.parse(s);
+  if (/\d{4}/.test(s) && Number.isFinite(direct)) return direct;
+  const ref = Number.isFinite(reference) ? reference : Date.now();
+  const year = new Date(ref).getUTCFullYear();
+  const at = (y) => Date.parse(`${s} ${y} UTC`);
+  let guess = at(year);
+  if (!Number.isFinite(guess)) return 0;
+  if (guess < ref) {
+    const next = at(year + 1);
+    if (rollForward && Number.isFinite(next)) guess = next;
+  }
+  return Number.isFinite(guess) ? guess : 0;
 }
 
 const isFinished = (m) => {
@@ -422,25 +515,46 @@ function linkHints(links) {
     }
     if (tokens.length >= 3) terms.push(tokens.slice(-3).join(' '));
   }
-  return terms;
+  // Fewest words first. The search matches on the series NAME, so the broad form
+  // ("t20 world cup") is the one that actually hits "ICC Mens T20 World Cup
+  // 2026"; the long form ("icc men t20 world cup") usually matches nothing. With
+  // a capped term budget the broad ones have to go first, and `relevance()`
+  // below still picks the right series out of whatever comes back.
+  return [...new Set(terms)].sort((a, b) => a.split(' ').length - b.split(' ').length);
 }
 
-async function cricapiFindLatest(teamA, teamB, links = []) {
+async function cricapiFindLatest(teamA, teamB, links = [], refresh = false) {
   const found = [];
   // Transport/API errors must never masquerade as "no such match" — that is what
   // hid a proxy failure behind a misleading "not found" during development.
   const errors = [];
+  // A quota failure outranks every other error: once the allowance is gone the
+  // remaining lookups are guaranteed to fail too, so stop rather than spend
+  // (already-counted) calls proving it.
+  let quotaHit = null;
+  const note = (label, e) => {
+    if (e instanceof QuotaError) quotaHit = quotaHit || e;
+    else errors.push(`${label}: ${e.message}`);
+  };
 
   // 1. cricScore — the current window. Covers the production case (a fixture
   //    that just ended) in a single cheap call.
   try {
-    const cs = await cricapiGet('cricScore', {});
+    const cs = await cricapiGet('cricScore', {}, cfg.cricapi.ttl.score, refresh);
     for (const m of cs.data || []) {
       const teams = [m.t1, m.t2].map((t) => String(t || '').replace(/\s*\[.*?\]\s*/g, '').trim());
       const norm = { ...m, teams, dateTimeGMT: m.dateTimeGMT, status: m.status, id: m.id };
       if (matchesPair(norm, teamA, teamB) && isFinished(norm)) found.push(norm);
     }
-  } catch (e) { errors.push(`cricScore: ${e.message}`); }
+  } catch (e) { note('cricScore', e); }
+  if (quotaHit) throw quotaHit;
+  // A hit here IS the latest — cricScore is the current window, so nothing in an
+  // archived series can be newer. Returning now saves the whole series sweep,
+  // which is the difference between one paid call and ten.
+  if (found.length) {
+    found.sort((a, b) => new Date(b.dateTimeGMT || b.date || 0) - new Date(a.dateTimeGMT || a.date || 0));
+    return found[0];
+  }
 
   // 2. Series lookup. Link slugs first (most specific), then the team names for
   //    bilateral tours. Series are then probed newest-first.
@@ -452,7 +566,11 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
   const TOURNAMENTS = (process.env.MATCH_TOURNAMENTS
     || 't20 world cup,cricket world cup,asia cup,champions trophy,premier league,tri-series,tri nation')
     .split(',').map((s) => s.trim()).filter(Boolean);
-  const terms = [...hints, teamA, teamB, ...(hints.length ? [] : TOURNAMENTS)].filter(Boolean);
+  // Hints are capped rather than allowed to fill the whole budget: a slug yields
+  // several near-identical phrasings and only the broadest tends to match, so
+  // spending every paid call on them would starve the team-name searches that
+  // find bilateral tours.
+  const terms = [...hints.slice(0, 2), teamA, teamB, ...(hints.length ? [] : TOURNAMENTS)].filter(Boolean);
   // Tokens from the link slug let us tell the real tournament from its
   // qualifiers: "ICC Men's T20 World Cup 2026" matches every slug token with no
   // spare words, while "...Europe Sub Regional Qualifier B 2026" carries many.
@@ -471,43 +589,100 @@ async function cricapiFindLatest(teamA, teamB, links = []) {
       if (hit === hintTokens.length) score += 4;          // covers all of it
       score -= Math.max(0, nameWords.length - hintTokens.length) * 0.5; // extra words = qualifier
     }
-    if (teamMatchesName(s.name, teamA)) score += 3;
-    if (teamMatchesName(s.name, teamB)) score += 3;
+    // How the series NAME relates to the requested pair. Naming exactly ONE of
+    // them is the strongest negative signal available: "India tour of Zimbabwe"
+    // is a bilateral against a third team, so an India v Pakistan match cannot
+    // possibly be in it. Rewarding that +3 for the word "India" is what buried
+    // the real fixture — India and Pakistan never play bilaterals, so the only
+    // series that can hold their match is a multi-team tournament whose name
+    // mentions neither of them.
+    const namesA = teamMatchesName(s.name, teamA);
+    const namesB = teamMatchesName(s.name, teamB);
+    if (namesA && namesB) score += 8;        // a bilateral between exactly these two
+    else if (namesA || namesB) score -= 6;   // a bilateral involving someone else
+    // else: names neither — a multi-team event, which is exactly where a
+    // marquee fixture lives. Neutral, not penalised.
+
+    // Stage and squad qualifiers the caller did not ask for. A men's senior
+    // request should not spend probes on warm-ups, regional qualifiers, U19 or
+    // women's editions of the same tournament.
+    const asked = SQUAD_QUALIFIER.test(teamA) || SQUAD_QUALIFIER.test(teamB);
+    if (!asked && /(qualifier|warm[\s-]?up|women|u1[6-9]|under[\s-]?1[6-9]|emerging|development|legends|masters)/i.test(s.name)) {
+      score -= 4;
+    }
+
+    // A bigger event is likelier to host the fixture — 55 matches is a World
+    // Cup, 2 is a short tour.
+    score += Math.min(2, (Number(s.matches) || 0) / 30);
+
+    // Recency breaks what is left.
+    const ageDays = (Date.now() - (Date.parse(s.startDate) || 0)) / 86400000;
+    if (ageDays <= 120) score += 2;
+    else if (ageDays <= 400) score += 1;
     return score;
   };
 
+  // Each term is one paid call, so the budget is explicit and configurable
+  // rather than "however many terms we happened to generate".
   const seenTerm = new Set();
   const series = [];
   for (const term of terms) {
     const key = term.toLowerCase();
-    if (seenTerm.has(key) || seenTerm.size >= 8) continue;
+    if (seenTerm.has(key)) continue;
+    if (seenTerm.size >= cfg.cricapi.maxSeriesTerms) break;
     seenTerm.add(key);
     try {
-      const r = await cricapiGet('series', { offset: '0', search: term });
+      const r = await cricapiGet('series', { offset: '0', search: term }, cfg.cricapi.ttl.series, refresh);
       for (const s of r.data || []) {
         if (!s.id || series.some((x) => x.id === s.id)) continue;
         if (Number(s.matches) === 0) continue;
         series.push(s);
       }
-    } catch (e) { errors.push(`series("${term}"): ${e.message}`); }
+    } catch (e) { note(`series("${term}")`, e); }
+    if (quotaHit) break;
   }
-  const started = (s) => Date.parse(s.startDate) || 0;
+  if (quotaHit && !series.length) throw quotaHit;
   const now = Date.now();
+  const started = (s) => seriesDate(s.startDate, now) || 0;
   const candidates = series.filter((x) => started(x) <= now);
   // Most relevant first, then most recent — so the real tournament beats both
   // its qualifiers and any newer but unrelated series.
   candidates.sort((a, b) => (relevance(b) - relevance(a)) || (started(b) - started(a)));
 
-  for (const s of candidates.slice(0, 8)) {
+  // Probe every candidate in budget and take the newest match across ALL of
+  // them. Stopping at the first series that happened to contain a fixture is
+  // what returned the second-latest match: the pair is usually named in an old
+  // bilateral tour's title and not in the current tournament's, so the stale
+  // series was reached first and won by default.
+  //
+  // The one call worth skipping is a series that ENDED before the best match
+  // already in hand — it cannot possibly hold anything newer.
+  // A series' end date decides whether it can still hold something newer, so it
+  // has to be read correctly — see seriesDate(): CricAPI writes it without a
+  // year, and the naive parse lands in 2001.
+  const ended = (s) => seriesDate(s.endDate, started(s) || now, true) || started(s) || 0;
+  const matchTs = (m) => new Date(m.dateTimeGMT || m.date || 0).getTime() || 0;
+  let bestTs = 0;
+  for (const s of candidates.slice(0, cfg.cricapi.maxSeriesProbe)) {
+    const end = ended(s);
+    if (bestTs && end && end < bestTs) continue;
     try {
-      const info = await cricapiGet('series_info', { id: s.id });
+      const info = await cricapiGet('series_info', { id: s.id }, cfg.cricapi.ttl.seriesInfo, refresh);
       const list = (info.data && info.data.matchList) || [];
-      for (const m of list) if (matchesPair(m, teamA, teamB) && isFinished(m)) found.push(m);
-    } catch (e) { errors.push(`series_info(${s.name}): ${e.message}`); }
-    if (found.length) break; // ranked order — the first hit is the right series
+      for (const m of list) {
+        if (!matchesPair(m, teamA, teamB) || !isFinished(m)) continue;
+        found.push(m);
+        bestTs = Math.max(bestTs, matchTs(m));
+      }
+    } catch (e) { note(`series_info(${s.name})`, e); }
+    if (quotaHit) break;
   }
 
   if (!found.length) {
+    // Quota first: "come back later" is a different answer from "no such match",
+    // and reporting the latter when the former is true is what sends the
+    // operator hunting for a bug that is not there.
+    if (quotaHit) throw quotaHit;
     // If every lookup errored, this is an API/transport failure, not an empty result.
     if (errors.length && !series.length) throw new Error(`CricAPI unreachable — ${errors[0]}`);
     const detail = errors.length ? ` (${errors.length} lookup error(s): ${errors[0]})` : '';
@@ -573,13 +748,23 @@ function normalizeCricApi(d) {
     .map((b) => ({ name: (b.bowler && b.bowler.name) || b.name || '', wkts: Number(b.w) || 0 }))
     .filter((b) => b.name && b.wkts > 0).sort((a, b) => b.wkts - a.wkts).slice(0, 3);
 
-  const winner = d.matchWinner || (String(d.status || '').match(/^(.+?)\s+won/) || [])[1] || '';
-  const margin = (String(d.status || '').match(/won by\s+(.+)$/i) || [])[1] || String(d.status || '');
+  // Any format is fair game — the question is only "what did these two play
+  // last". A drawn Test or a tie therefore has to render as a result in its own
+  // right: CricAPI answers matchWinner "No Winner" for those, and passing that
+  // straight through produced "No Winner won by Day 4: 2nd Session".
+  const status = String(d.status || '');
+  const rawWinner = String(d.matchWinner || '').trim();
+  const decided = rawWinner && !/^no\s*winner$/i.test(rawWinner) && !/^(draw|tie|drawn|tied)$/i.test(rawWinner);
+  const winner = decided ? rawWinner : ((status.match(/^(.+?)\s+won\b/) || [])[1] || '');
+  const margin = (status.match(/won by\s+(.+)$/i) || [])[1] || '';
 
   return {
     source: 'cricapi',
     competition: d.name || d.series || 'Match',
+    // The scorecard's own format label, whatever it is — Test, ODI, T20, T10.
     format: (d.matchType || '').toUpperCase() || 'T20',
+    // Kept verbatim so a no-result match can state its own outcome.
+    status,
     date: String(d.date || (d.dateTimeGMT || '')).slice(0, 10),
     venue: d.venue || 'Unknown venue',
     home: teams[0] || innings[0].batting,
@@ -595,12 +780,25 @@ function normalizeCricApi(d) {
 }
 
 // Resolve "latest A v B" end to end through CricAPI.
-async function fetchViaCricApi(teamA, teamB, links = []) {
-  const found = await cricapiFindLatest(teamA, teamB, links);
-  const sc = await cricapiGet('match_scorecard', { id: found.id });
-  const m = normalizeCricApi(sc.data || {});
-  m.matchId = found.id;
-  return m;
+//
+// The whole answer is cached under the team pair, not just the individual API
+// calls: pressing Fetch twice for the same two teams is the single most common
+// thing an operator does, and on a 100-calls-a-day plan the second press has to
+// be free. The pair is order-insensitive — "India v Pakistan" and "Pakistan v
+// India" are one question.
+async function fetchViaCricApi(teamA, teamB, links = [], refresh = false) {
+  const pairKey = [canon(teamA), canon(teamB)].sort().join('|')
+    + (links.length ? `|${links.slice().sort().join(',')}` : '');
+  const { data, cached, age } = await cache.through('cricapi-pair', pairKey, cfg.cricapi.ttl.resolved, async () => {
+    const found = await cricapiFindLatest(teamA, teamB, links, refresh);
+    const sc = await cricapiGet('match_scorecard', { id: found.id }, cfg.cricapi.ttl.scorecard);
+    const m = normalizeCricApi(sc.data || {});
+    m.matchId = found.id;
+    return m;
+  }, refresh);
+  // Say so when the answer came from disk. An operator who cannot tell a cached
+  // answer from a live one has no way to know a re-search did nothing.
+  return { ...clone(data), fromCache: cached, cacheAgeMs: cached ? age : 0 };
 }
 
 // ---- provider registry ------------------------------------------------------
@@ -608,7 +806,7 @@ const PROVIDERS = {
   espn: fetchEspn,
   stub: async (_id) => clone(IND_ENG_3RD_ODI_2026),
   cricapi: async (id) => {
-    const sc = await cricapiGet('match_scorecard', { id });
+    const sc = await cricapiGet('match_scorecard', { id }, cfg.cricapi.ttl.scorecard);
     return normalizeCricApi(sc.data || {});
   },
 };
@@ -663,10 +861,14 @@ function verify(match, requested) {
 
 // Fetch + normalize one finished match.
 //   opts = { id?, teamA?, teamB?, links? }
-// - teamA+teamB or links present -> Gemini grounded resolution (reads the links
-//   too); without a key it still HITS the links but falls back to the snapshot.
+// - teamA+teamB or links present -> CricAPI first (structured, cannot be
+//   hallucinated), Gemini grounded search as backup.
 // - otherwise -> keyless live ESPN by id, snapshot on failure.
-// Always resolves to normalized data so the client never dead-ends.
+//
+// A TEAM QUERY THAT RESOLVES NOTHING RETURNS `notFound`, never the snapshot.
+// Handing back an unrelated England v India card stamped REJECTED reads as a
+// bug in the search; "we could not find it, here is what was tried" reads as
+// what actually happened.
 async function fetchMatch(opts = {}) {
   const o = typeof opts === 'string' ? { id: opts } : (opts || {});
   const wantsQuery = (o.teamA && o.teamB) || (Array.isArray(o.links) && o.links.length);
@@ -679,17 +881,22 @@ async function fetchMatch(opts = {}) {
 
     const finish = (m) => {
       m.linksRead = linkSummary; m.requested = requested; m.tried = tried;
+      m.quota = quotaState();
       return verify(m, requested);
     };
 
     // 1. CricAPI — the structured feed. Authoritative: the match is chosen by
     //    filtering + sorting a real index in code, so it cannot be hallucinated.
+    let quotaBlocked = false;
     if (o.teamA && o.teamB && cricapiKey()) {
       try {
-        return finish(await fetchViaCricApi(o.teamA, o.teamB, o.links || []));
-      } catch (e) { tried.push(`cricapi: ${e.message}`); }
+        return finish(await fetchViaCricApi(o.teamA, o.teamB, o.links || [], !!o.refresh));
+      } catch (e) {
+        quotaBlocked = e instanceof QuotaError;
+        tried.push(`cricapi: ${e.message}`);
+      }
     } else if (o.teamA && o.teamB) {
-      tried.push('cricapi: CRICAPI_KEY not set');
+      tried.push('cricapi: CRICAPI_KEY not set — add it to .env for reliable results');
     }
 
     // 2. Gemini + Google Search — backup only. Can read the pasted links, but is
@@ -703,10 +910,21 @@ async function fetchMatch(opts = {}) {
       tried.push('gemini: GEMINI_API_KEY not set');
     }
 
-    const m = await PROVIDERS.stub();
-    m.source = 'stub';
-    m.fallbackReason = tried.join(' · ') || 'no resolver available';
-    return finish(m);
+    // Nothing resolved. Report that, with the chain — do NOT hand back the
+    // offline snapshot, which is a different fixture entirely.
+    return {
+      notFound: true,
+      rejected: true,
+      quotaBlocked,
+      source: 'none',
+      requested,
+      linksRead: linkSummary,
+      tried,
+      quota: quotaState(),
+      error: quotaBlocked
+        ? `Could not fetch ${o.teamA} v ${o.teamB}: the CricAPI daily quota is used up and the search backup could not confirm a recent match.`
+        : `Could not find a recent completed match between "${o.teamA || '?'}" and "${o.teamB || '?'}".`,
+    };
   }
 
   const name = providerName();
@@ -725,4 +943,10 @@ async function fetchMatch(opts = {}) {
   }
 }
 
-module.exports = { fetchMatch, providerName, MAX_LINKS, IND_ENG_3RD_ODI_2026 };
+module.exports = {
+  fetchMatch, providerName, MAX_LINKS, IND_ENG_3RD_ODI_2026,
+  // Exported for the server's status line and for tests.
+  quotaState, cricapiFindLatest, normalizeCricApi, teamMatches, linkHints, QuotaError,
+  clearCache: () => cache.clear(),
+  cacheStats: () => cache.stats(),
+};

@@ -13,7 +13,7 @@
         "primary": "#C8102E",
         "secondary": "#F5C518"
       },
-      "logo": "/logos/tkr.png"
+      "logo": "/logos/tkr.svg"
     },
     {
       "name": "Guyana Amazon Warriors",
@@ -23,7 +23,7 @@
         "primary": "#16A34A",
         "secondary": "#F5C518"
       },
-      "logo": "/logos/gaw.png"
+      "logo": "/logos/gaw.svg"
     },
     {
       "name": "Antigua & Barbuda Falcons",
@@ -53,7 +53,7 @@
         "primary": "#1D4ED8",
         "secondary": "#FACC15"
       },
-      "logo": "/logos/slk.png"
+      "logo": "/logos/slk.svg"
     },
     {
       "name": "St Kitts & Nevis Patriots",
@@ -73,7 +73,7 @@
         "primary": "#111827",
         "secondary": "#FDB913"
       },
-      "logo": "/logos/jam.png"
+      "logo": "/logos/jam.jpeg"
     }
   ],
   "matches": [
