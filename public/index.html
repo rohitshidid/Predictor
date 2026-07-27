@@ -47,10 +47,16 @@
       font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
+    /* Same condensed display stack the exported broadcast graphic uses, so the
+       app header and the on-air table read as one brand. */
     h1 {
-      font-size: 20px;
+      font-family: "DIN Condensed", "DIN Alternate", "Avenir Next Condensed", Oswald, "Roboto Condensed", "Arial Narrow", Impact, sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
       margin: 0;
-      letter-spacing: -.02em;
+      line-height: 1.1;
     }
 
     h2 {
@@ -511,6 +517,14 @@
       margin: 0;
     }
 
+    .exportbar .bgopt select {
+      width: auto;
+      padding: 3px 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 7px;
+    }
+
     #fetchPreview {
       margin-top: 10px;
     }
@@ -770,6 +784,14 @@
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
         <label class="bgopt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
           <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
+        </label>
+        <label class="bgopt" title="Pixel width of the exported PNG. The graphic is vector, so a larger raster is genuinely sharper — not an upscale.">
+          PNG size
+          <select id="pngRes">
+            <option value="1920">HD · 1920px</option>
+            <option value="3840" selected>4K · 3840px</option>
+            <option value="7680">8K · 7680px</option>
+          </select>
         </label>
       </div>
       <ol id="list"></ol>
@@ -1509,11 +1531,17 @@
 
     // ---- table export (PNG / PDF / SVG), dependency-free ----
     function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+    // Broadcast display face for the title, names and figures. DIN Condensed is
+    // the scoreboard standard on macOS; the fallbacks are the nearest condensed
+    // grotesques shipping with Windows/Linux, so the graphic keeps its shape on
+    // whatever machine renders it. Small metadata stays in the humanist sans —
+    // the mix is deliberate.
+    const DISP = "'DIN Condensed','DIN Alternate','Avenir Next Condensed','Oswald','Roboto Condensed','Arial Narrow',Impact,'Haettenschweiler',sans-serif";
     function crestSvgAt(name, cx, cy, r) {
       const t = teamMeta(name), p = t.primary || '#334155', sec = t.secondary || '#94a3b8', sh = t.short || '?';
-      const fs = sh.length >= 3 ? 11 : 14;
+      const fs = sh.length >= 3 ? 13 : 16;
       return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p}" stroke="${sec}" stroke-width="3"/>` +
-        `<text x="${cx}" y="${cy}" font-size="${fs}" font-weight="800" fill="${textOn(p)}" text-anchor="middle" dominant-baseline="central">${esc(sh)}</text>`;
+        `<text x="${cx}" y="${cy}" font-family="${DISP}" font-size="${fs}" font-weight="700" letter-spacing=".5" fill="${textOn(p)}" text-anchor="middle" dominant-baseline="central">${esc(sh)}</text>`;
     }
     // The exported table is a broadcast graphic: it sits over a live feed, so it
     // carries one line per team — rank, crest, name, three headline numbers,
@@ -1524,32 +1552,49 @@
     function tableSvg(opts) {
       const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      const W = 940, pad = 20, headerH = 74, rh = 58, footerH = 34;
+      const W = 940, pad = 20, headerH = 88, rh = 58, footerH = 34;
       const H = headerH + n * rh + footerH;
       const P = transparent
         ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
         : { A: '#0b5cff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee', up: '#12864f', down: '#c0392b', card: '#ffffff' };
       const colScore = W - pad - 20, colMv = W - pad - 96, colStats = W - pad - 150;
-      // Header and footer sit outside the row plates, straight on the feed —
-      // a drawn-behind stroke keeps them legible over a bright pitch too.
-      const halo = transparent
-        ? ' stroke="rgba(6,9,14,.75)" stroke-width="3" paint-order="stroke fill" stroke-linejoin="round"' : '';
-      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
+      // Header and footer sit outside the row plates, straight on the feed. A
+      // soft drop shadow lifts them off a bright pitch without the sticker
+      // outline a stroke halo gives at title size.
+      const halo = transparent ? ' filter="url(#tvsh)"' : '';
+      // The layout is authored in a fixed 940-unit coordinate space and the
+      // viewBox does the scaling, so `scale` only changes the SVG's declared
+      // pixel size. That matters for the PNG: giving the image its true target
+      // dimensions makes the browser rasterize the vector at that resolution
+      // rather than rendering 940px wide and upscaling the bitmap, which is
+      // what made the exports look soft.
+      const scale = (opts && opts.scale) || 1;
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
+      if (transparent) s += `<defs><filter id="tvsh" x="-20%" y="-40%" width="140%" height="180%">` +
+        `<feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#04070d" flood-opacity=".9"/></filter></defs>`;
       if (!transparent) s += `<rect width="${W}" height="${H}" fill="#f4f6f9"/>`;
-      s += `<text x="${pad}" y="36" font-size="26" font-weight="800" fill="${P.ink}"${halo}>${esc(st.league)} — Power Rankings</text>`;
-      s += `<text x="${pad}" y="58" font-size="13" fill="${P.muted}"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
+      // League name carries the size; "POWER RANKINGS" sits under it tracked
+      // out, with an accent rule tying the block together — standard lower-third
+      // hierarchy, and it reads at a glance on a moving picture.
+      s += `<text x="${pad}" y="40" font-family="${DISP}" font-size="38" font-weight="700" letter-spacing="1" fill="${P.ink}"${halo}>${esc(String(st.league).toUpperCase())}</text>`;
+      // Accent blue only ever sits on a dark row plate. Over open feed — which
+      // may be a bright sky or a sightscreen — the header stays white, since a
+      // light tint on a light background is the one thing that vanishes on air.
+      s += `<text x="${pad}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
+      s += `<text x="${W - pad}" y="64" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
+      s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="${transparent ? '#ffffff' : P.A}" opacity="${transparent ? '.8' : '.55'}"${halo}/>`;
       rows.forEach((r, i) => {
         const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
-        s += `<text x="${pad + 30}" y="${cyc}" font-size="24" font-weight="800" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += `<text x="${pad + 30}" y="${cyc}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
         s += crestSvgAt(r.name, pad + 80, cyc, 16);
-        s += `<text x="${pad + 108}" y="${cyc}" font-size="16" font-weight="700" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 26))} <tspan font-size="11" font-weight="400" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        s += `<text x="${pad + 108}" y="${cyc}" font-family="${DISP}" font-size="22" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 30).toUpperCase())} <tspan font-size="13" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
         const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% · ${r.formRecord.wins}/${r.formRecord.of} form`;
         s += `<text x="${colStats}" y="${cyc}" font-size="12" fill="${P.muted}" text-anchor="end" dominant-baseline="central">${esc(stats)}</text>`;
         const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
         const mvc = r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.muted;
         s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
-        s += `<text x="${colScore}" y="${cyc}" font-size="22" font-weight="800" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
+        s += `<text x="${colScore}" y="${cyc}" font-family="${DISP}" font-size="28" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
       });
       s += `<text x="${pad}" y="${H - 12}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
       s += `</svg>`;
@@ -1561,20 +1606,23 @@
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     }
+    // The SVG already carries its target pixel size, so this draws 1:1 — no
+    // canvas transform, no bitmap upscale, text rasterized straight from the
+    // vector at full resolution.
     // opaque=true paints a white plate under the graphic (PDF has no alpha
     // channel). Left false, the PNG keeps its alpha so it can be keyed over the
     // live feed straight from the vision mixer.
-    function rasterize(svg, scale, opaque) {
+    function rasterize(svg, opaque) {
       return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+        const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
         const img = new Image();
         img.onload = () => {
           const c = document.createElement('canvas');
-          c.width = img.width * scale; c.height = img.height * scale;
+          c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
           const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
           if (opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); }
-          ctx.setTransform(scale, 0, 0, scale, 0, 0);
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
           URL.revokeObjectURL(url); resolve(c);
         };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not rasterize table')); };
@@ -1583,18 +1631,25 @@
     }
     function exportName(ext) { return `${(STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}-power-rankings.${ext}`; }
     function isTransparent() { const cb = $('bgTransparent'); return !cb || cb.checked; }
+    // The graphic is authored 940 units wide; the PNG is rendered out to a real
+    // broadcast raster width (3840 = 4K by default) so it is sharp when the
+    // mixer scales it, rather than the old fixed 1880px.
+    const SVG_W = 940;
+    function pngScale() { const sel = $('pngRes'); return (sel ? +sel.value : 3840) / SVG_W; }
     function downloadSvg() {
       saveBlob(new Blob([tableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
     }
     async function downloadPng() {
       const tr = isTransparent();
-      const c = await rasterize(tableSvg({ transparent: tr }), 2, !tr);
-      c.toBlob(b => saveBlob(b, exportName('png')), 'image/png');
+      const c = await rasterize(tableSvg({ transparent: tr, scale: pngScale() }), !tr);
+      // toBlob keeps the full 8-bit RGBA buffer; PNG is lossless, so there is
+      // no quality setting to trade off here — only the raster size above.
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png')); res(); }, 'image/png'));
     }
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
-      const c = await rasterize(tableSvg({ transparent: false }), 2, true);
-      const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.92));
+      const c = await rasterize(tableSvg({ transparent: false, scale: 3 }), true);
+      const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
       saveBlob(new Blob([buildPdf(jpeg, c.width, c.height)], { type: 'application/pdf' }), exportName('pdf'));
     }
     function jpegBytes(dataUrl) {
