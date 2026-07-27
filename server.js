@@ -296,6 +296,28 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, restoreCheckpoint(await readBody(req)));
     }
 
+    // Undo the last match. The summaries for the two sides involved described a
+    // match that no longer exists, so they are dropped back to the deterministic
+    // template rather than left describing deleted data.
+    if (req.method === 'POST' && url.pathname === '/api/undo-match') {
+      const removed = sim.undoLastMatch();
+      if (!removed) throw new Error('no matches to undo');
+      for (const t of [removed.home, removed.away]) delete blurbCache[t];
+      const state = buildState();
+      state.undone = { home: removed.home, away: removed.away, winner: removed.winner };
+      return send(res, 200, state);
+    }
+
+    // Clear every match, keeping the teams and mode. Restoring a checkpoint
+    // afterwards brings the count back to exactly what that file holds.
+    if (req.method === 'POST' && url.pathname === '/api/clear-matches') {
+      const cleared = sim.clearMatches();
+      blurbCache = {};
+      const state = buildState();
+      state.cleared = cleared;
+      return send(res, 200, state);
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/reset') {
       sim.reset();
       blurbCache = {};

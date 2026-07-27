@@ -62,6 +62,22 @@ const state = {
     return this.setMode(mode);
   },
 
+  // Remove the most recently appended match. A mis-entered result is otherwise
+  // permanent — the match count only ever grew — so this is the one-step undo.
+  // Returns the removed record, or null if there was nothing to remove.
+  undoLastMatch() {
+    if (!data.matches.length) return null;
+    return data.matches.pop();
+  },
+
+  // Empty the match list, keeping the same teams and mode. Every ranking figure
+  // is derived from the matches, so the table returns to its zero state.
+  clearMatches() {
+    const n = data.matches.length;
+    data.matches = [];
+    return n;
+  },
+
   // Restore a season saved in a checkpoint. The match list is the source of
   // truth — every ranking figure is re-derived from it by the engine — so a
   // checkpoint reproduces the exact table it was taken from.
