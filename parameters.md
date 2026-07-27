@@ -172,7 +172,9 @@ Where `α` (0–1) controls how fast momentum decays. A configurable `alpha` in 
 
 _Added 2026-07-25. Supersedes the suggested block below, which was a hand-set starting point._
 
-The weights are now **fitted**, not chosen by feel.
+> **Withdrawn 2026-07-27.** The fitted weights below are kept as the method record only. Shipping weights are now hand-set (see `system_health.md`), because this fit targeted the generator's latent `strength` and the generator builds phase splits from that same number, over-crediting powerplay/death. The method transfers unchanged to real results.
+
+The weights below were **fitted**, not chosen by feel.
 
 ### Method
 

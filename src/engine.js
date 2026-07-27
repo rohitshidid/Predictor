@@ -144,14 +144,32 @@ function collect(data) {
 
 // --- always-on metrics -------------------------------------------------------
 const winPct = (t) => safeDiv(t.won, t.played);
-const seasonNRR = (t) => safeDiv(t.runsFor, t.oversFor) - safeDiv(t.runsAgainst, t.oversAgainst);
 
-function rollingNRR(t, window) {
+// ICC net-run-rate convention: a side dismissed for less than its full quota is
+// charged the FULL quota of overs, not the overs it actually faced. Without this
+// a team bowled out cheaply in 14 overs gets its run rate divided by 14 and is
+// flattered. A side that wins a chase early is NOT adjusted — it keeps the overs
+// it actually used, which is also per the rules.
+const oversFaced = (innings, quotaOvers) =>
+  (innings.wktsLost >= 10 ? quotaOvers : innings.overs);
+
+function seasonNRR(t, quotaOvers) {
+  let rf = 0, of = 0, ra = 0, oa = 0;
+  for (const r of t.results) {
+    const { own, opp } = sides(r.match, t.name);
+    rf += own.runs; of += oversFaced(own, quotaOvers);
+    ra += opp.runs; oa += oversFaced(opp, quotaOvers);
+  }
+  return safeDiv(rf, of) - safeDiv(ra, oa);
+}
+
+function rollingNRR(t, window, quotaOvers) {
   const recent = t.results.slice(-window);
   let rf = 0, of = 0, ra = 0, oa = 0;
   for (const r of recent) {
     const { own, opp } = sides(r.match, t.name);
-    rf += own.runs; of += own.overs; ra += opp.runs; oa += opp.overs;
+    rf += own.runs; of += oversFaced(own, quotaOvers);
+    ra += opp.runs; oa += oversFaced(opp, quotaOvers);
   }
   return safeDiv(rf, of) - safeDiv(ra, oa);
 }
@@ -162,19 +180,34 @@ function momentum(t, alpha) {
   return m;
 }
 
-function marginAdjustedWin(t) {
-  const wins = t.results.filter((r) => r.win);
-  if (!wins.length) return 0;
-  let sum = 0;
-  for (const r of wins) {
-    const m = r.match;
-    const { own, opp } = sides(m, t.name);
-    const q = m.battingFirst === t.name
-      ? safeDiv(own.runs - opp.runs, own.runs) * 100
-      : safeDiv(120 - own.balls, 120) * 100;
-    sum += Math.max(0, Math.min(100, q));
+// Win quality — signed margin in RUNS, averaged over EVERY match.
+//
+// The previous version averaged only over wins (so losses were invisible) and
+// scored a bat-first win as a share of its own total while scoring a chase as a
+// share of the innings length — two different units that could not be compared.
+// It measured no correlation with team quality at all.
+//
+// Both outcomes are now expressed in one currency. A chase is converted to its
+// runs equivalent: balls spared × the rate the side was scoring at. Losses are
+// the same quantity with the sign flipped, so a heavy defeat costs what a heavy
+// win earns.
+function marginRuns(match, team, ballsQuota) {
+  const { own, opp } = sides(match, team);
+  const chasing = match.battingFirst !== team;
+  const won = match.winner === team;
+  if (chasing) {
+    if (won) return Math.max(0, ballsQuota - own.balls) * safeDiv(own.runs, own.balls);
+    return own.runs - opp.runs;                       // fell short: negative
   }
-  return sum / wins.length;
+  if (won) return own.runs - opp.runs;                // defended: positive
+  return -Math.max(0, ballsQuota - opp.balls) * safeDiv(opp.runs, opp.balls);
+}
+
+function marginAdjustedWin(t, ballsQuota) {
+  if (!t.results.length) return 0;
+  let sum = 0;
+  for (const r of t.results) sum += marginRuns(r.match, t.name, ballsQuota);
+  return sum / t.results.length;                      // mean signed runs margin
 }
 
 function powerplayDominance(t) {
@@ -263,6 +296,11 @@ function rank(data, config, lastWeek = {}) {
   const ppCfg = config.powerplay;
   const dCfg = config.deathOvers;
   const scale = config.scoreScale || 100;
+  // Match shape: a full T20 innings. Config-driven so other formats can be set
+  // without touching the engine.
+  const ballsQuota = (config.match && config.match.ballsQuota) || 120;
+  const quotaOvers = (config.match && config.match.oversQuota) || ballsQuota / 6;
+  const mCfg = config.winQuality || { min: -40, max: 40 };
 
   const teams = collect(data);
   const list = Object.values(teams);
@@ -270,18 +308,44 @@ function rank(data, config, lastWeek = {}) {
   const winPctOf = {};
   for (const t of list) winPctOf[t.name] = winPct(t);
 
+  // Strength of schedule, EXCLUDING head-to-head.
+  //
+  // Taking opponents' raw win% made this metric a mirror of the team's own
+  // record — every win you take is a loss on an opponent's card — so in a
+  // complete round robin it measured r = -1.00 against quality and, being added
+  // positively, actively penalised the best sides. Removing the matches played
+  // against this team removes exactly that feedback, leaving only how the
+  // opponents fared against everybody else. On a balanced schedule that is
+  // near-constant (correctly: a round robin carries no schedule information);
+  // on an unbalanced one it is a real signal.
+  const sosOf = (team) => {
+    const opps = [...new Set(team.opponents)];
+    if (!opps.length) return 0;
+    let sum = 0;
+    for (const name of opps) {
+      const o = teams[name];
+      if (!o) continue;
+      let played = 0, won = 0;
+      for (const r of o.results) {
+        if (r.opponent === team.name) continue;       // drop head-to-head
+        played++; won += r.win ? 1 : 0;
+      }
+      sum += played ? won / played : winPctOf[name] || 0;
+    }
+    return sum / opps.length;
+  };
+
   const rows = list.map((t) => {
     const wp = winPctOf[t.name];
-    const season = seasonNRR(t);
-    const rNRR = rollingNRR(t, nrrCfg.rollingWindow);
+    const season = seasonNRR(t, quotaOvers);
+    const rNRR = rollingNRR(t, nrrCfg.rollingWindow, quotaOvers);
     const form = momentum(t, alpha);
-    const margin = marginAdjustedWin(t);
+    const margin = marginAdjustedWin(t, ballsQuota);
     const pp = powerplayDominance(t);
     const death = deathOvers(t, dCfg.scalingFactor);
     const ha = homeAway(t);
     const avail = availability(t);
-    const opp = t.opponents;
-    const sos = opp.length ? opp.reduce((s, o) => s + (winPctOf[o] || 0), 0) / opp.length : 0;
+    const sos = sosOf(t);
     // optional
     const xW = expectedWins(t);
     const tossM = toss(t);
@@ -291,7 +355,7 @@ function rank(data, config, lastWeek = {}) {
 
     const n = {
       winPct: clamp01(wp),
-      marginAdjustedWin: clamp01(margin / 100),
+      marginAdjustedWin: norm(margin, mCfg.min, mCfg.max),
       rollingNRR: norm(rNRR, nrrCfg.seasonMin, nrrCfg.seasonMax),
       form: clamp01(form),
       powerplayDominance: norm(pp.dominance, ppCfg.dominanceMin, ppCfg.dominanceMax),

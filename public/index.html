@@ -975,7 +975,7 @@
       },
       marginAdjustedWin: {
         label: 'Win quality',
-        tip: 'Not just did they win, but HOW convincingly? A win by 8 wickets with 20 balls to spare scores ~85/100. A last-ball 1-wicket squeaker scores ~5/100. Higher = team dominates rather than just getting by.'
+        tip: 'How convincingly they win AND how heavily they lose, as an average runs margin across every match. A chase is converted to its runs equivalent (balls to spare × the rate they were scoring at), so defending and chasing are measured in the same unit. Positive = they usually win comfortably.'
       },
       rollingNRR: {
         label: 'Rolling NRR',
@@ -995,7 +995,7 @@
       },
       sos: {
         label: 'Str. of schedule',
-        tip: 'Strength of Schedule — how tough were the opponents faced? A team with 7 wins against strong opposition is ranked higher than one with 7 wins against bottom-table teams. Averages the Win% of all opponents played.'
+        tip: 'Strength of Schedule — how tough were the opponents faced? Averages each opponent\'s win rate EXCLUDING their matches against you, so your own results cannot feed back into it. In a full round robin everyone faces the same field, so this is identical for every team and changes nothing; it only carries information on an uneven schedule.'
       },
       homeAwayAdjustment: {
         label: 'Home/away',

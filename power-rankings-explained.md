@@ -13,18 +13,18 @@ Think of it as a **school report card**. Instead of one exam, each team is grade
 | # | What we measure | What it tells you | Counts for |
 |---|---|---|---|
 | 1 | **Win %** | How often they win. The foundation. | **30%** |
-| 2 | **Death overs (16–20)** | The closing overs, where T20 games are decided: their hitting versus their bowling. | **18%** |
-| 3 | **Powerplay (overs 1–6)** | Command of the opening burst — runs scored there minus runs conceded. | **16%** |
-| 4 | **Rolling Net Run Rate** | Whether they out-score opponents, over the **last 5 games only**, so one early thrashing doesn't flatter them all season. | **9%** |
-| 5 | **Momentum (form)** | Are they hot *right now*? The latest match counts most. | **8%** |
-| 6 | **Home / away** | Teams that only win at home are flattered; travelling well counts. | **8%** |
+| 2 | **Death overs (16–20)** | The closing overs, where T20 games are decided: their hitting versus their bowling. | **15%** |
+| 3 | **Rolling Net Run Rate** | Whether they out-score opponents, over the **last 5 games only**, so one early thrashing doesn't flatter them all season. | **15%** |
+| 4 | **Powerplay (overs 1–6)** | Command of the opening burst — runs scored there minus runs conceded. | **12%** |
+| 5 | **Momentum (form)** | Are they hot *right now*? The latest match counts most. | **12%** |
+| 6 | **Home / away** | Teams that only win at home are flattered; travelling well counts. | **5%** |
 | 7 | **Key players** | A side missing its stars is not the same side, whatever last week's results say. | **5%** |
-| 8 | **Win quality** | *How* they win — a 60-run rout versus a last-ball escape. | **3%** |
-| 9 | **Strength of schedule** | Whether the opponents beaten were any good. | **3%** |
+| 8 | **Win quality** | *How* they win and lose — a 60-run rout versus a last-ball escape. | **4%** |
+| 9 | **Strength of schedule** | Whether the opponents faced were any good. | **2%** |
 
-**These weights were measured, not chosen.** Rather than arguing about how much the powerplay "should" be worth, we built 300 simulated seasons in which each team's true strength was known in advance, then searched for the weights that best recovered that true order. We tuned on two-thirds of those seasons and scored on the third we had not touched. The fitted weights rank teams noticeably better than our original hand-picked ones (rank correlation with true strength improved from **0.69 to 0.76**).
+**Where the weights come from.** They are set by cricket judgement, not by a training run. Win% leads because winning is the point. Net run rate and the two phase measures — the powerplay and the death overs — come next, because they capture *how* a side controls a game rather than just the result. Form, home/away, key players and win quality fill in the margins. They are deliberately round numbers, and they are published here so anyone can argue with them.
 
-**The two subjects worth only 3%.** Honesty matters more than a tidy table. That same test showed **win quality** carried almost no signal as we currently compute it, and **strength of schedule** actively worked *backwards* in a full round-robin — where everyone plays everyone, your opponents' average win rate is essentially the mirror of your own. Both were cut to a token weight rather than quietly dropped, and both need rebuilding before they earn it back.
+**Why not fit them statistically?** We tried. Weights tuned against simulated seasons scored better on the simulator, but the simulator built each team's powerplay and death-overs numbers straight out of a single hidden "strength" value — so those two measures were close to reading the answer key, and the fit handed them a third of the table. Real teams have phase *styles* that do not collapse to one number. Rather than publish a precision we cannot support, the weights are honest editorial choices, and we will re-fit only when a full season of real results exists to fit against.
 
 **Why momentum isn't simply "the last five".** Recent matches count far more than old ones, fading smoothly rather than stopping dead at a cut-off. In practice the most recent match carries about 35% of this grade, and the last five together about 88%.
 
@@ -50,16 +50,16 @@ net = deathBatSR − deathBowlEcon × 16.67
 ```
 The factor `100/6 = 16.67` converts bowling economy (runs/over) onto the batting strike-rate scale (runs per 100 balls), making the two dimensionally comparable.
 
-**3. Powerplay dominance** *(overs 1–6, i.e. 6 overs per innings per match)*
-```
-PP = (ppRunsFor / 6P) − (ppRunsAgainst / 6P)        [runs per over]
-```
-
-**4. Rolling NRR** *(last 5 matches)*
+**3. Rolling NRR** *(last 5 matches)*
 ```
 rNRR = (Σ RF / Σ OF) − (Σ RA / Σ OA)
 ```
-Also reported: `trend = rolling − season`, positive meaning improving.
+Per ICC convention a side **bowled out** is charged its full 20-over quota rather than the overs it actually faced, so being dismissed cheaply cannot flatter a run rate. A side that wins a chase early keeps the overs it used. Also reported: `trend = rolling − season`.
+
+**4. Powerplay dominance** *(overs 1–6, i.e. 6 overs per innings per match)*
+```
+PP = (ppRunsFor / 6P) − (ppRunsAgainst / 6P)        [runs per over]
+```
 
 **5. Momentum** — exponentially weighted update over **every** match played, seeded at 0.5:
 ```
@@ -71,24 +71,26 @@ Match weights decay 0.350, 0.228, 0.148, 0.096, 0.063… — a **half-life of �
 
 **7. Key-player availability** — `starsAvailable / squadStars`, taken **as of the most recent match**.
 
-**8. Win quality** *(mean over wins only, each clamped to 0–100)*
+**8. Win quality** — mean **signed runs margin over every match**, wins and losses alike:
 ```
-batting first : (own − opp) / own × 100
-chasing       : (120 − balls used) / 120 × 100
+defended   : own − opp                       (runs)
+chased     : (120 − balls used) × run rate   (runs equivalent)
+lost       : the same quantity, negated
 ```
+Both outcomes are expressed in one unit — runs — so defending and chasing are directly comparable, and heavy defeats cost what heavy wins earn. Normalised over ±40 runs.
 
-**9. Strength of schedule** — mean current win% of all opponents faced (repeat fixtures counted each time).
+**9. Strength of schedule** — mean opponent win rate, **excluding their matches against this team**. Counting head-to-head made it a mirror of the team's own record (every win you take is a loss on an opponent's card), which inverted the metric. In a complete round robin every side then faces the identical field, so the value is the same for everyone and changes no ranking; it only carries information on an uneven schedule.
 
 ### Normalisation and the final score
 
-Each raw metric maps onto [0,1] via `norm(x) = clamp((x − min)/(max − min))`. Ratios (1, 6, 7, 9) are already 0–1; the rest use configured bounds — **death net ±60**, **powerplay ±3.00 rpo**, **rNRR ±2.00**, win quality ÷100. Then:
+Each raw metric maps onto [0,1] via `norm(x) = clamp((x − min)/(max − min))`. Ratios (1, 6, 7, 9) are already 0–1; the rest use configured bounds — **death net ±60**, **rNRR ±2.00**, **powerplay ±3.00 rpo**, **win quality ±40 runs**. Then:
 
 ```
 score = 100 × Σ ( w_k · n_k )
 ```
-weights `0.30, 0.18, 0.16, 0.09, 0.08, 0.08, 0.05, 0.03, 0.03`, summing to exactly 1.00. **Ties** break on win% then rolling NRR. **Delta** = previous rank − current rank.
+weights `0.30, 0.15, 0.15, 0.12, 0.12, 0.05, 0.05, 0.04, 0.02`, summing to exactly 1.00. **Ties** break on win% then rolling NRR. **Delta** = previous rank − current rank.
 
-**Fitting method.** Weights maximise `corr(score, latent strength)` subject to `w ≥ 0, Σw = 1`, over 300 seeded synthetic seasons, trained on 66% and evaluated on the held-out 34% (held-out Spearman 0.694 → 0.760; correct #1 46% → 50%). The unconstrained optimum (0.892) was **rejected**: it loaded ~75% of the table onto the two phase metrics and dropped Win% to 0.05, which would let a team win every match and not rank first.
+**Choosing the weights.** They are editorial, set by cricket judgement and stored in `weights.config.json` so they can be changed without touching the engine. An earlier set was fitted by maximising rank correlation against latent team strength over 300 synthetic seasons; that fit was withdrawn because the generator derived phase splits directly from strength, so it over-credited the powerplay and death-overs terms. The fitting method transfers unchanged to real data — only the target needs to become actual results.
 
 ### Optional metrics (off by default)
 
@@ -96,12 +98,11 @@ Five extras can be enabled per session: **expected wins** (Pythagorean `RF²/(RF
 
 ### Known limitations — stated deliberately
 
-- **Ground truth is synthetic.** Weights are fitted against a generator, not real results, so the phase metrics are probably over-credited. Re-fitting on a full season of live data is the priority; the method transfers unchanged.
-- **NRR convention.** ICC rules charge a side bowled out with its **full quota** of overs; this engine divides by overs actually faced, slightly flattering teams dismissed early.
-- **Win quality (3%)** measured `r ≈ +0.01` — no signal as computed. It averages only over wins, and its batting-first and chasing scales are not calibrated to each other.
-- **Strength of schedule (3%)** measured `r = −1.00` in a complete round robin and is added *positively*, so it currently penalises the best teams. The sign needs fixing, or the metric restricting to unbalanced schedules.
-- **T20-shaped.** 120 balls and a 6-over powerplay are assumed; rain-shortened games and other formats are not modelled.
-- **Key players** is a supplied figure, not yet a live ICC top-30 feed.
+- **The weights are judgement, not evidence.** They are reasonable and openly published, but no live data yet proves this particular split is optimal. Re-fit against a full season of real results when one exists.
+- **Correlated components.** Several measures move together — home/away tracks Win% very closely, and form overlaps rolling NRR — so the nine subjects are less independent than the table implies, and Win% effectively carries more than its stated 30%.
+- **Key players** is a supplied figure, not yet a live ICC top-30 feed, so it reflects whatever availability was entered.
+- **T20-shaped.** A 120-ball innings and a 6-over powerplay are assumed. Rain-shortened matches and other formats are not modelled, and the powerplay term assumes six powerplay overs per innings.
+- **Strength of schedule is inert in a balanced league.** By design it is identical for every team in a complete round robin; it only does work on an uneven schedule.
 
 ---
 

@@ -67,31 +67,19 @@ New per-innings data fields: `top4`, `wktsLost`, `bowlTop2`. Every metric derive
 from raw match data → math stays defensible. NOTE: keyPlayer/star availability is
 still SYNTHETIC (squadStars), not a live ICC top-30 feed.
 
-## Weights (fitted 2026-07-25 — no longer hand-set)
-- **Method:** 300 seeded synthetic seasons, each team carrying the latent
-  `strength` the generator used; metrics normalized exactly as `engine.js` does;
-  maximize `corr(score, strength)` s.t. `w >= 0`, `sum(w) = 1`; fit on 66% of
-  seasons, score on the held-out 34%. Full write-up in `parameters.md`.
-- **Shipped core:** winPct 0.30 · deathOversNet 0.18 · powerplayDominance 0.16 ·
-  rollingNRR 0.09 · form 0.08 · homeAwayAdjustment 0.08 ·
-  keyPlayerAvailability 0.05 · marginAdjustedWin 0.03 · sos 0.03.
-- **Held-out Spearman vs true strength:** 0.694 (old hand-set) -> 0.760 (fitted).
-  Correct #1: 46% -> 50%.
-- **Deliberately NOT shipped:** the unconstrained best fit (0.892 Spearman) puts
-  ~75% of the table on the two phase metrics and Win% at 0.05. It would let a
-  team win every match and not rank first — unpublishable, and over-fitted to a
-  generator that derives phase splits straight from `strength`.
-- **Two defects the fit exposed, both still open:**
-  - `marginAdjustedWin` measured r = +0.01 — no signal AS COMPUTED. It averages
-    only over wins and reads a chase as `(120-balls)/120`. Weight cut to a floor;
-    the METRIC needs reworking before it earns weight back.
-  - `sos` measured r = -1.00 in a complete round robin (opponents' average Win%
-    mirrors your own) and the engine adds it POSITIVELY, so it penalises the best
-    teams. Weight cut to a floor. Fix the sign or restrict it to unbalanced
-    schedules before raising it.
-- **Caveat on record:** the only ground truth today is the synthetic generator, so
-  phase metrics are likely over-credited. Re-fit against real results once a
-  season of live CricAPI data exists — the method transfers unchanged.
+## Weights (hand-set 2026-07-27 — fitted values withdrawn)
+- **Method:** editorial, set by cricket judgement, published in
+  `power-rankings-explained.md` so they can be argued with. Config, not code.
+- **Shipped:** winPct 0.30 · deathOversNet 0.15 · rollingNRR 0.15 ·
+  powerplayDominance 0.12 · form 0.12 · homeAwayAdjustment 0.05 ·
+  keyPlayerAvailability 0.05 · marginAdjustedWin 0.04 · sos 0.02. Sum 1.00.
+- **Why the fit was withdrawn:** it maximised correlation against the generator's
+  latent `strength`, but the generator derives phase splits straight from that
+  same number, so powerplay/death read as the answer key and took ~34% of the
+  table. Precision we could not support on real cricket.
+- **Re-fit against REAL results** once a live season exists; the method in
+  `parameters.md` transfers unchanged, only the target changes.
+
 
 ## Match search (locked 2026-07-25)
 - **Resolver order:** CricAPI structured feed (authoritative — the match is chosen
