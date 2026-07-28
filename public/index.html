@@ -779,11 +779,25 @@
     <div>
       <div class="exportbar">
         <span class="exportlabel">Download table:</span>
+        <label class="bgopt" title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; CPL matches the cplt20.com points-table styling.">
+          Template
+          <select id="tplSelect">
+            <option value="willow" selected>Willow TV · broadcast</option>
+            <option value="cpl">CPL · website</option>
+          </select>
+        </label>
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
         <button id="dlPdf" title="Download the current table as a PDF">PDF</button>
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
-        <label class="bgopt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
+        <label class="bgopt" id="bgWillowOpt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
           <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
+        </label>
+        <label class="bgopt" id="bgCplOpt" title="How much of the CPL card is painted. Solid is the website look; translucent keeps an alpha channel so the table can be keyed over a live feed. PDF is always exported solid.">
+          Background
+          <select id="cplBg">
+            <option value="solid" selected>Solid navy (website)</option>
+            <option value="translucent">Translucent navy (overlay)</option>
+          </select>
         </label>
         <label class="bgopt" title="Pixel width of the exported PNG. The graphic is vector, so a larger raster is genuinely sharper — not an upscale.">
           PNG size
@@ -1586,6 +1600,74 @@
 
     // ---- table export (PNG / PDF / SVG), dependency-free ----
     function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+    // Real text measurement. A character budget is only ever a guess — "WWW" and
+    // "iii" are the same three characters and nowhere near the same width — so
+    // the fitting below asks the same font stack the SVG uses how wide a string
+    // actually is, in the same user units the viewBox is authored in.
+    const BODY_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+    const _measure = document.createElement('canvas').getContext('2d');
+    function textWidth(s, size) {
+      _measure.font = `${size}px ${BODY_FONT}`;
+      return _measure.measureText(s).width;
+    }
+    // The AI summary, reduced to the longest *complete* unit that fits the space
+    // a row actually has. Nothing is ever chopped and closed with an ellipsis:
+    // the line drops whole sentences, then whole clauses, until what is left fits
+    // the measured width and still reads as a finished thought.
+    function blurbLine(name, maxWidth, fontSize) {
+      const b = (STATE.blurbs || {})[name];
+      let text = String((b && b.text) || '').replace(/\s+/g, ' ').trim();
+      // Blurbs open with the movement ("Holding at 3.", "Up 2 to 4.") because
+      // they are also read standalone. In a table with a rank and a movement
+      // column that sentence is pure duplication, so it comes off and the line
+      // spends its width on something the columns don't already say.
+      text = text.replace(/^(holding at \d+|up \d+ to \d+|down \d+ to \d+|new at \d+)[.,]\s*/i, '');
+      if (!text) return '';
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+      const fits = (s) => textWidth(s, fontSize) <= maxWidth;
+      if (fits(text)) return text;
+
+      // Split on a terminator followed by a capital, not on any full stop —
+      // "rolling NRR +0.24" would otherwise break into two "sentences" at the
+      // decimal point and the line would open with a fragment.
+      const sentences = text.split(/(?<=[.!?])\s+(?=["'“‘(]?[A-Z])/).filter(Boolean);
+
+      // 1. As many whole sentences as fit.
+      let acc = '';
+      for (const sent of sentences) {
+        const next = acc ? `${acc} ${sent}` : sent;
+        if (!fits(next)) break;
+        acc = next;
+      }
+      if (acc) return acc;
+
+      // 2. No whole sentence fits from the front. Take each sentence in turn and
+      // shed its trailing clauses, closing what remains with a full stop. Working
+      // through them in order means a later, shorter sentence gets used when the
+      // opening one is a single long unbreakable clause — a true statement about
+      // the team beats a fragment of a better one.
+      const close = (s) => s.replace(/[,;:\s]+$/, '').replace(/[.!?]$/, '') + '.';
+      for (const sent of sentences) {
+        let cl = '';
+        for (const clause of sent.split(/(?<=[,;])\s+|\s+[—–]\s+/)) {
+          const next = cl ? `${cl} ${clause}` : clause;
+          if (!fits(close(next))) break;
+          cl = next;
+        }
+        if (cl) return close(cl);
+      }
+
+      // 3. Nothing anywhere breaks down far enough — one long phrase with no
+      // punctuation to cut on. Whole words only, and still no ellipsis: a
+      // trailing "…" reads as a rendering fault rather than as abbreviation.
+      let w = '';
+      for (const word of (sentences[0] || text).split(' ')) {
+        const next = w ? `${w} ${word}` : word;
+        if (!fits(next)) break;
+        w = next;
+      }
+      return w;
+    }
     // Broadcast display face for the title, names and figures. DIN Condensed is
     // the scoreboard standard on macOS; the fallbacks are the nearest condensed
     // grotesques shipping with Windows/Linux, so the graphic keeps its shape on
@@ -1607,7 +1689,8 @@
     function tableSvg(opts) {
       const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      const W = 940, pad = 20, headerH = 88, rh = 58, footerH = 86;
+      // rh carries two lines now — team name plus its one-line AI summary.
+      const W = 940, pad = 20, headerH = 88, rh = 72, footerH = 86;
       const H = headerH + n * rh + footerH;
       const P = transparent
         ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
@@ -1638,12 +1721,14 @@
       s += `<text x="${pad}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
       // "Powered by" + partner mark, top right. Falls back to a wordmark until
       // public/logos/champhunt.png is present, so the graphic is never broken.
-      const logoH = 26, logoW = 92, logoX = W - pad - logoW, logoY = 16;
-      s += `<text x="${logoX - 8}" y="${logoY + logoH / 2}" font-size="11.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
+      // The mark is a 7:1 letterbox, so under `meet` scaling the width is what
+      // sets its size — the box height is slack and only centres it.
+      const logoH = 30, logoW = 138, logoX = W - pad - logoW, logoY = 14;
+      s += `<text x="${logoX - 9}" y="${logoY + logoH / 2}" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
-        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing=".3" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="25" font-weight="700" letter-spacing=".3" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
       s += `<text x="${W - pad}" y="64" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
       s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="${transparent ? '#ffffff' : P.A}" opacity="${transparent ? '.8' : '.55'}"${halo}/>`;
@@ -1651,8 +1736,13 @@
         const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
         s += `<text x="${pad + 30}" y="${cyc}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
-        s += crestSvgAt(r.name, pad + 80, cyc, 16);
-        s += `<text x="${pad + 108}" y="${cyc}" font-family="${DISP}" font-size="22" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 30).toUpperCase())} <tspan font-size="13" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        s += teamMarkAt(r.name, pad + 80, cyc, 16);
+        // Name and summary stack on the left; the numerics stay optically
+        // centred on the row so the right-hand columns still scan as a column.
+        s += `<text x="${pad + 108}" y="${cyc - 11}" font-family="${DISP}" font-size="22" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 30).toUpperCase())} <tspan font-size="13" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        // Runs from the name's left edge to a hair short of the stats column.
+        const line = blurbLine(r.name, colStats - (pad + 108) - 14, 11.5);
+        if (line) s += `<text x="${pad + 108}" y="${cyc + 13}" font-size="11.5" fill="${P.muted}" dominant-baseline="central">${esc(line)}</text>`;
         const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% · ${r.formRecord.wins}/${r.formRecord.of} form`;
         s += `<text x="${colStats}" y="${cyc}" font-size="12" fill="${P.muted}" text-anchor="end" dominant-baseline="central">${esc(stats)}</text>`;
         const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
@@ -1673,6 +1763,127 @@
       s += `</svg>`;
       return s;
     }
+
+    // ---- CPL website template ----------------------------------------------
+    // The second house style: cplt20.com's points table — deep navy plate, one
+    // lime keyline around the whole card, tracked-out lime title, hairline rules
+    // between rows and the figures in evenly spaced columns on the right.
+    // Two background modes, because the same table gets used as a web asset and
+    // as an overlay: `solid` is the site look; `translucent` drops the page fill
+    // and keeps a smoked navy plate so a feed reads through it. Translucent
+    // carries a drop shadow on every glyph, since white-on-bright-sky is the one
+    // thing that disappears on air. There is deliberately no fully-keyed mode —
+    // without a plate the figures sit straight on the picture and the columns
+    // stop reading as a table.
+    const CPL = {
+      bg: '#0B0B2E', card: '#0A0A20', accent: '#C3F53C', ink: '#ffffff',
+      muted: '#9aa2b8', line: 'rgba(255,255,255,.10)', up: '#4ade80', down: '#ff7a6e',
+    };
+    // `muted` lifts to a near-white when keyed: the slate grey that reads as
+    // secondary on the opaque navy plate goes soft against a bright sky or a
+    // sightscreen, taking the column labels and the AI line with it.
+    const CPL_BG = {
+      solid:       { page: CPL.bg, card: CPL.card,             line: CPL.line,                muted: CPL.muted,             shadow: false },
+      translucent: { page: null,   card: 'rgba(10,10,32,.74)', line: 'rgba(255,255,255,.14)', muted: 'rgba(255,255,255,.80)', shadow: true },
+    };
+    // Stat columns, centred, in the order CPL lists them. `Points` becomes
+    // `Rating` — a power ranking has no league points, and printing the score
+    // under CPL's own header would read as an official standing, which it isn't.
+    const CPL_COLS = [
+      { label: 'Matches',       x: 640,  get: (r) => String(r.played) },
+      { label: 'Won',           x: 745,  get: (r) => String(r.won) },
+      { label: 'Loss',          x: 850,  get: (r) => String(r.lost) },
+      { label: 'Net Run Rate',  x: 975,  get: (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}` },
+      { label: 'Form',          x: 1080, get: (r) => `${r.formRecord.wins}/${r.formRecord.of}` },
+      { label: 'Rating',        x: 1190, get: (r) => r.score.toFixed(1), strong: true },
+    ];
+    function cplTableSvg(opts) {
+      const st = STATE, rows = st.ranking, n = rows.length;
+      const mode = (opts && opts.bg) || cplBackground();
+      const B = CPL_BG[mode] || CPL_BG.solid;
+      const W = 1280, pad = 36, rh = 92;
+      const titleH = 104, colHeadH = 64, cardPadB = 26, footerH = 92;
+      const cardY = titleH, cardH = colHeadH + n * rh + cardPadB;
+      const H = titleH + cardH + footerH;
+      const scale = (opts && opts.scale) || 1;
+      // Everything outside the plate — and everything on it in the keyed modes —
+      // gets the shadow, so the graphic survives being dropped on a bright pitch.
+      const halo = B.shadow ? ' filter="url(#cplsh)"' : '';
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
+      if (B.shadow) s += `<defs><filter id="cplsh" x="-20%" y="-40%" width="140%" height="180%">` +
+        `<feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#04070d" flood-opacity=".9"/></filter></defs>`;
+      if (B.page) s += `<rect width="${W}" height="${H}" fill="${B.page}"/>`;
+
+      // Title block. CPL sets its heading in a wide, tracked-out lime caps face;
+      // the condensed display stack is the closest match that renders anywhere.
+      s += `<text x="${pad}" y="56" font-family="${DISP}" font-size="40" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>POWER RANKINGS</text>`;
+      // "Powered by" + partner mark, top right — same block as the broadcast
+      // graphic, so the two templates carry identical attribution. The mark runs
+      // larger here than in the overlay: this table is 1280 wide against the
+      // graphic's 940, and a web asset is read at desk distance, not glanced at.
+      const logoH = 44, logoW = 196, logoX = W - pad - logoW, logoY = 10;
+      s += `<text x="${logoX - 10}" y="${logoY + logoH / 2}" font-size="13.5" font-weight="600" fill="${B.muted}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
+      if (BRAND.logo) {
+        s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
+      } else {
+        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="34" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+      }
+      s += `<text x="${W - pad}" y="76" font-size="13" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)} · ${st.matchCount} MATCHES</text>`;
+
+      // The card: one hairline lime keyline, generously rounded, nothing else.
+      s += `<rect x="${pad}" y="${cardY}" width="${W - 2 * pad}" height="${cardH}" rx="10" fill="${B.card}" stroke="${CPL.accent}" stroke-width="1.5"${B.shadow ? ' filter="url(#cplsh)"' : ''}/>`;
+
+      const colHeadY = cardY + 40;
+      s += `<text x="${pad + 60}" y="${colHeadY}" font-size="13" fill="${B.muted}"${halo}>Team</text>`;
+      for (const c of CPL_COLS) {
+        s += `<text x="${c.x}" y="${colHeadY}" font-size="13" fill="${B.muted}" text-anchor="middle"${halo}>${esc(c.label)}</text>`;
+      }
+
+      rows.forEach((r, i) => {
+        const y = cardY + colHeadH + i * rh, cy = y + rh / 2;
+        // Rule *under* every row but the last, matching CPL's open-ended list.
+        if (i < n - 1) s += `<rect x="${pad + 24}" y="${y + rh}" width="${W - 2 * pad - 48}" height="1" fill="${B.line}"/>`;
+        s += `<text x="${pad + 26}" y="${cy}" font-size="15" font-weight="600" fill="${CPL.ink}" dominant-baseline="central"${halo}>${r.rank}</text>`;
+        s += teamMarkAt(r.name, pad + 68, cy, 19);
+        // Name over summary. The AI line is the reason this row is two-deep, so
+        // it gets the full run to the movement column rather than a token strip.
+        s += `<text x="${pad + 98}" y="${cy - 13}" font-family="${DISP}" font-size="24" font-weight="700" letter-spacing=".6" fill="${CPL.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 32).toUpperCase())}</text>`;
+        // Runs from the name's left edge to a hair short of the movement column.
+        const line = blurbLine(r.name, (pad + 540) - 22 - (pad + 98) - 14, 12);
+        if (line) s += `<text x="${pad + 98}" y="${cy + 14}" font-size="12" fill="${B.muted}" dominant-baseline="central"${halo}>${esc(line)}</text>`;
+        // Movement rides with the name rather than taking a column of its own —
+        // CPL's table has no such column and adding one breaks the rhythm.
+        const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
+        const mvc = r.movement === 'up' ? CPL.up : r.movement === 'down' ? CPL.down : CPL.muted;
+        s += `<text x="${pad + 540}" y="${cy}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
+        for (const c of CPL_COLS) {
+          const strong = c.strong ? ` font-weight="700"` : '';
+          s += `<text x="${c.x}" y="${cy}" font-size="15" fill="${CPL.ink}"${strong} text-anchor="middle" dominant-baseline="central"${halo}>${esc(c.get(r))}</text>`;
+        }
+      });
+
+      // Same footer contract as the broadcast graphic: methodology line left,
+      // partner mark and QR right, so both templates carry identical provenance.
+      const footY = cardY + cardH;
+      s += `<text x="${pad}" y="${footY + 26}" font-size="11.5" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      const qrS = 54, qrX = W - pad - qrS, qrY = footY + 14;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, qrY, qrS);
+      const tx = qrX - 12, ty = qrY + 16;
+      s += `<text x="${tx}" y="${ty}" font-size="11" fill="${B.muted}" text-anchor="end"${halo}>For more information about how the score is calculated,</text>`;
+      s += `<text x="${tx}" y="${ty + 14}" font-size="11" fill="${B.muted}" text-anchor="end"${halo}>please scan the QR code or visit</text>`;
+      s += `<text x="${tx}" y="${ty + 30}" font-size="12" font-weight="700" fill="${CPL.accent}" text-anchor="end"${halo}>www.champhunt.in/powerranking</text>`;
+      s += `</svg>`;
+      return s;
+    }
+
+    // Template picker. Every download path goes through here, so the switch in
+    // the export bar is the single place that decides which house style ships.
+    function currentTemplate() { const sel = $('tplSelect'); return sel ? sel.value : 'willow'; }
+    function buildTableSvg(opts) {
+      return currentTemplate() === 'cpl' ? cplTableSvg(opts) : tableSvg(opts);
+    }
+
     function saveBlob(blob, name) {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob); a.download = name;
@@ -1702,7 +1913,12 @@
         img.src = url;
       });
     }
-    function exportName(ext) { return `${(STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-')}-power-rankings.${ext}`; }
+    // The template is in the filename: the same week is often exported in both
+    // styles, and two files called cpl-power-rankings.png overwrite each other.
+    function exportName(ext) {
+      const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return `${league}-power-rankings-${currentTemplate()}.${ext}`;
+    }
 
     // ---- daily checkpoints ----
     // One JSON per day holding the whole working season, so the table can be
@@ -1783,6 +1999,25 @@
       ]);
       BRAND = { logo, qr };
     }
+    // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each
+    // one is inlined once at boot and reused by every export. Needs STATE, so it
+    // runs after the first applyState; a missing file just leaves the entry null
+    // and that team falls back to the drawn colour badge.
+    let TEAM_LOGOS = {};
+    async function loadTeamLogos() {
+      const teams = (STATE && STATE.teams) || [];
+      const pairs = await Promise.all(teams.map(async (t) => [t.name, t.logo ? await toDataUri(t.logo) : null]));
+      TEAM_LOGOS = Object.fromEntries(pairs);
+    }
+    // A team's mark inside a square box centred on (cx, cy): the licensed logo
+    // if we have it, otherwise the deterministic crest badge.
+    function teamMarkAt(name, cx, cy, r) {
+      const src = TEAM_LOGOS[name];
+      if (!src) return crestSvgAt(name, cx, cy, r);
+      const d = r * 2;
+      return `<image x="${cx - r}" y="${cy - r}" width="${d}" height="${d}" href="${src}" ` +
+        `preserveAspectRatio="xMidYMid meet"/>`;
+    }
     // Placeholder QR: correct finder squares and a deterministic module field so
     // it reads as a QR in layout. It does NOT scan — drop a real
     // public/logos/qr.png in and it is used instead, no code change.
@@ -1804,25 +2039,35 @@
       }
       return g;
     }
-    function isTransparent() { const cb = $('bgTransparent'); return !cb || cb.checked; }
-    // The graphic is authored 940 units wide; the PNG is rendered out to a real
-    // broadcast raster width (3840 = 4K by default) so it is sharp when the
-    // mixer scales it, rather than the old fixed 1880px.
-    const SVG_W = 940;
-    function pngScale() { const sel = $('pngRes'); return (sel ? +sel.value : 3840) / SVG_W; }
+    function cplBackground() { const sel = $('cplBg'); return sel ? sel.value : 'solid'; }
+    // Each template owns its own background control; this is the one answer the
+    // rasterizer needs — whether to keep the alpha channel or flatten onto white.
+    function isTransparent() {
+      if (currentTemplate() === 'cpl') return cplBackground() !== 'solid';
+      const cb = $('bgTransparent');
+      return !cb || cb.checked;
+    }
+    // Each graphic is authored at its own fixed unit width; the PNG is rendered
+    // out to a real broadcast raster width (3840 = 4K by default) so it is sharp
+    // when the mixer scales it, rather than the old fixed 1880px.
+    const SVG_W = 940, CPL_SVG_W = 1280;
+    function pngScale() {
+      const sel = $('pngRes');
+      return (sel ? +sel.value : 3840) / (currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W);
+    }
     function downloadSvg() {
-      saveBlob(new Blob([tableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
+      saveBlob(new Blob([buildTableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
     }
     async function downloadPng() {
       const tr = isTransparent();
-      const c = await rasterize(tableSvg({ transparent: tr, scale: pngScale() }), !tr);
+      const c = await rasterize(buildTableSvg({ transparent: tr, scale: pngScale() }), !tr);
       // toBlob keeps the full 8-bit RGBA buffer; PNG is lossless, so there is
       // no quality setting to trade off here — only the raster size above.
       await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png')); res(); }, 'image/png'));
     }
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
-      const c = await rasterize(tableSvg({ transparent: false, scale: 3 }), true);
+      const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: 3 }), true);
       const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
       saveBlob(new Blob([buildPdf(jpeg, c.width, c.height)], { type: 'application/pdf' }), exportName('pdf'));
     }
@@ -1869,6 +2114,17 @@
     $('dlPng').addEventListener('click', () => downloadPng().catch(e => $('err').textContent = e.message));
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
+    // Each template has its own background control — a two-state switch for the
+    // broadcast graphic, a three-way for CPL. Only the relevant one is shown, so
+    // the bar never offers a setting that does nothing.
+    function syncTemplateOptions() {
+      const cpl = currentTemplate() === 'cpl';
+      const w = $('bgWillowOpt'), c = $('bgCplOpt');
+      if (w) w.style.display = cpl ? 'none' : '';
+      if (c) c.style.display = cpl ? '' : 'none';
+    }
+    $('tplSelect').addEventListener('change', syncTemplateOptions);
+    syncTemplateOptions();
     $('btnFinish').addEventListener('click', finishMatch);
     $('btnUndo').addEventListener('click', async () => {
       $('err').textContent = '';
@@ -1966,6 +2222,7 @@
         await refreshCheckpoints();
         const data = await api('/api/state');
         applyState(data);
+        await loadTeamLogos();
         fillTeamSelects();
       } catch (e) { $('err').textContent = 'Failed to load: ' + e.message; }
       finally { overlay(false); }
