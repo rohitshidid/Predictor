@@ -19,6 +19,7 @@ function freshFrom(baseline) {
     season: baseline.season,
     league: baseline.league,
     leagueShort: baseline.leagueShort,
+    region: baseline.region,
     teams: clone(baseline.teams),
     matches: [],
   };
@@ -29,6 +30,7 @@ function baselineFrom(baseline) {
     season: baseline.season,
     league: baseline.league,
     leagueShort: baseline.leagueShort,
+    region: baseline.region,
     teams: clone(baseline.teams),
     matches: clone(baseline.matches),
   };
@@ -89,6 +91,7 @@ const state = {
       season: nextData.season,
       league: nextData.league,
       leagueShort: nextData.leagueShort,
+      region: nextData.region,
       teams: clone(nextData.teams),
       matches: clone(nextData.matches),
     };

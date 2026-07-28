@@ -2,6 +2,7 @@
   "season": "2026",
   "league": "Caribbean Premier League",
   "leagueShort": "CPL",
+  "region": "Caribbean",
   "generatedAt": "2026-07-23T22:29:17.195Z",
   "note": "Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.",
   "teams": [

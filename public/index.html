@@ -827,6 +827,41 @@
         <div class="note" id="cpNote"></div>
       </div>
 
+      <!-- Publish to the website. A checkpoint is a restore file; this is the
+           flat, derived view the cplxch /admin page ingests. -->
+      <div class="panel">
+        <h2>Publish to the website</h2>
+        <div class="row">
+          <div>
+            <label>Week number</label>
+            <input type="number" id="pubWeek" value="1" min="1" max="52"
+                   title="Which week of the season this table is. The site labels the section and its week selector from this.">
+          </div>
+          <div>
+            <label>Worked example</label>
+            <select id="pubWorked" title="The team the site walks through factor by factor. Defaults to mid-table."></select>
+          </div>
+        </div>
+        <label>Hero sentence <span style="color:var(--muted);font-weight:400;">(blank = auto)</span></label>
+        <input type="text" id="pubHeadline" maxlength="240"
+               placeholder="Trinbago are playing the best cricket in the Caribbean right now.">
+        <div class="row">
+          <div>
+            <label>Next match</label>
+            <input type="datetime-local" id="pubNextIso" title="Drives the countdown in the site's hero. Leave blank to keep whatever the site already shows.">
+          </div>
+          <div>
+            <label>Venue</label>
+            <input type="text" id="pubVenue" maxlength="60" placeholder="Providence">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button id="btnPublish" style="flex:1;" title="Download the website JSON. Upload it on the cplxch /admin page to update every ranking, blurb and carousel.">🌐 Export for website</button>
+          <button id="btnPublishPreview" class="ghost" style="flex:0 0 auto;" title="Show what the file will contain without downloading it">Preview</button>
+        </div>
+        <div class="note" id="pubNote"></div>
+      </div>
+
       <div class="panel">
         <h2>Simulate a match</h2>
         <div class="row">
@@ -1148,6 +1183,11 @@
       for (const id of ['teamX', 'teamY']) { $(id).innerHTML = opts; }
       $('teamX').value = teams[0].name;
       $('teamY').value = teams[1].name;
+      // Worked-example picker: blank keeps the automatic mid-table choice.
+      const keep = $('pubWorked').value;
+      $('pubWorked').innerHTML = '<option value="">— mid-table (auto) —</option>'
+        + teams.map(t => `<option value="${esc(t.short)}">${esc(t.short)} — ${esc(t.name)}</option>`).join('');
+      $('pubWorked').value = keep;
       syncMatchSelects();
     }
     function syncMatchSelects() {
@@ -1854,6 +1894,53 @@
       } catch (e) { $('err').textContent = e.message; }
       finally { overlay(false); }
     });
+    // ---- website publish ----
+    // The engine's numbers, flattened into the shape the marketing site renders.
+    // Sent as one POST so the operator's week/headline edits are stored on the
+    // server too, and therefore ride along in the next checkpoint.
+    function publishMeta() {
+      const local = $('pubNextIso').value; // "YYYY-MM-DDTHH:mm" in the operator's zone
+      return {
+        week: +$('pubWeek').value || 1,
+        headline: $('pubHeadline').value.trim(),
+        workedExampleAbbr: $('pubWorked').value,
+        nextMatch: local
+          ? { iso: new Date(local).toISOString(), venue: $('pubVenue').value.trim() }
+          : null,
+      };
+    }
+    async function buildPublish() {
+      const { payload } = await api('/api/publish', publishMeta());
+      return payload;
+    }
+    function publishName(p) {
+      const league = (p.leagueShort || p.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return `${league}-week-${p.week}-site.json`;
+    }
+    async function exportForWebsite() {
+      $('err').textContent = '';
+      overlay(true, 'Building website file…');
+      try {
+        const p = await buildPublish();
+        saveBlob(new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' }), publishName(p));
+        $('pubNote').textContent = `${publishName(p)} — ${p.weekLabel}, ${p.teams.length} teams, `
+          + `${p.factors.length} factors, ${p.changes.length} movers. Upload it on the site's /admin page.`;
+      } catch (e) { $('err').textContent = 'Export failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+    async function previewPublish() {
+      $('err').textContent = '';
+      try {
+        const p = await buildPublish();
+        const top = p.teams[0];
+        $('pubNote').textContent = `${p.weekLabel} · ${p.league} ${p.season} · top: ${top.abbr} ${top.rating} `
+          + `(${top.w}-${top.l}, NRR ${top.nrr}) · worked example: ${p.workedExample ? p.workedExample.abbr : '—'} `
+          + `· headline: "${p.headline}"`;
+      } catch (e) { $('err').textContent = 'Preview failed: ' + e.message; }
+    }
+    $('btnPublish').addEventListener('click', exportForWebsite);
+    $('btnPublishPreview').addEventListener('click', previewPublish);
+
     $('btnSave').addEventListener('click', saveCheckpoint);
     $('btnRestore').addEventListener('click', restoreCheckpoint);
     $('btnLoad').addEventListener('click', () => $('cpFile').click());

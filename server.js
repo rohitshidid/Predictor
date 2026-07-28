@@ -19,6 +19,7 @@ const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
 const { fetchMatch, providerName, quotaState, clearCache, cacheStats } = require('./src/liveMatch');
 const store = require('./src/checkpoints');
+const { buildSitePayload } = require('./src/publish');
 
 const PORT = Number(process.env.PORT || 4310);
 const BASE_WEIGHTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'weights.config.json'), 'utf8'));
@@ -28,6 +29,46 @@ let config = JSON.parse(JSON.stringify(BASE_WEIGHTS));
 
 // Blurb cache: teamName -> { text, source, audit }. Empty => template shown.
 let blurbCache = {};
+
+// Editorial fields the engine cannot derive — which week this is, the hero
+// sentence, the next fixture. They ride along in checkpoints so restoring a
+// Tuesday file brings back Tuesday's week number too.
+const DEFAULT_SITE_META = {
+  site: 'cplxch',
+  week: 1,
+  weekLabel: '',
+  headline: '',
+  subhead: '',
+  region: '',
+  workedExampleAbbr: '',
+  nextMatch: null, // { iso, home, away, venue }
+};
+let siteMeta = { ...DEFAULT_SITE_META };
+
+// Only accept the fields we know about, and coerce them — this payload comes
+// straight from a browser form.
+function mergeSiteMeta(patch) {
+  if (!patch || typeof patch !== 'object') return siteMeta;
+  const next = { ...siteMeta };
+  if (patch.week != null) next.week = Math.max(1, Math.min(52, Math.round(+patch.week) || 1));
+  for (const k of ['site', 'weekLabel', 'headline', 'subhead', 'region', 'workedExampleAbbr']) {
+    if (typeof patch[k] === 'string') next[k] = patch[k].trim().slice(0, 240);
+  }
+  if (patch.nextMatch === null) next.nextMatch = null;
+  else if (patch.nextMatch && typeof patch.nextMatch === 'object') {
+    const iso = String(patch.nextMatch.iso || '').trim();
+    next.nextMatch = iso
+      ? {
+          iso,
+          home: String(patch.nextMatch.home || '').slice(0, 60),
+          away: String(patch.nextMatch.away || '').slice(0, 60),
+          venue: String(patch.nextMatch.venue || '').slice(0, 60),
+        }
+      : null;
+  }
+  siteMeta = next;
+  return siteMeta;
+}
 
 function currentRanking() {
   return rank(sim.getData(), config, sim.getPrevRanks());
@@ -161,9 +202,22 @@ function buildCheckpoint() {
     config: { weights: config.weights, optionalWeights: config.optionalWeights, enabled: config.enabled },
     blurbs: blurbCache,
     prevRanks: sim.getPrevRanks(),
+    siteMeta,
     // Read-only copy of the table as it stood — for audit, not for restore.
     ranking: ranking.map((r) => ({ rank: r.rank, team: r.name, score: +r.score.toFixed(2), won: r.won, lost: r.lost })),
   };
+}
+
+// The website's copy of today's table. Same ranked rows as the graphic — only
+// the shape differs (derived figures instead of the match list).
+function buildPublishPayload() {
+  return buildSitePayload({
+    data: sim.getData(),
+    config,
+    blurbs: blurbCache,
+    prevRanks: sim.getPrevRanks(),
+    meta: siteMeta,
+  });
 }
 
 function restoreCheckpoint(cp) {
@@ -182,6 +236,10 @@ function restoreCheckpoint(cp) {
     }
   }
   blurbCache = (cp.blurbs && typeof cp.blurbs === 'object') ? cp.blurbs : {};
+  // Older checkpoints predate siteMeta — those restore to the defaults rather
+  // than inheriting whatever week the server happened to be on.
+  siteMeta = { ...DEFAULT_SITE_META };
+  mergeSiteMeta(cp.siteMeta);
   // buildState renders the arrows against the checkpoint's saved prevRanks, then
   // snapshots the restored order so the NEXT action diffs against it.
   return buildState();
@@ -290,6 +348,19 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/checkpoint') {
       return send(res, 200, buildCheckpoint());
+    }
+
+    // ---- website publish ----------------------------------------------------
+    // The flat, derived view of the same table that cplxch's /admin ingests.
+    // GET  returns the current meta + payload; POST sets the meta first, so the
+    // "Export for website" button is a single round trip.
+    if (req.method === 'GET' && url.pathname === '/api/publish') {
+      return send(res, 200, { meta: siteMeta, payload: buildPublishPayload() });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/publish') {
+      mergeSiteMeta(await readBody(req));
+      return send(res, 200, { meta: siteMeta, payload: buildPublishPayload() });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/checkpoint') {
