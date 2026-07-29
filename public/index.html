@@ -1689,8 +1689,10 @@
     function tableSvg(opts) {
       const transparent = !opts || opts.transparent !== false;
       const st = STATE, rows = st.ranking, n = rows.length;
-      // rh carries two lines now — team name plus its one-line AI summary.
-      const W = 940, pad = 20, headerH = 88, rh = 72, footerH = 86;
+      // rh carries two lines now — team name plus its one-line AI summary. The
+      // header carries three right-hand lines (mark, learn-more, season) so it
+      // is deeper than it was; the footer is down to the methodology line alone.
+      const W = 940, pad = 20, headerH = 104, rh = 72, footerH = 36;
       const H = headerH + n * rh + footerH;
       const P = transparent
         ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
@@ -1710,7 +1712,21 @@
       let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
       if (transparent) s += `<defs><filter id="tvsh" x="-20%" y="-40%" width="140%" height="180%">` +
         `<feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#04070d" flood-opacity=".9"/></filter></defs>`;
-      if (!transparent) s += `<rect width="${W}" height="${H}" fill="#f4f6f9"/>`;
+      if (!transparent) {
+        s += `<rect width="${W}" height="${H}" fill="#f4f6f9"/>`;
+        // Header band for the opaque exports — the PDF above all, which has no
+        // alpha and so always lands here. The partner mark is near-white
+        // artwork, so on the old off-white plate it simply disappeared. The band
+        // runs light pink under the league title, where the type is dark ink,
+        // and deepens to violet under the right-hand block, where the white mark
+        // and its lockup sit. A uniformly *light* pink would have left the mark
+        // exactly as invisible as before — white needs something to sit against.
+        s += `<defs><linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0">` +
+          `<stop offset="0" stop-color="#FBE3F1"/><stop offset="0.34" stop-color="#EFD8F7"/>` +
+          `<stop offset="0.68" stop-color="#7A46C9"/><stop offset="1" stop-color="#5E2FAE"/>` +
+          `</linearGradient></defs>`;
+        s += `<rect x="0" y="0" width="${W}" height="${headerH - 8}" fill="url(#hdr)"/>`;
+      }
       // League name carries the size; "POWER RANKINGS" sits under it tracked
       // out, with an accent rule tying the block together — standard lower-third
       // hierarchy, and it reads at a glance on a moving picture.
@@ -1723,15 +1739,35 @@
       // public/logos/champhunt.png is present, so the graphic is never broken.
       // The mark is a 7:1 letterbox, so under `meet` scaling the width is what
       // sets its size — the box height is slack and only centres it.
-      const logoH = 30, logoW = 138, logoX = W - pad - logoW, logoY = 14;
-      s += `<text x="${logoX - 9}" y="${logoY + logoH / 2}" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
+      // The QR takes the far-right corner and the partner lockup sits to its
+      // left, so the mark and the code read as one block. It stands the full
+      // height of the two header lines, which is what makes it scannable at
+      // broadcast distance — down in the footer it was the smallest thing on the
+      // graphic and the last thing a viewer would find.
+      const qrS = 52, qrX = W - pad - qrS, qrY = 24;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, qrY, qrS);
+      const brandR = qrX - 13;
+      const logoH = 30, logoW = 138, logoX = brandR - logoW, logoY = 12;
+      // On the opaque plate the right-hand block sits on the purple band, so its
+      // type goes white; over open feed it is already white.
+      const hInk = transparent ? P.ink : '#ffffff';
+      const hOp = transparent ? '.82' : '.92';
+      s += `<text x="${logoX - 9}" y="${logoY + logoH / 2}" font-size="12.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
-        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="25" font-weight="700" letter-spacing=".3" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+        s += `<text x="${brandR}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="25" font-weight="700" letter-spacing=".3" fill="${hInk}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
-      s += `<text x="${W - pad}" y="64" font-size="12.5" font-weight="600" fill="${transparent ? P.ink : P.muted}" opacity="${transparent ? '.82' : '1'}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
-      s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="${transparent ? '#ffffff' : P.A}" opacity="${transparent ? '.8' : '.55'}"${halo}/>`;
+      // Learn-more sits between the mark and the season line: the QR beside it
+      // is the same destination, so the two belong in one block.
+      s += `<text x="${brandR}" y="58" font-size="11.5" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Learn more: ` +
+        `<tspan font-size="12.5" font-weight="700" opacity="1">www.champhunt.in/powerranking</tspan></text>`;
+      s += `<text x="${brandR}" y="78" font-size="12.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
+      // Over open feed the rule is what separates header from rows. On the
+      // opaque plate the band's own bottom edge already does that, and a rule
+      // drawn across a gradient reads as a seam.
+      if (transparent) s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="#ffffff" opacity=".8"${halo}/>`;
       rows.forEach((r, i) => {
         const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
@@ -1750,16 +1786,9 @@
         s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
         s += `<text x="${colScore}" y="${cyc}" font-family="${DISP}" font-size="28" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
       });
-      s += `<text x="${pad}" y="${H - 14}" font-size="11" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      // Bottom-right: how to find the methodology. The QR sits flush right with
-      // the two-line explainer to its left.
-      const qrS = 54, qrX = W - pad - qrS, qrY = H - footerH + 12;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, qrY, qrS);
-      const tx = qrX - 10, ty = qrY + 18;
-      s += `<text x="${tx}" y="${ty}" font-size="11" fill="${P.muted}" text-anchor="end"${halo}>For more information about how the score is calculated,</text>`;
-      s += `<text x="${tx}" y="${ty + 14}" font-size="11" fill="${P.muted}" text-anchor="end"${halo}>please scan the QR code or visit</text>`;
-      s += `<text x="${tx}" y="${ty + 30}" font-size="12" font-weight="700" fill="${P.ink}" text-anchor="end"${halo}>www.champhunt.in/powerranking</text>`;
+      // Footer is the methodology line alone now — the mark, the QR and the
+      // learn-more link all live together in the header block.
+      s += `<text x="${pad}" y="${H - footerH + 22}" font-size="11.5" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
       s += `</svg>`;
       return s;
     }
@@ -1802,7 +1831,7 @@
       const mode = (opts && opts.bg) || cplBackground();
       const B = CPL_BG[mode] || CPL_BG.solid;
       const W = 1280, pad = 36, rh = 92;
-      const titleH = 104, colHeadH = 64, cardPadB = 26, footerH = 92;
+      const titleH = 112, colHeadH = 64, cardPadB = 26, footerH = 40;
       const cardY = titleH, cardH = colHeadH + n * rh + cardPadB;
       const H = titleH + cardH + footerH;
       const scale = (opts && opts.scale) || 1;
@@ -1821,14 +1850,25 @@
       // graphic, so the two templates carry identical attribution. The mark runs
       // larger here than in the overlay: this table is 1280 wide against the
       // graphic's 940, and a web asset is read at desk distance, not glanced at.
-      const logoH = 44, logoW = 196, logoX = W - pad - logoW, logoY = 10;
+      // QR in the far-right corner with the partner lockup to its left, so the
+      // mark and the code read as one block instead of being split across the
+      // full height of the graphic.
+      const qrS = 62, qrX = W - pad - qrS, qrY = 16;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, qrY, qrS);
+      const brandR = qrX - 16;
+      const logoH = 44, logoW = 196, logoX = brandR - logoW, logoY = 6;
       s += `<text x="${logoX - 10}" y="${logoY + logoH / 2}" font-size="13.5" font-weight="600" fill="${B.muted}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
-        s += `<text x="${W - pad}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="34" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+        s += `<text x="${brandR}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="34" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
-      s += `<text x="${W - pad}" y="76" font-size="13" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)} · ${st.matchCount} MATCHES</text>`;
+      // Learn-more sits between the mark and the league line: the QR beside it
+      // is the same destination, so the two belong in one block.
+      s += `<text x="${brandR}" y="62" font-size="12" fill="${B.muted}" text-anchor="end"${halo}>Learn more: ` +
+        `<tspan font-size="13" font-weight="700" fill="${CPL.accent}">www.champhunt.in/powerranking</tspan></text>`;
+      s += `<text x="${brandR}" y="86" font-size="13" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)} · ${st.matchCount} MATCHES</text>`;
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
       s += `<rect x="${pad}" y="${cardY}" width="${W - 2 * pad}" height="${cardH}" rx="10" fill="${B.card}" stroke="${CPL.accent}" stroke-width="1.5"${B.shadow ? ' filter="url(#cplsh)"' : ''}/>`;
@@ -1862,17 +1902,9 @@
         }
       });
 
-      // Same footer contract as the broadcast graphic: methodology line left,
-      // partner mark and QR right, so both templates carry identical provenance.
-      const footY = cardY + cardH;
-      s += `<text x="${pad}" y="${footY + 26}" font-size="11.5" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      const qrS = 54, qrX = W - pad - qrS, qrY = footY + 14;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, qrY, qrS);
-      const tx = qrX - 12, ty = qrY + 16;
-      s += `<text x="${tx}" y="${ty}" font-size="11" fill="${B.muted}" text-anchor="end"${halo}>For more information about how the score is calculated,</text>`;
-      s += `<text x="${tx}" y="${ty + 14}" font-size="11" fill="${B.muted}" text-anchor="end"${halo}>please scan the QR code or visit</text>`;
-      s += `<text x="${tx}" y="${ty + 30}" font-size="12" font-weight="700" fill="${CPL.accent}" text-anchor="end"${halo}>www.champhunt.in/powerranking</text>`;
+      // Same footer contract as the broadcast graphic: the methodology line
+      // alone, with the mark, QR and learn-more link together in the header.
+      s += `<text x="${pad}" y="${cardY + cardH + 25}" font-size="12" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
       s += `</svg>`;
       return s;
     }
