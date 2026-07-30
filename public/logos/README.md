@@ -35,7 +35,7 @@ Two extra files are picked up automatically by the PNG/SVG/PDF export:
 | File | Used for | Fallback if absent |
 |---|---|---|
 | `champhunt.png` (or `.svg`) | The **"Powered by"** mark, top right | a plain `champhunt` wordmark |
-| `qr.png` (or `.svg`) | The QR code, bottom right | a drawn placeholder that does **not** scan |
+| `qr.png` (or `.svg`) | The QR code in the header block | a drawn placeholder that does **not** scan |
 
 Drop the files in and they appear on the next page load — no code change. The
 logo is drawn into a 92×26 box and is right-aligned, so a transparent-background
@@ -47,3 +47,8 @@ canvas with navy type, so it is drawn into a near-square box on a light plate �
 navy artwork is illegible on the CPL navy card and on a night feed without one.
 `cpl.png` is optional: supply it for a league mark top-left on the CPL template,
 otherwise the league's short code runs ahead of the title ("CPL POWER RANKINGS").
+
+`qr.png` is now a real, verified QR encoding `https://www.champhunt.in/cpl`
+(error-correction level H, 2-module quiet zone). It is deliberately NOT run
+through the auto-crop that trims the other marks — cropping would eat the quiet
+zone and stop it scanning. Regenerate it if the destination URL ever changes.
