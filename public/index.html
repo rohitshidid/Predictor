@@ -1698,7 +1698,11 @@
     // URL sits (as a fraction of the canvas, so it survives any export scale) and
     // the PDF writer turns that into a real /Link annotation.
     let SVG_LINKS = [];
-    function linkWidth(text, fontSize) { return text.length * fontSize * 0.56; }
+    // 0.60 em/char is the measured average advance for the bold UI face at these
+    // sizes — checked against the rendered run of "Champhunt.com/CPL", which came
+    // out 128 units wide at 12.5px where the old 0.56 factor predicted 119. The
+    // hotspot was landing short of the last character or two.
+    function linkWidth(text, fontSize) { return text.length * fontSize * 0.60; }
     function noteLink(href, rightX, baselineY, fontSize, text, W, H) {
       const w = linkWidth(text, fontSize), h = fontSize * 1.25;
       SVG_LINKS.push({ href, fx: (rightX - w) / W, fy: (baselineY - fontSize) / H, fw: w / W, fh: h / H });
@@ -1789,35 +1793,47 @@
       // may be a bright sky or a sightscreen — the header stays white, since a
       // light tint on a light background is the one thing that vanishes on air.
       s += `<text x="${tX}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
-      // "Powered by" + partner mark, top right. Falls back to a wordmark until
-      // public/logos/champhunt.png is present, so the graphic is never broken.
-      // The mark is a 7:1 letterbox, so under `meet` scaling the width is what
-      // sets its size — the box height is slack and only centres it.
-      // The QR takes the far-right corner and the partner lockup sits to its
-      // left, so the mark and the code read as one block. It stands the full
-      // height of the two header lines, which is what makes it scannable at
-      // broadcast distance — down in the footer it was the smallest thing on the
-      // graphic and the last thing a viewer would find.
-      const qrS = 52, qrX = W - pad - qrS, qrY = 24;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, qrY, qrS);
-      const brandR = qrX - 13;
+      // "Powered by" + partner mark + URL + QR, top right. Falls back to a
+      // wordmark until public/logos/champhunt.png is present, so the graphic is
+      // never broken.
+      //
+      // The whole corner is set as ONE rectangle: the QR holds the far-right
+      // corner and the lockup column sits immediately to its left, both starting
+      // on `blockT` and finishing on `blockB`. Before this the QR began below the
+      // caption and ran on past the URL, so the corner had three different top
+      // edges and three different bottom edges and read as a pile rather than a
+      // block. The QR stands the full height of the lockup, which is what keeps
+      // it scannable at broadcast distance.
+      const qrS = 52, blockT = 18, blockB = blockT + qrS;
+      const qrX = W - pad - qrS;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${blockT}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, blockT, qrS);
+      const brandR = qrX - 14;
       const hInk = transparent ? P.ink : '#ffffff';
       const hOp = transparent ? '.82' : '.92';
-      // "Powered by" is a caption, so it sets smaller than the URL and stacks
-      // directly ABOVE the mark rather than beside it.
-      const logoH = 28, logoW = 138, logoX = brandR - logoW, logoY = 27;
+      // Three baselines, all derived from the block: the caption's cap-height
+      // starts on the block top, the URL's descenders finish on the block foot,
+      // and the mark is centred in whatever is left between them. So the two
+      // gaps around the mark stay equal whatever artwork is dropped in.
+      const capY = blockT + 7;          // 9.5px caption
+      const urlY = blockB - 3;          // 12.5px link
+      const logoW = 152, logoH = logoW / (BRAND.logoAR || 8);
+      const logoX = brandR - logoW, logoY = capY + 3 + ((urlY - 9 - capY - 3) - logoH) / 2;
       // Caption sits centred over the mark it labels, not flush to the block edge.
-      s += `<text x="${(logoX + brandR) / 2}" y="20" font-size="9.5" font-weight="600" letter-spacing=".4" fill="${hInk}" opacity="${hOp}" text-anchor="middle" dominant-baseline="central"${halo}>Powered by</text>`;
+      s += `<text x="${(logoX + brandR) / 2}" y="${capY}" font-size="9.5" font-weight="600" letter-spacing=".4" fill="${hInk}" opacity="${hOp}" text-anchor="middle"${halo}>Powered by</text>`;
       if (BRAND.logo) {
-        s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
+        s += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
-        s += `<text x="${brandR}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="24" font-weight="700" letter-spacing=".3" fill="${hInk}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+        s += `<text x="${brandR}" y="${(logoY + logoH / 2).toFixed(2)}" font-family="${DISP}" font-size="24" font-weight="700" letter-spacing=".3" fill="${hInk}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
       // The URL is a live link in the SVG and the PDF; the QR beside it encodes
       // the same address.
-      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, 64, 12.5, hInk, halo, W, H);
-      s += `<text x="${brandR}" y="88" font-size="11.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
+      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, urlY, 12.5, hInk, halo, W, H);
+      // The season line closes the block on the page margin — the same edge the
+      // QR, the row plates and the rating column all use. Right-aligning it to the
+      // lockup's inner edge instead left it stopping short of the corner, which is
+      // what made the right-hand side look ragged.
+      s += `<text x="${W - pad}" y="${blockB + 15}" font-size="11.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
       // Over open feed the rule is what separates header from rows. On the
       // opaque plate the band's own bottom edge already does that, and a rule
       // drawn across a gradient reads as a seam.
@@ -1946,25 +1962,33 @@
       // graphic, so the two templates carry identical attribution. The mark runs
       // larger here than in the overlay: this table is 1280 wide against the
       // graphic's 940, and a web asset is read at desk distance, not glanced at.
-      // QR in the far-right corner with the partner lockup to its left, so the
-      // mark and the code read as one block instead of being split across the
-      // full height of the graphic.
-      const qrS = 62, qrX = W - pad - qrS, qrY = 16;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${qrY}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, qrY, qrS);
-      const brandR = qrX - 16;
+      // Same construction as the broadcast overlay, so the two templates carry an
+      // identical block: QR in the far-right corner, lockup column immediately to
+      // its left, both spanning exactly `blockT`..`blockB` so the corner has one
+      // top edge and one foot.
+      const qrS = 62, blockT = 16, blockB = blockT + qrS;
+      const qrX = W - pad - qrS;
+      if (BRAND.qr) s += `<image x="${qrX}" y="${blockT}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
+      else s += placeholderQr(qrX, blockT, qrS);
+      const brandR = qrX - 18;
       // "Powered by" is a caption: smaller than the URL, stacked directly above
-      // the mark instead of sitting beside it.
-      const logoH = 40, logoW = 196, logoX = brandR - logoW, logoY = 24;
-      s += `<text x="${(logoX + brandR) / 2}" y="14" font-size="10.5" font-weight="600" letter-spacing=".4" fill="${B.muted}" text-anchor="middle" dominant-baseline="central"${halo}>Powered by</text>`;
+      // the mark instead of sitting beside it. Caption cap-height on the block
+      // top, link descenders on the block foot, mark centred between the two.
+      const capY = blockT + 8;          // 10.5px caption
+      const urlY = blockB - 3;          // 13px link
+      const logoW = 200, logoH = logoW / (BRAND.logoAR || 8);
+      const logoX = brandR - logoW, logoY = capY + 3 + ((urlY - 9.5 - capY - 3) - logoH) / 2;
+      s += `<text x="${(logoX + brandR) / 2}" y="${capY}" font-size="10.5" font-weight="600" letter-spacing=".4" fill="${B.muted}" text-anchor="middle"${halo}>Powered by</text>`;
       if (BRAND.logo) {
-        s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
+        s += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
-        s += `<text x="${brandR}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="32" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+        s += `<text x="${brandR}" y="${(logoY + logoH / 2).toFixed(2)}" font-family="${DISP}" font-size="32" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
       // Live link; the QR encodes the same address.
-      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, 74, 13, CPL.accent, halo, W, H);
-      s += `<text x="${brandR}" y="100" font-size="12.5" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
+      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, urlY, 13, CPL.accent, halo, W, H);
+      // Closes the block on the page margin, the edge the QR and the card below
+      // both use, rather than on the lockup's inner edge.
+      s += `<text x="${W - pad}" y="${blockB + 18}" font-size="12.5" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
       s += `<rect x="${pad}" y="${cardY}" width="${W - 2 * pad}" height="${cardH}" rx="10" fill="${B.card}" stroke="${CPL.accent}" stroke-width="1.5"${B.shadow ? ' filter="url(#cplsh)"' : ''}/>`;
@@ -2113,7 +2137,12 @@
     // ---- broadcast branding assets ----
     // The exported SVG is rasterized through an <img>, which cannot fetch
     // anything external, so both marks must be inlined as data URIs.
-    let BRAND = { logo: null, qr: null, willow: null, cpl: null, willowWhite: null };
+    // `logoAR` is the partner mark's own aspect ratio, measured after the trim.
+    // The header used to fit an 8:1 mark into a ~5:1 box, so `meet` left a third
+    // of the box empty and the caption above it and the URL below were spaced
+    // against dead box rather than against the artwork. Sizing the box from the
+    // measured ratio makes the drawn gaps the gaps in the code.
+    let BRAND = { logo: null, qr: null, willow: null, cpl: null, willowWhite: null, logoAR: 8 };
     function toDataUri(url) {
       return fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error('missing')))
         .then(b => new Promise((res, rej) => {
@@ -2241,7 +2270,13 @@
         tightCrop(cpl, { keyBg: true, liftDark: 90, protectTop: true }),
         tightCrop(willowWhite),
       ]);
-      BRAND = { logo: logoTrim || logo, qr, willow: willowTrim || willow,
+      const mark = logoTrim || logo;
+      // Measured once here rather than at draw time: the templates are synchronous
+      // string builders and cannot wait on an image decode.
+      const logoAR = await loadImageEl(mark)
+        .then(i => (i.naturalHeight ? i.naturalWidth / i.naturalHeight : 8))
+        .catch(() => 8);
+      BRAND = { logo: mark, logoAR, qr, willow: willowTrim || willow,
                 cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
                 willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift };
     }
