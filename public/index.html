@@ -1720,6 +1720,59 @@
     const LEARN_URL = 'Champhunt.com/CPL';   // label shown on the graphic
     const LEARN_HREF = 'https://www.champhunt.in/cpl';
 
+    // ---- the top-right attribution block --------------------------------------
+    // Caption, partner mark, live URL, QR, and the context line that closes it.
+    // Both templates draw the same construction at different sizes, so it is
+    // built once here and they pass their own metrics in.
+    //
+    // Whatever the style, the block is one rectangle: the caption's cap-height
+    // sits on `blockT`, the link's descenders finish on `blockT + qrS`, the QR
+    // spans exactly that band, and the mark is centred in what is left between
+    // the caption and the link — so the two gaps around the mark stay equal
+    // whatever artwork is dropped in.
+    //
+    // `style` only decides how the caption and the QR relate to the lockup:
+    //   'centred' — caption centred over the mark; QR holds the page corner.
+    //   'flush'   — caption right-aligned, so caption, mark and URL share one
+    //               edge and the lockup has a single clean right margin.
+    //   'corner'  — QR moves inboard and the lockup itself runs out to the page
+    //               margin, so every line of type ends on the same edge as the
+    //               row plates below.
+    const BRAND_STYLE_DEFAULT = 'centred';
+    function brandBlock(o) {
+      const style = o.style || BRAND_STYLE_DEFAULT;
+      const marginR = o.W - o.pad, blockB = o.blockT + o.qrS;
+      const logoH = o.logoW / (BRAND.logoAR || 8);
+      // 'corner' hands the margin to the lockup and tucks the QR in behind it;
+      // the other two keep the QR on the margin with the lockup inboard.
+      const brandR = style === 'corner' ? marginR : marginR - o.qrS - o.gap;
+      const qrX = style === 'corner' ? brandR - o.logoW - o.gap - o.qrS : marginR - o.qrS;
+      const logoX = brandR - o.logoW;
+      const capY = o.blockT + o.capSize * 0.74;         // cap-height on the block top
+      const urlY = blockB - 3;                          // descenders on the block foot
+      const logoY = capY + 3 + ((urlY - o.urlSize * 0.72 - capY - 3) - logoH) / 2;
+      const halo = o.halo || '';
+      let g = '';
+      if (BRAND.qr) g += `<image x="${qrX}" y="${o.blockT}" width="${o.qrS}" height="${o.qrS}" href="${BRAND.qr}"/>`;
+      else g += placeholderQr(qrX, o.blockT, o.qrS);
+      g += `<text x="${style === 'centred' ? (logoX + brandR) / 2 : brandR}" y="${capY.toFixed(2)}"`
+        + ` font-size="${o.capSize}" font-weight="600" letter-spacing=".4" fill="${o.capFill}"`
+        + `${o.capOpacity ? ` opacity="${o.capOpacity}"` : ''}`
+        + ` text-anchor="${style === 'centred' ? 'middle' : 'end'}"${halo}>Powered by</text>`;
+      if (BRAND.logo) {
+        g += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${o.logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
+      } else {
+        g += `<text x="${brandR}" y="${(logoY + logoH / 2).toFixed(2)}" font-family="${DISP}" font-size="${o.fallbackSize}" font-weight="700" letter-spacing=".3" fill="${o.markFill}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
+      }
+      g += linkTextRight(LEARN_HREF, LEARN_URL, brandR, urlY, o.urlSize, o.linkFill, halo, o.W, o.H);
+      // The context line always closes on the page margin — the edge the QR, the
+      // row plates and the rating column all share. Right-aligning it to the
+      // lockup's inner edge instead left it stopping short of the corner.
+      g += `<text x="${marginR}" y="${blockB + o.ctxGap}" font-size="${o.ctxSize}" font-weight="600" fill="${o.capFill}"`
+        + `${o.capOpacity ? ` opacity="${o.capOpacity}"` : ''} text-anchor="end"${halo}>${o.ctx}</text>`;
+      return g;
+    }
+
     function crestSvgAt(name, cx, cy, r) {
       const t = teamMeta(name), p = t.primary || '#334155', sec = t.secondary || '#94a3b8', sh = t.short || '?';
       const fs = sh.length >= 3 ? 13 : 16;
@@ -1793,58 +1846,32 @@
       // may be a bright sky or a sightscreen — the header stays white, since a
       // light tint on a light background is the one thing that vanishes on air.
       s += `<text x="${tX}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
-      // "Powered by" + partner mark + URL + QR, top right. Falls back to a
-      // wordmark until public/logos/champhunt.png is present, so the graphic is
-      // never broken.
-      //
-      // The whole corner is set as ONE rectangle: the QR holds the far-right
-      // corner and the lockup column sits immediately to its left, both starting
-      // on `blockT` and finishing on `blockB`. Before this the QR began below the
-      // caption and ran on past the URL, so the corner had three different top
-      // edges and three different bottom edges and read as a pile rather than a
-      // block. The QR stands the full height of the lockup, which is what keeps
-      // it scannable at broadcast distance.
-      const qrS = 52, blockT = 18, blockB = blockT + qrS;
-      const qrX = W - pad - qrS;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${blockT}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, blockT, qrS);
-      const brandR = qrX - 14;
+      // Attribution block, top right — see brandBlock(). The QR stands the full
+      // height of the lockup, which is what keeps it scannable at broadcast
+      // distance; down in the footer it was the smallest thing on the graphic.
       const hInk = transparent ? P.ink : '#ffffff';
       const hOp = transparent ? '.82' : '.92';
-      // Three baselines, all derived from the block: the caption's cap-height
-      // starts on the block top, the URL's descenders finish on the block foot,
-      // and the mark is centred in whatever is left between them. So the two
-      // gaps around the mark stay equal whatever artwork is dropped in.
-      const capY = blockT + 7;          // 9.5px caption
-      const urlY = blockB - 3;          // 12.5px link
-      const logoW = 152, logoH = logoW / (BRAND.logoAR || 8);
-      const logoX = brandR - logoW, logoY = capY + 3 + ((urlY - 9 - capY - 3) - logoH) / 2;
-      // Caption sits centred over the mark it labels, not flush to the block edge.
-      s += `<text x="${(logoX + brandR) / 2}" y="${capY}" font-size="9.5" font-weight="600" letter-spacing=".4" fill="${hInk}" opacity="${hOp}" text-anchor="middle"${halo}>Powered by</text>`;
-      if (BRAND.logo) {
-        s += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
-      } else {
-        s += `<text x="${brandR}" y="${(logoY + logoH / 2).toFixed(2)}" font-family="${DISP}" font-size="24" font-weight="700" letter-spacing=".3" fill="${hInk}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
-      }
-      // The URL is a live link in the SVG and the PDF; the QR beside it encodes
-      // the same address.
-      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, urlY, 12.5, hInk, halo, W, H);
-      // The season line closes the block on the page margin — the same edge the
-      // QR, the row plates and the rating column all use. Right-aligning it to the
-      // lockup's inner edge instead left it stopping short of the corner, which is
-      // what made the right-hand side look ragged.
-      s += `<text x="${W - pad}" y="${blockB + 15}" font-size="11.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
+      s += brandBlock({
+        style: opts && opts.brandStyle, W, H, pad, blockT: 18, qrS: 52, gap: 14, logoW: 152,
+        capSize: 9.5, urlSize: 12.5, ctxSize: 11.5, ctxGap: 15, fallbackSize: 24,
+        capFill: hInk, capOpacity: hOp, markFill: hInk, linkFill: hInk, halo,
+        ctx: `Season ${esc(st.season)}`,
+      });
       // Over open feed the rule is what separates header from rows. On the
       // opaque plate the band's own bottom edge already does that, and a rule
       // drawn across a gradient reads as a seam.
       if (transparent) s += `<rect x="${pad}" y="${headerH - 14}" width="${W - 2 * pad}" height="2.5" rx="1.25" fill="#ffffff" opacity=".8"${halo}/>`;
       // Column labels, so the figures are self-explanatory the way they are on
-      // the CPL table.
+      // the CPL table — and spelled out in full for the same reason that table
+      // spells its own out. "W-L" and "MOVE" assume the reader already knows the
+      // convention, which a broadcast audience meeting the graphic for four
+      // seconds does not. The cells stay short ("8-3", "▲2"); only the headings
+      // that explain them run long.
       const chY = headerH + 15;
       const lblInk = transparent ? P.muted : P.muted;
       s += `<text x="${pad + 118}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}"${halo}>TEAM</text>`;
-      s += `<text x="${colStats}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}" text-anchor="end"${halo}>W-L</text>`;
-      s += `<text x="${colMv}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}" text-anchor="middle"${halo}>MOVE</text>`;
+      s += `<text x="${colStats}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}" text-anchor="end"${halo}>WON-LOSS</text>`;
+      s += `<text x="${colMv}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}" text-anchor="middle"${halo}>MOVEMENT</text>`;
       s += `<text x="${colScore}" y="${chY}" font-size="11.5" letter-spacing=".08em" fill="${lblInk}" text-anchor="end"${halo}>RATING</text>`;
       rows.forEach((r, i) => {
         const y = headerH + colHeadH + i * rh, ch = rh - 8, cyc = y + ch / 2;
@@ -1958,37 +1985,16 @@
       }
       const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
       s += `<text x="${titleX}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
-      // "Powered by" + partner mark, top right — same block as the broadcast
-      // graphic, so the two templates carry identical attribution. The mark runs
-      // larger here than in the overlay: this table is 1280 wide against the
-      // graphic's 940, and a web asset is read at desk distance, not glanced at.
-      // Same construction as the broadcast overlay, so the two templates carry an
-      // identical block: QR in the far-right corner, lockup column immediately to
-      // its left, both spanning exactly `blockT`..`blockB` so the corner has one
-      // top edge and one foot.
-      const qrS = 62, blockT = 16, blockB = blockT + qrS;
-      const qrX = W - pad - qrS;
-      if (BRAND.qr) s += `<image x="${qrX}" y="${blockT}" width="${qrS}" height="${qrS}" href="${BRAND.qr}"/>`;
-      else s += placeholderQr(qrX, blockT, qrS);
-      const brandR = qrX - 18;
-      // "Powered by" is a caption: smaller than the URL, stacked directly above
-      // the mark instead of sitting beside it. Caption cap-height on the block
-      // top, link descenders on the block foot, mark centred between the two.
-      const capY = blockT + 8;          // 10.5px caption
-      const urlY = blockB - 3;          // 13px link
-      const logoW = 200, logoH = logoW / (BRAND.logoAR || 8);
-      const logoX = brandR - logoW, logoY = capY + 3 + ((urlY - 9.5 - capY - 3) - logoH) / 2;
-      s += `<text x="${(logoX + brandR) / 2}" y="${capY}" font-size="10.5" font-weight="600" letter-spacing=".4" fill="${B.muted}" text-anchor="middle"${halo}>Powered by</text>`;
-      if (BRAND.logo) {
-        s += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
-      } else {
-        s += `<text x="${brandR}" y="${(logoY + logoH / 2).toFixed(2)}" font-family="${DISP}" font-size="32" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
-      }
-      // Live link; the QR encodes the same address.
-      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, urlY, 13, CPL.accent, halo, W, H);
-      // Closes the block on the page margin, the edge the QR and the card below
-      // both use, rather than on the lockup's inner edge.
-      s += `<text x="${W - pad}" y="${blockB + 18}" font-size="12.5" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
+      // Attribution block, top right — the same brandBlock() the broadcast
+      // overlay draws, so the two templates carry identical attribution. Every
+      // metric runs larger here: this table is 1280 wide against the graphic's
+      // 940, and a web asset is read at desk distance, not glanced at.
+      s += brandBlock({
+        style: opts && opts.brandStyle, W, H, pad, blockT: 16, qrS: 62, gap: 18, logoW: 200,
+        capSize: 10.5, urlSize: 13, ctxSize: 12.5, ctxGap: 18, fallbackSize: 32,
+        capFill: B.muted, markFill: CPL.ink, linkFill: CPL.accent, halo,
+        ctx: `${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}`,
+      });
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
       s += `<rect x="${pad}" y="${cardY}" width="${W - 2 * pad}" height="${cardH}" rx="10" fill="${B.card}" stroke="${CPL.accent}" stroke-width="1.5"${B.shadow ? ' filter="url(#cplsh)"' : ''}/>`;
