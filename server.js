@@ -292,15 +292,33 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, cacheStats());
     }
 
-    // Serve licensed team logo files dropped into public/logos/. path.basename
-    // strips any directory component, so ../ traversal can't escape the folder.
-    if (req.method === 'GET' && url.pathname.startsWith('/logos/')) {
+    // The browser cannot list a directory, so the backdrop stills available for
+    // the broadcast-frame export are enumerated here. Drop a still into
+    // public/backgrounds/ and it appears in the picker on the next load.
+    if (req.method === 'GET' && url.pathname === '/api/backgrounds') {
+      const dir = path.join(__dirname, 'public', 'backgrounds');
+      let files = [];
+      try {
+        files = fs.readdirSync(dir)
+          .filter((f) => /\.(png|jpe?g|webp)$/i.test(f) && fs.statSync(path.join(dir, f)).isFile())
+          .sort();
+      } catch { files = []; }   // folder absent is normal, not an error
+      return send(res, 200, { files });
+    }
+
+    // Serve drop-in artwork: licensed team logos and branding marks from
+    // public/logos/, broadcast backdrop stills from public/backgrounds/. The
+    // folder is matched against a fixed list rather than taken from the URL, and
+    // path.basename strips any directory component, so ../ traversal can't
+    // escape either folder.
+    const assetDir = /^\/(logos|backgrounds)\//.exec(url.pathname);
+    if (req.method === 'GET' && assetDir) {
       // Decode before resolving: a filename containing a space arrives as
       // %20 and would never match the file on disk. basename still runs after
       // decoding, so ../ traversal cannot escape the folder.
       let requested;
       try { requested = decodeURIComponent(url.pathname); } catch { requested = url.pathname; }
-      const file = path.join(__dirname, 'public', 'logos', path.basename(requested));
+      const file = path.join(__dirname, 'public', assetDir[1], path.basename(requested));
       if (fs.existsSync(file) && fs.statSync(file).isFile()) {
         const type = {
           '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',

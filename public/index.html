@@ -789,6 +789,11 @@
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
         <button id="dlPdf" title="Download the current table as a PDF">PDF</button>
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
+        <button id="dlFrame" title="Download a finished 1920x1080 broadcast frame: the keyed overlay composited onto the selected backdrop still">1080p frame</button>
+        <label class="bgopt" id="frameBgOpt" title="Backdrop still for the broadcast frame. Drop images into public/backgrounds/ and they appear here.">
+          Backdrop
+          <select id="frameBg"></select>
+        </label>
         <label class="bgopt" id="bgWillowOpt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
           <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
         </label>
@@ -1725,28 +1730,20 @@
     // Both templates draw the same construction at different sizes, so it is
     // built once here and they pass their own metrics in.
     //
-    // Whatever the style, the block is one rectangle: the caption's cap-height
-    // sits on `blockT`, the link's descenders finish on `blockT + qrS`, the QR
-    // spans exactly that band, and the mark is centred in what is left between
-    // the caption and the link — so the two gaps around the mark stay equal
-    // whatever artwork is dropped in.
+    // The block is one rectangle: the caption's cap-height sits on `blockT`, the
+    // link's descenders finish on `blockT + qrS`, the QR spans exactly that band,
+    // and the mark is centred in what is left between the caption and the link —
+    // so the two gaps around the mark stay equal whatever artwork is dropped in.
     //
-    // `style` only decides how the caption and the QR relate to the lockup:
-    //   'centred' — caption centred over the mark; QR holds the page corner.
-    //   'flush'   — caption right-aligned, so caption, mark and URL share one
-    //               edge and the lockup has a single clean right margin.
-    //   'corner'  — QR moves inboard and the lockup itself runs out to the page
-    //               margin, so every line of type ends on the same edge as the
-    //               row plates below.
-    const BRAND_STYLE_DEFAULT = 'centred';
+    // Caption, mark and URL are all right-aligned to the same edge. Centring the
+    // caption over the mark made it the one centred thing in a corner where
+    // everything else was flush right, and that odd-one-out is what read as
+    // "off"; the QR keeps the page corner and the lockup sits inboard of it.
     function brandBlock(o) {
-      const style = o.style || BRAND_STYLE_DEFAULT;
       const marginR = o.W - o.pad, blockB = o.blockT + o.qrS;
       const logoH = o.logoW / (BRAND.logoAR || 8);
-      // 'corner' hands the margin to the lockup and tucks the QR in behind it;
-      // the other two keep the QR on the margin with the lockup inboard.
-      const brandR = style === 'corner' ? marginR : marginR - o.qrS - o.gap;
-      const qrX = style === 'corner' ? brandR - o.logoW - o.gap - o.qrS : marginR - o.qrS;
+      const brandR = marginR - o.qrS - o.gap;
+      const qrX = marginR - o.qrS;
       const logoX = brandR - o.logoW;
       const capY = o.blockT + o.capSize * 0.74;         // cap-height on the block top
       const urlY = blockB - 3;                          // descenders on the block foot
@@ -1755,10 +1752,10 @@
       let g = '';
       if (BRAND.qr) g += `<image x="${qrX}" y="${o.blockT}" width="${o.qrS}" height="${o.qrS}" href="${BRAND.qr}"/>`;
       else g += placeholderQr(qrX, o.blockT, o.qrS);
-      g += `<text x="${style === 'centred' ? (logoX + brandR) / 2 : brandR}" y="${capY.toFixed(2)}"`
+      g += `<text x="${brandR}" y="${capY.toFixed(2)}"`
         + ` font-size="${o.capSize}" font-weight="600" letter-spacing=".4" fill="${o.capFill}"`
         + `${o.capOpacity ? ` opacity="${o.capOpacity}"` : ''}`
-        + ` text-anchor="${style === 'centred' ? 'middle' : 'end'}"${halo}>Powered by</text>`;
+        + ` text-anchor="end"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         g += `<image x="${logoX}" y="${logoY.toFixed(2)}" width="${o.logoW}" height="${logoH.toFixed(2)}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
@@ -1852,7 +1849,7 @@
       const hInk = transparent ? P.ink : '#ffffff';
       const hOp = transparent ? '.82' : '.92';
       s += brandBlock({
-        style: opts && opts.brandStyle, W, H, pad, blockT: 18, qrS: 52, gap: 14, logoW: 152,
+        W, H, pad, blockT: 18, qrS: 52, gap: 14, logoW: 152,
         capSize: 9.5, urlSize: 12.5, ctxSize: 11.5, ctxGap: 15, fallbackSize: 24,
         capFill: hInk, capOpacity: hOp, markFill: hInk, linkFill: hInk, halo,
         ctx: `Season ${esc(st.season)}`,
@@ -1990,7 +1987,7 @@
       // metric runs larger here: this table is 1280 wide against the graphic's
       // 940, and a web asset is read at desk distance, not glanced at.
       s += brandBlock({
-        style: opts && opts.brandStyle, W, H, pad, blockT: 16, qrS: 62, gap: 18, logoW: 200,
+        W, H, pad, blockT: 16, qrS: 62, gap: 18, logoW: 200,
         capSize: 10.5, urlSize: 13, ctxSize: 12.5, ctxGap: 18, fallbackSize: 32,
         capFill: B.muted, markFill: CPL.ink, linkFill: CPL.accent, halo,
         ctx: `${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}`,
@@ -2370,6 +2367,60 @@
       // no quality setting to trade off here — only the raster size above.
       await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png')); res(); }, 'image/png'));
     }
+    // ---- broadcast frame ------------------------------------------------------
+    // The deliverable Willow actually puts to air is a finished 16:9 frame — the
+    // keyed overlay already sitting on a stadium still — not a bare table the
+    // gallery has to composite itself. The backdrop is whatever still is dropped
+    // into public/backgrounds/; the overlay is always the TRANSPARENT build, so
+    // the row plates let the picture through exactly as they do over live feed.
+    const FRAME_W = 1920, FRAME_H = 1080, FRAME_INSET = 0.085;
+    let BACKDROPS = [];
+    async function loadBackdrops() {
+      try {
+        const r = await fetch('/api/backgrounds');
+        BACKDROPS = r.ok ? ((await r.json()).files || []) : [];
+      } catch { BACKDROPS = []; }
+      const sel = $('frameBg'), opt = $('frameBgOpt'), btn = $('dlFrame');
+      if (sel) sel.innerHTML = BACKDROPS.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+      // With no still installed the frame export has nothing to composite onto,
+      // so it says so on the control rather than producing a table on black.
+      const none = BACKDROPS.length === 0;
+      if (opt) opt.style.display = none ? 'none' : '';
+      if (btn) {
+        btn.disabled = none;
+        btn.title = none
+          ? 'Add a backdrop still to public/backgrounds/ to enable the broadcast frame export'
+          : 'Download a finished 1920x1080 broadcast frame: the keyed overlay composited onto the selected backdrop still';
+      }
+    }
+    // Cover-fit: fill the frame and crop the overflow, never letterbox — a
+    // stadium still is a photograph and bars down the side would go to air.
+    function drawCover(ctx, img, W, H) {
+      const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      const w = img.naturalWidth * s, h = img.naturalHeight * s;
+      ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+    }
+    async function downloadFrame() {
+      const file = $('frameBg') && $('frameBg').value;
+      if (!file) throw new Error('no backdrop still installed — add one to public/backgrounds/');
+      const back = await loadImageEl('/backgrounds/' + encodeURIComponent(file));
+      // Render the overlay at frame resolution rather than scaling a small
+      // bitmap up, so the type stays vector-sharp at 1080p.
+      const inner = FRAME_H * (1 - 2 * FRAME_INSET);
+      const unitW = currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W;
+      const probe = buildTableSvg({ transparent: true, bg: 'translucent', scale: 1 });
+      const unitH = +(/height="(\d+)"/.exec(probe) || [])[1] || unitW * 0.78;
+      const scale = Math.min(inner / unitH, (FRAME_W * (1 - 2 * FRAME_INSET)) / unitW);
+      const table = await rasterize(buildTableSvg({ transparent: true, bg: 'translucent', scale }), false);
+      const c = document.createElement('canvas');
+      c.width = FRAME_W; c.height = FRAME_H;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      drawCover(ctx, back, FRAME_W, FRAME_H);
+      ctx.drawImage(table, Math.round((FRAME_W - table.width) / 2), Math.round((FRAME_H - table.height) / 2));
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('frame.png')); res(); }, 'image/png'));
+    }
+
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
       const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: 3 }), true);
@@ -2432,6 +2483,7 @@
     $('dlPng').addEventListener('click', () => downloadPng().catch(e => $('err').textContent = e.message));
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
+    $('dlFrame').addEventListener('click', () => downloadFrame().catch(e => $('err').textContent = e.message));
     // Each template has its own background control — a two-state switch for the
     // broadcast graphic, a three-way for CPL. Only the relevant one is shown, so
     // the bar never offers a setting that does nothing.
@@ -2537,6 +2589,7 @@
       overlay(true, 'Loading…');
       try {
         await loadBrand();
+        await loadBackdrops();
         await refreshCheckpoints();
         const data = await api('/api/state');
         applyState(data);
