@@ -771,7 +771,9 @@
       <h1 id="title">T20 Power Rankings</h1>
       <span class="pill" id="modePill">baseline</span>
       <span class="pill" id="aiPill">AI</span>
-      <span class="pill on" id="buildPill" title="Deploy marker — if you don't see this pill, you're on a cached OLD version; hard-reload.">build&nbsp;4 · labels&nbsp;✓</span>
+      <span class="pill on" id="buildPill"
+        title="Deploy marker — if you don't see this pill, you're on a cached OLD version; hard-reload.">build&nbsp;4 ·
+        labels&nbsp;✓</span>
       <span class="sub" id="sub"></span>
     </div>
 
@@ -779,7 +781,8 @@
     <div>
       <div class="exportbar">
         <span class="exportlabel">Download table:</span>
-        <label class="bgopt" title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; CPL matches the cplt20.com points-table styling.">
+        <label class="bgopt"
+          title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; CPL matches the cplt20.com points-table styling.">
           Template
           <select id="tplSelect">
             <option value="willow" selected>Willow TV · broadcast</option>
@@ -789,22 +792,28 @@
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
         <button id="dlPdf" title="Download the current table as a PDF">PDF</button>
         <button id="dlSvg" title="Download the current table as a scalable vector (SVG)">SVG (vector)</button>
-        <button id="dlFrame" title="Download a finished 1920x1080 broadcast frame: the keyed overlay composited onto the selected backdrop still">1080p frame</button>
-        <label class="bgopt" id="frameBgOpt" title="Backdrop still for the broadcast frame. Drop images into public/backgrounds/ and they appear here.">
+        <button id="dlFrame"
+          title="Download a finished 1920x1080 broadcast frame: the keyed overlay composited onto the selected backdrop still">1080p
+          frame</button>
+        <label class="bgopt" id="frameBgOpt"
+          title="Backdrop still for the broadcast frame. Drop images into public/backgrounds/ and they appear here.">
           Backdrop
           <select id="frameBg"></select>
         </label>
-        <label class="bgopt" id="bgWillowOpt" title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
+        <label class="bgopt" id="bgWillowOpt"
+          title="Export with an alpha channel so the graphic can be keyed over the live feed. PDF is always exported on a solid background.">
           <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
         </label>
-        <label class="bgopt" id="bgCplOpt" title="How much of the CPL card is painted. Solid is the website look; translucent keeps an alpha channel so the table can be keyed over a live feed. PDF is always exported solid.">
+        <label class="bgopt" id="bgCplOpt"
+          title="How much of the CPL card is painted. Solid is the website look; translucent keeps an alpha channel so the table can be keyed over a live feed. PDF is always exported solid.">
           Background
           <select id="cplBg">
             <option value="solid" selected>Solid navy (website)</option>
             <option value="translucent">Translucent navy (overlay)</option>
           </select>
         </label>
-        <label class="bgopt" title="Pixel width of the exported PNG. The graphic is vector, so a larger raster is genuinely sharper — not an upscale.">
+        <label class="bgopt"
+          title="Pixel width of the exported PNG. The graphic is vector, so a larger raster is genuinely sharper — not an upscale.">
           PNG size
           <select id="pngRes">
             <option value="1920">HD · 1920px</option>
@@ -830,15 +839,23 @@
           <button id="btnAiAll" class="ghost" style="flex:1;">AI-write all</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <button id="btnUndo" class="ghost" style="flex:1;" title="Remove the last match that was added — use this if a result was entered wrongly">↩︎ Undo last match</button>
-          <button id="btnClear" class="ghost" style="flex:1;" title="Remove every match, keeping the teams. Restore a checkpoint afterwards to start from that point.">🧹 Clear matches</button>
+          <button id="btnUndo" class="ghost" style="flex:1;"
+            title="Remove the last match that was added — use this if a result was entered wrongly">↩︎ Undo last
+            match</button>
+          <button id="btnClear" class="ghost" style="flex:1;"
+            title="Remove every match, keeping the teams. Restore a checkpoint afterwards to start from that point.">🧹
+            Clear matches</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
-          <button id="btnSave" class="ghost" style="flex:1;" title="Download today's checkpoint: every match, weight and summary as one JSON file">💾 Save the file</button>
-          <button id="btnLoad" class="ghost" style="flex:1;" title="Load a saved checkpoint and carry on from there">📂 Load checkpoint</button>
+          <button id="btnSave" class="ghost" style="flex:1;"
+            title="Download today's checkpoint: every match, weight and summary as one JSON file">💾 Save the
+            file</button>
+          <button id="btnLoad" class="ghost" style="flex:1;" title="Load a saved checkpoint and carry on from there">📂
+            Load checkpoint</button>
         </div>
         <input type="file" id="cpFile" accept="application/json,.json" style="display:none">
-        <label style="margin-top:10px;">Saved on this server <span id="cpCount" style="color:var(--muted);font-weight:400;"></span></label>
+        <label style="margin-top:10px;">Saved on this server <span id="cpCount"
+            style="color:var(--muted);font-weight:400;"></span></label>
         <div style="display:flex;gap:8px;">
           <select id="cpList" style="flex:1;"></select>
           <button id="btnRestore" class="ghost" style="flex:0 0 auto;">Restore</button>
@@ -854,20 +871,22 @@
           <div>
             <label>Week number</label>
             <input type="number" id="pubWeek" value="1" min="1" max="52"
-                   title="Which week of the season this table is. The site labels the section and its week selector from this.">
+              title="Which week of the season this table is. The site labels the section and its week selector from this.">
           </div>
           <div>
             <label>Worked example</label>
-            <select id="pubWorked" title="The team the site walks through factor by factor. Defaults to mid-table."></select>
+            <select id="pubWorked"
+              title="The team the site walks through factor by factor. Defaults to mid-table."></select>
           </div>
         </div>
         <label>Hero sentence <span style="color:var(--muted);font-weight:400;">(blank = auto)</span></label>
         <input type="text" id="pubHeadline" maxlength="240"
-               placeholder="Trinbago are playing the best cricket in the Caribbean right now.">
+          placeholder="Trinbago are playing the best cricket in the Caribbean right now.">
         <div class="row">
           <div>
             <label>Next match</label>
-            <input type="datetime-local" id="pubNextIso" title="Drives the countdown in the site's hero. Leave blank to keep whatever the site already shows.">
+            <input type="datetime-local" id="pubNextIso"
+              title="Drives the countdown in the site's hero. Leave blank to keep whatever the site already shows.">
           </div>
           <div>
             <label>Venue</label>
@@ -875,8 +894,11 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button id="btnPublish" style="flex:1;" title="Download the website JSON. Upload it on the cplxch /admin page to update every ranking, blurb and carousel.">🌐 Export for website</button>
-          <button id="btnPublishPreview" class="ghost" style="flex:0 0 auto;" title="Show what the file will contain without downloading it">Preview</button>
+          <button id="btnPublish" style="flex:1;"
+            title="Download the website JSON. Upload it on the cplxch /admin page to update every ranking, blurb and carousel.">🌐
+            Export for website</button>
+          <button id="btnPublishPreview" class="ghost" style="flex:0 0 auto;"
+            title="Show what the file will contain without downloading it">Preview</button>
         </div>
         <div class="note" id="pubNote"></div>
       </div>
@@ -991,12 +1013,14 @@
         <label>Something significant — Team Y <span id="sigYteam" style="color:var(--accent)"></span></label>
         <textarea id="sigY" placeholder="e.g. Collapsed from 90/1 to 140 all out"></textarea>
 
-        <label style="margin-top:14px;">Fetch latest match between <span id="feedPill" style="color:var(--muted);font-weight:400;"></span></label>
+        <label style="margin-top:14px;">Fetch latest match between <span id="feedPill"
+            style="color:var(--muted);font-weight:400;"></span></label>
         <div class="row">
           <input type="text" id="teamAName" placeholder="Team A — e.g. India">
           <input type="text" id="teamBName" placeholder="Team B — e.g. West Indies">
         </div>
-        <label>Match links (optional) — read for extra detail <span id="linkCount" style="color:var(--muted);font-weight:400;"></span></label>
+        <label>Match links (optional) — read for extra detail <span id="linkCount"
+            style="color:var(--muted);font-weight:400;"></span></label>
         <div id="linkList"></div>
         <div class="row" id="linkAddRow">
           <input type="text" id="linkInput" placeholder="Paste a match link (scorecard, report…)" style="flex:3;">
@@ -1005,8 +1029,10 @@
 
         <button id="btnFetch" class="ghost" style="width:100%;margin-top:12px;">⤓ Fetch match result (API)</button>
         <div class="row" style="margin-top:6px;">
-          <button id="btnRefetch" class="ghost" style="flex:1;" title="Ignore every stored response and search the feed again">↻ Search again (ignore cache)</button>
-          <button id="btnClearCache" class="ghost" style="flex:1;" title="Delete all stored provider responses">🗑 Clear all previous cache</button>
+          <button id="btnRefetch" class="ghost" style="flex:1;"
+            title="Ignore every stored response and search the feed again">↻ Search again (ignore cache)</button>
+          <button id="btnClearCache" class="ghost" style="flex:1;" title="Delete all stored provider responses">🗑 Clear
+            all previous cache</button>
         </div>
         <div id="cacheNote" style="color:var(--muted);font-size:11px;margin-top:4px;"></div>
         <div id="fetchPreview"></div>
@@ -1586,7 +1612,7 @@
       };
       const srcLabel = match.source === 'cricapi' ? 'CricAPI (structured feed)'
         : match.source === 'espn' ? 'ESPN (live)'
-        : match.source === 'gemini' ? 'Gemini (grounded search — backup)' : 'offline snapshot';
+          : match.source === 'gemini' ? 'Gemini (grounded search — backup)' : 'offline snapshot';
       let src = `Source: <b>${esc(srcLabel)}</b>`;
       if (match.source === 'stub' && match.fallbackReason) src += ` — ${esc(match.fallbackReason)}`;
       const diag = fetchDiagnostics(match);
@@ -1723,7 +1749,7 @@
     }
 
     const LEARN_URL = 'Champhunt.com/CPL';   // label shown on the graphic
-    const LEARN_HREF = 'https://www.champhunt.in/cpl';
+    const LEARN_HREF = 'https://www.champhunt.com/cpl';
 
     // ---- the top-right attribution block --------------------------------------
     // Caption, partner mark, live URL, QR, and the context line that closes it.
@@ -1935,8 +1961,8 @@
     // secondary on the opaque navy plate goes soft against a bright sky or a
     // sightscreen, taking the column labels and the AI line with it.
     const CPL_BG = {
-      solid:       { page: CPL.bg, card: CPL.card,             line: CPL.line,                muted: CPL.muted,             shadow: false },
-      translucent: { page: null,   card: 'rgba(10,10,32,.74)', line: 'rgba(255,255,255,.14)', muted: 'rgba(255,255,255,.80)', shadow: true },
+      solid: { page: CPL.bg, card: CPL.card, line: CPL.line, muted: CPL.muted, shadow: false },
+      translucent: { page: null, card: 'rgba(10,10,32,.74)', line: 'rgba(255,255,255,.14)', muted: 'rgba(255,255,255,.80)', shadow: true },
     };
     // Stat columns, centred, in the order CPL lists them. `Points` becomes
     // `Rating` — a power ranking has no league points, and printing the score
@@ -1945,11 +1971,11 @@
     // The remaining columns spread into the space, which is what buys the larger
     // type an email read on a phone needs.
     const CPL_COLS = [
-      { label: 'Won',           x: 700,  get: (r) => String(r.won) },
-      { label: 'Loss',          x: 810,  get: (r) => String(r.lost) },
-      { label: 'Net Run Rate',  x: 950,  get: (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}` },
-      { label: 'Form',          x: 1075, get: (r) => `${r.formRecord.wins}/${r.formRecord.of}` },
-      { label: 'Rating',        x: 1195, get: (r) => r.scoreDisplay.toFixed(1), strong: true },
+      { label: 'Won', x: 700, get: (r) => String(r.won) },
+      { label: 'Loss', x: 810, get: (r) => String(r.lost) },
+      { label: 'Net Run Rate', x: 950, get: (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}` },
+      { label: 'Form', x: 1075, get: (r) => `${r.formRecord.wins}/${r.formRecord.of}` },
+      { label: 'Rating', x: 1195, get: (r) => r.scoreDisplay.toFixed(1), strong: true },
     ];
     function cplTableSvg(opts) {
       const st = STATE, rows = st.ranking, n = rows.length;
@@ -2116,9 +2142,9 @@
         const sel = $('cpList');
         sel.innerHTML = items.length
           ? items.map(i => {
-              const when = i.savedAt ? new Date(i.savedAt).toLocaleString() : i.file;
-              return `<option value="${esc(i.file)}">${esc(when)} · ${i.matchCount != null ? i.matchCount + ' matches' : '?'}</option>`;
-            }).join('')
+            const when = i.savedAt ? new Date(i.savedAt).toLocaleString() : i.file;
+            return `<option value="${esc(i.file)}">${esc(when)} · ${i.matchCount != null ? i.matchCount + ' matches' : '?'}</option>`;
+          }).join('')
           : '<option value="">— none saved yet —</option>';
         $('cpCount').textContent = items.length ? `(${items.length})` : '';
       } catch { /* listing is non-critical */ }
@@ -2279,9 +2305,11 @@
       const logoAR = await loadImageEl(mark)
         .then(i => (i.naturalHeight ? i.naturalWidth / i.naturalHeight : 8))
         .catch(() => 8);
-      BRAND = { logo: mark, logoAR, qr, willow: willowTrim || willow,
-                cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
-                willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift };
+      BRAND = {
+        logo: mark, logoAR, qr, willow: willowTrim || willow,
+        cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
+        willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift
+      };
     }
     // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each
     // one is inlined once at boot and reused by every export. Needs STATE, so it

@@ -51,7 +51,7 @@ navy artwork is illegible on the CPL navy card and on a night feed without one.
 `cpl.png` is optional: supply it for a league mark top-left on the CPL template,
 otherwise the league's short code runs ahead of the title ("CPL POWER RANKINGS").
 
-`qr.png` is now a real, verified QR encoding `https://www.champhunt.in/cpl`
+`qr.png` is now a real, verified QR encoding `https://www.champhunt.com/cpl`
 (error-correction level H, 2-module quiet zone). It is deliberately NOT run
 through the auto-crop that trims the other marks — cropping would eat the quiet
 zone and stop it scanning. Regenerate it if the destination URL ever changes.
