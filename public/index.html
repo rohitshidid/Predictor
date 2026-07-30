@@ -1868,7 +1868,11 @@
       // Accent blue only ever sits on a dark row plate. Over open feed — which
       // may be a bright sky or a sightscreen — the header stays white, since a
       // light tint on a light background is the one thing that vanishes on air.
-      s += `<text x="${tX}" y="64" font-family="${DISP}" font-size="17" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
+      // One step up the scale from 17: enough to stop the strapline reading as
+      // fine print, still well clear of the league name above it so the hierarchy
+      // holds. The baseline drops 2 to keep the gap under the league name, which
+      // the taller cap-height would otherwise have closed up.
+      s += `<text x="${tX}" y="66" font-family="${DISP}" font-size="20" font-weight="700" letter-spacing="6.5" fill="${P.ink}" opacity=".9"${halo}>POWER RANKINGS</text>`;
       // Attribution block, top right — see brandBlock(). The QR stands the full
       // height of the lockup, which is what keeps it scannable at broadcast
       // distance; down in the footer it was the smallest thing on the graphic.
@@ -1999,15 +2003,22 @@
       // the condensed display stack is the closest match that renders anywhere.
       // League mark top-left. Without the artwork the league's short code runs
       // ahead of the title instead — Willow accepted either.
-      let titleX = pad;
       const cplArt = BRAND.cplDark || BRAND.cpl;   // this card is always dark navy
       if (cplArt) {
         const clH = 106, clW = 106;
         s += `<image x="${pad}" y="6" width="${clW}" height="${clH}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
-        titleX = pad + clW + 20;
       }
       const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
-      s += `<text x="${titleX}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
+      // Centred on the slide, not run out from behind the league mark. The mark
+      // sits left and the attribution block sits right, so a left-set title left
+      // the header visibly weighted to one side; centred, it reads as a title
+      // card. text-anchor="middle" centres the ADVANCE box, and SVG adds a full
+      // letter-space after the final glyph, so anchoring on W/2 alone leaves the
+      // visible run sitting fractionally left — half the tracking is added back.
+      // Checked by measuring the painted pixels of the rasterised title, not by
+      // assuming: ink centre lands within half a unit of W/2.
+      const titleTrack = 3;
+      s += `<text x="${W / 2 + titleTrack / 2}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="${titleTrack}" fill="${CPL.accent}" text-anchor="middle"${halo}>${lead}POWER RANKINGS</text>`;
       // Attribution block, top right — the same brandBlock() the broadcast
       // overlay draws, so the two templates carry identical attribution. Every
       // metric runs larger here: this table is 1280 wide against the graphic's
