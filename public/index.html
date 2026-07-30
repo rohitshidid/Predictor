@@ -1694,6 +1694,15 @@
     }
 
     // Single source for the destination: the QR asset encodes this exact URL.
+    // A rasterised PDF page loses the SVG's <a>, so each template records where the
+    // URL sits (as a fraction of the canvas, so it survives any export scale) and
+    // the PDF writer turns that into a real /Link annotation.
+    let SVG_LINKS = [];
+    function noteLink(href, rightX, baselineY, fontSize, text, W, H) {
+      const w = text.length * fontSize * 0.56, h = fontSize * 1.25;
+      SVG_LINKS.push({ href, fx: (rightX - w) / W, fy: (baselineY - fontSize) / H, fw: w / W, fh: h / H });
+    }
+
     const LEARN_URL = 'www.champhunt.in/cpl';
     const LEARN_HREF = 'https://www.champhunt.in/cpl';
 
@@ -1735,6 +1744,7 @@
       // rather than rendering 940px wide and upscaling the bitmap, which is
       // what made the exports look soft.
       const scale = (opts && opts.scale) || 1;
+      SVG_LINKS = [];
       let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
       if (transparent) s += `<defs><filter id="tvsh" x="-20%" y="-40%" width="140%" height="180%">` +
         `<feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#04070d" flood-opacity=".9"/></filter></defs>`;
@@ -1796,6 +1806,7 @@
       // The URL is a live link in the SVG and the PDF; the QR beside it encodes
       // the same address.
       s += `<a href="${LEARN_HREF}" target="_blank"><text x="${brandR}" y="70" font-size="12.5" font-weight="700" fill="${hInk}" text-anchor="end"${halo}>${LEARN_URL}</text></a>`;
+      noteLink(LEARN_HREF, brandR, 70, 12.5, LEARN_URL, W, H);
       s += `<text x="${brandR}" y="88" font-size="11.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
       // Over open feed the rule is what separates header from rows. On the
       // opaque plate the band's own bottom edge already does that, and a rule
@@ -1899,6 +1910,7 @@
       const cardY = titleH, cardH = colHeadH + n * rh + cardPadB;
       const H = titleH + cardH + footerH;
       const scale = (opts && opts.scale) || 1;
+      SVG_LINKS = [];
       // Everything outside the plate — and everything on it in the keyed modes —
       // gets the shadow, so the graphic survives being dropped on a bright pitch.
       const halo = B.shadow ? ' filter="url(#cplsh)"' : '';
@@ -1942,6 +1954,7 @@
       }
       // Live link; the QR encodes the same address.
       s += `<a href="${LEARN_HREF}" target="_blank"><text x="${brandR}" y="80" font-size="13" font-weight="700" fill="${CPL.accent}" text-anchor="end"${halo}>${LEARN_URL}</text></a>`;
+      noteLink(LEARN_HREF, brandR, 80, 13, LEARN_URL, W, H);
       s += `<text x="${brandR}" y="100" font-size="12.5" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
@@ -2157,7 +2170,36 @@
         ox.drawImage(c, minX, minY, w, h, 0, 0, w, h);
         if (opts && opts.liftDark) {
           const id = ox.getImageData(0, 0, w, h), p = id.data;
-          for (let i = 0; i < p.length; i += 4) {
+          // Lifting every dark pixel destroyed artwork: the CPL emblem contains a
+          // black batsman silhouette inside a light globe, which turned white and
+          // vanished. `protectTop` confines the lift to the text beneath the
+          // emblem — the boundary is the first fully-transparent row-gap below the
+          // topmost content block, so it is measured from the artwork rather than
+          // hardcoded. No gap found means no safe boundary, so nothing is lifted.
+          let fromY = 0;
+          if (opts.protectTop) {
+            const rowOpaque = (y) => {
+              for (let x = 0; x < w; x++) if (p[(y * w + x) * 4 + 3] > 12) return true;
+              return false;
+            };
+            let firstContent = -1;
+            for (let y = 0; y < h; y++) if (rowOpaque(y)) { firstContent = y; break; }
+            let boundary = -1;
+            if (firstContent >= 0) {
+              for (let y = firstContent; y < h; y++) {
+                if (!rowOpaque(y)) {                       // start of the gap
+                  let end = y;
+                  while (end + 1 < h && !rowOpaque(end + 1)) end++;
+                  boundary = end;
+                  break;
+                }
+              }
+            }
+            if (boundary < 0) return out.toDataURL('image/png');   // leave it alone
+            fromY = boundary + 1;
+          }
+          for (let y = fromY; y < h; y++) for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
             if (p[i + 3] < 12) continue;
             const lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
             if (lum < opts.liftDark) { p[i] = 255; p[i + 1] = 255; p[i + 2] = 255; }
@@ -2187,7 +2229,7 @@
         // trim. The dark variant additionally lifts its near-black wordmark so it
         // stays visible on the navy card without putting a plate behind it.
         tightCrop(cpl, { keyBg: true }),
-        tightCrop(cpl, { keyBg: true, liftDark: 90 }),
+        tightCrop(cpl, { keyBg: true, liftDark: 90, protectTop: true }),
         tightCrop(willowWhite),
       ]);
       BRAND = { logo: logoTrim || logo, qr, willow: willowTrim || willow,
@@ -2281,8 +2323,9 @@
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
       const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: 3 }), true);
+      const links = SVG_LINKS.slice();   // captured by the render just above
       const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
-      saveBlob(new Blob([buildPdf(jpeg, c.width, c.height)], { type: 'application/pdf' }), exportName('pdf'));
+      saveBlob(new Blob([buildPdf(jpeg, c.width, c.height, links)], { type: 'application/pdf' }), exportName('pdf'));
     }
     function jpegBytes(dataUrl) {
       const bin = atob(dataUrl.split(',')[1]);
@@ -2291,25 +2334,37 @@
       return u;
     }
     // Minimal single-image PDF (embeds the table as a JPEG). No library.
-    function buildPdf(jpeg, imgW, imgH) {
+    function buildPdf(jpeg, imgW, imgH, links) {
       const margin = 24, pageW = 595.28, drawW = pageW - 2 * margin, drawH = drawW * imgH / imgW, pageH = drawH + 2 * margin;
       const enc = new TextEncoder(); const chunks = []; let len = 0; const off = [];
       const put = (d) => { const b = (typeof d === 'string') ? enc.encode(d) : d; chunks.push(b); len += b.length; };
       const obj = (num, body) => { off[num] = len; put(`${num} 0 obj\n`); put(body); put('\nendobj\n'); };
+      // Annotations follow the five fixed objects. PDF y runs bottom-up, so the
+      // recorded top-down fractions are flipped here.
+      const ann = (links || []).map((l, i) => {
+        const x0 = margin + l.fx * drawW, x1 = margin + (l.fx + l.fw) * drawW;
+        const y1 = margin + drawH - l.fy * drawH, y0 = margin + drawH - (l.fy + l.fh) * drawH;
+        return { num: 6 + i, rect: [x0, y0, x1, y1], href: l.href };
+      });
+      const total = 5 + ann.length;
       put('%PDF-1.4\n');
       obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
       obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-      obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>`);
+      obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im0 5 0 R >> >>${ann.length ? ` /Annots [${ann.map((a) => `${a.num} 0 R`).join(' ')}]` : ''} /Contents 4 0 R >>`);
       const content = `q ${drawW.toFixed(2)} 0 0 ${drawH.toFixed(2)} ${margin.toFixed(2)} ${margin.toFixed(2)} cm /Im0 Do Q`;
       obj(4, `<< /Length ${enc.encode(content).length} >>\nstream\n${content}\nendstream`);
       off[5] = len;
       put(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);
       put(jpeg); put('\nendstream\nendobj\n');
+      for (const a of ann) {
+        obj(a.num, `<< /Type /Annot /Subtype /Link /Border [0 0 0] /H /N /Rect [`
+          + `${a.rect.map((v) => v.toFixed(2)).join(' ')}] /A << /S /URI /URI (${a.href}) >> >>`);
+      }
       const xrefOff = len;
-      let xref = 'xref\n0 6\n0000000000 65535 f \n';
-      for (let i = 1; i <= 5; i++) xref += String(off[i]).padStart(10, '0') + ' 00000 n \n';
+      let xref = `xref\n0 ${total + 1}\n0000000000 65535 f \n`;
+      for (let i = 1; i <= total; i++) xref += String(off[i]).padStart(10, '0') + ' 00000 n \n';
       put(xref);
-      put(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOff}\n%%EOF`);
+      put(`trailer\n<< /Size ${total + 1} /Root 1 0 R >>\nstartxref\n${xrefOff}\n%%EOF`);
       const out = new Uint8Array(len); let p = 0;
       for (const b of chunks) { out.set(b, p); p += b.length; }
       return out;

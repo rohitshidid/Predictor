@@ -62,3 +62,15 @@ the border to transparent (a global white-key would punch holes through the star
 white gaps), then trimmed. On dark placements its near-black wordmark is lifted to
 white so the mark stays visible without a plate behind it. A transparent PNG named
 `cpl.png` takes precedence if you ever supply one.
+
+`cpl.png` / `cpl-dark.png` are the exported results of that process, saved so the
+transparent artwork exists as a file rather than only at runtime. `cpl.png` is the
+keyed, trimmed mark (RGBA, transparent background); `cpl-dark.png` is the same
+with the wordmark lifted to white for dark placements. `cpl.png` takes precedence
+over the JPEG on load.
+
+Note on the lift: it is confined to the text BELOW the emblem. The CPL badge
+contains a dark batsman silhouette inside a light globe, and lifting every dark
+pixel turned that white and erased it. The boundary is found from the artwork —
+the first fully-transparent row-gap under the topmost content block — so it is not
+hardcoded to this particular logo.
