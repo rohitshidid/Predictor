@@ -1937,13 +1937,13 @@
         // it gets the full run to the movement column rather than a token strip.
         const sl = streakLine(r);
         const nmY = sl ? cy - 14 : cy;
-        s += `<text x="${pad + 108}" y="${nmY}" font-family="${DISP}" font-size="28" font-weight="700" letter-spacing=".6" fill="${CPL.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 30).toUpperCase())}</text>`;
+        s += `<text x="${pad + 108}" y="${nmY}" font-family="${DISP}" font-size="26" font-weight="700" letter-spacing=".4" fill="${CPL.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 26).toUpperCase())}</text>`;
         if (sl) s += `<text x="${pad + 108}" y="${cy + 16}" font-size="14.5" fill="${B.muted}" dominant-baseline="central"${halo}>${esc(sl)}</text>`;
         // Movement rides with the name rather than taking a column of its own —
         // CPL's table has no such column and adding one breaks the rhythm.
         const mv = movementText(r);
         const mvc = r.movement === 'up' ? CPL.up : r.movement === 'down' ? CPL.down : CPL.accent;
-        if (mv) s += `<text x="${pad + 560}" y="${cy}" font-size="17" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
+        if (mv) s += `<text x="${pad + 604}" y="${cy}" font-size="17" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
         for (const c of CPL_COLS) {
           const strong = c.strong ? ` font-weight="700"` : '';
           s += `<text x="${c.x}" y="${cy}" font-size="${c.strong ? 22 : 19}" fill="${CPL.ink}"${strong} text-anchor="middle" dominant-baseline="central"${halo}>${esc(c.get(r))}</text>`;
