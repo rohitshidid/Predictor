@@ -1698,12 +1698,22 @@
     // URL sits (as a fraction of the canvas, so it survives any export scale) and
     // the PDF writer turns that into a real /Link annotation.
     let SVG_LINKS = [];
+    function linkWidth(text, fontSize) { return text.length * fontSize * 0.56; }
     function noteLink(href, rightX, baselineY, fontSize, text, W, H) {
-      const w = text.length * fontSize * 0.56, h = fontSize * 1.25;
+      const w = linkWidth(text, fontSize), h = fontSize * 1.25;
       SVG_LINKS.push({ href, fx: (rightX - w) / W, fy: (baselineY - fontSize) / H, fw: w / W, fh: h / H });
     }
+    // Right-aligned link: the text plus the PDF hotspot, which is sized from
+    // linkWidth() so the tappable area lands on the glyphs rather than by eye.
+    // Deliberately no underline — the label is set unadorned on both templates.
+    function linkTextRight(href, text, rightX, baselineY, fontSize, fill, halo, W, H) {
+      noteLink(href, rightX, baselineY, fontSize, text, W, H);
+      return `<a href="${href}" target="_blank">`
+        + `<text x="${rightX}" y="${baselineY}" font-size="${fontSize}" font-weight="700" fill="${fill}" text-anchor="end"${halo}>${text}</text>`
+        + `</a>`;
+    }
 
-    const LEARN_URL = 'www.champhunt.in/cpl';
+    const LEARN_URL = 'Champhunt.com/CPL';   // label shown on the graphic
     const LEARN_HREF = 'https://www.champhunt.in/cpl';
 
     function crestSvgAt(name, cx, cy, r) {
@@ -1796,8 +1806,9 @@
       const hOp = transparent ? '.82' : '.92';
       // "Powered by" is a caption, so it sets smaller than the URL and stacks
       // directly ABOVE the mark rather than beside it.
-      s += `<text x="${brandR}" y="20" font-size="9.5" font-weight="600" letter-spacing=".4" fill="${hInk}" opacity="${hOp}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
       const logoH = 28, logoW = 138, logoX = brandR - logoW, logoY = 27;
+      // Caption sits centred over the mark it labels, not flush to the block edge.
+      s += `<text x="${(logoX + brandR) / 2}" y="20" font-size="9.5" font-weight="600" letter-spacing=".4" fill="${hInk}" opacity="${hOp}" text-anchor="middle" dominant-baseline="central"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
@@ -1805,8 +1816,7 @@
       }
       // The URL is a live link in the SVG and the PDF; the QR beside it encodes
       // the same address.
-      s += `<a href="${LEARN_HREF}" target="_blank"><text x="${brandR}" y="70" font-size="12.5" font-weight="700" fill="${hInk}" text-anchor="end"${halo}>${LEARN_URL}</text></a>`;
-      noteLink(LEARN_HREF, brandR, 70, 12.5, LEARN_URL, W, H);
+      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, 64, 12.5, hInk, halo, W, H);
       s += `<text x="${brandR}" y="88" font-size="11.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
       // Over open feed the rule is what separates header from rows. On the
       // opaque plate the band's own bottom edge already does that, and a rule
@@ -1945,16 +1955,15 @@
       const brandR = qrX - 16;
       // "Powered by" is a caption: smaller than the URL, stacked directly above
       // the mark instead of sitting beside it.
-      s += `<text x="${brandR}" y="14" font-size="10.5" font-weight="600" letter-spacing=".4" fill="${B.muted}" text-anchor="end" dominant-baseline="central"${halo}>Powered by</text>`;
       const logoH = 40, logoW = 196, logoX = brandR - logoW, logoY = 24;
+      s += `<text x="${(logoX + brandR) / 2}" y="14" font-size="10.5" font-weight="600" letter-spacing=".4" fill="${B.muted}" text-anchor="middle" dominant-baseline="central"${halo}>Powered by</text>`;
       if (BRAND.logo) {
         s += `<image x="${logoX}" y="${logoY}" width="${logoW}" height="${logoH}" href="${BRAND.logo}" preserveAspectRatio="xMaxYMid meet"/>`;
       } else {
         s += `<text x="${brandR}" y="${logoY + logoH / 2}" font-family="${DISP}" font-size="32" font-weight="700" letter-spacing=".3" fill="${CPL.ink}" text-anchor="end" dominant-baseline="central"${halo}>champhunt</text>`;
       }
       // Live link; the QR encodes the same address.
-      s += `<a href="${LEARN_HREF}" target="_blank"><text x="${brandR}" y="80" font-size="13" font-weight="700" fill="${CPL.accent}" text-anchor="end"${halo}>${LEARN_URL}</text></a>`;
-      noteLink(LEARN_HREF, brandR, 80, 13, LEARN_URL, W, H);
+      s += linkTextRight(LEARN_HREF, LEARN_URL, brandR, 74, 13, CPL.accent, halo, W, H);
       s += `<text x="${brandR}" y="100" font-size="12.5" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
