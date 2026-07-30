@@ -295,7 +295,12 @@ const server = http.createServer(async (req, res) => {
     // Serve licensed team logo files dropped into public/logos/. path.basename
     // strips any directory component, so ../ traversal can't escape the folder.
     if (req.method === 'GET' && url.pathname.startsWith('/logos/')) {
-      const file = path.join(__dirname, 'public', 'logos', path.basename(url.pathname));
+      // Decode before resolving: a filename containing a space arrives as
+      // %20 and would never match the file on disk. basename still runs after
+      // decoding, so ../ traversal cannot escape the folder.
+      let requested;
+      try { requested = decodeURIComponent(url.pathname); } catch { requested = url.pathname; }
+      const file = path.join(__dirname, 'public', 'logos', path.basename(requested));
       if (fs.existsSync(file) && fs.statSync(file).isFile()) {
         const type = {
           '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',

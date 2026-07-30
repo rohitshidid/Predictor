@@ -1755,12 +1755,13 @@
       // hierarchy, and it reads at a glance on a moving picture.
       // League mark top-left; the title block shifts right to make room for it.
       let tX = pad;
-      if (BRAND.cpl) {
-        const lh = 62, lw = 74;
-        s += `<image x="${pad}" y="10" width="${lw}" height="${lh}" href="${BRAND.cpl}" preserveAspectRatio="xMinYMid meet"/>`;
+      const cplArt = transparent ? (BRAND.cplDark || BRAND.cpl) : BRAND.cpl;
+      if (cplArt) {
+        const lh = 86, lw = 86;
+        s += `<image x="${pad}" y="4" width="${lw}" height="${lh}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
         tX = pad + lw + 16;
       }
-      s += `<text x="${tX}" y="40" font-family="${DISP}" font-size="38" font-weight="700" letter-spacing="1" fill="${P.ink}"${halo}>${esc(String(st.league).toUpperCase())}</text>`;
+      s += `<text x="${tX}" y="40" font-family="${DISP}" font-size="${cplArt ? 33 : 38}" font-weight="700" letter-spacing="1" fill="${P.ink}"${halo}>${esc(String(st.league).toUpperCase())}</text>`;
       // Accent blue only ever sits on a dark row plate. Over open feed — which
       // may be a bright sky or a sightscreen — the header stays white, since a
       // light tint on a light background is the one thing that vanishes on air.
@@ -1908,12 +1909,13 @@
       // League mark top-left. Without the artwork the league's short code runs
       // ahead of the title instead — Willow accepted either.
       let titleX = pad;
-      if (BRAND.cpl) {
-        const clH = 56, clW = 84;
-        s += `<image x="${pad}" y="12" width="${clW}" height="${clH}" href="${BRAND.cpl}" preserveAspectRatio="xMinYMid meet"/>`;
-        titleX = pad + clW + 18;
+      const cplArt = BRAND.cplDark || BRAND.cpl;   // this card is always dark navy
+      if (cplArt) {
+        const clH = 106, clW = 106;
+        s += `<image x="${pad}" y="6" width="${clW}" height="${clH}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
+        titleX = pad + clW + 20;
       }
-      const lead = BRAND.cpl ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
+      const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
       s += `<text x="${titleX}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
       // "Powered by" + partner mark, top right — same block as the broadcast
       // graphic, so the two templates carry identical attribution. The mark runs
@@ -2103,6 +2105,30 @@
     function loadImageEl(src) {
       return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
     }
+    // Clear a flat background to transparent by flood-filling inwards from the
+    // border. A global "make white transparent" pass would punch holes through
+    // the artwork itself — the CPL star has white gaps between its rays and white
+    // around the batsman — so only background connected to an edge is removed.
+    function keyBorderBackground(cx, w, h, thresh) {
+      const id = cx.getImageData(0, 0, w, h), p = id.data;
+      const seen = new Uint8Array(w * h);
+      const stack = [];
+      const isBg = (i) => p[i * 4 + 3] < 8 || (p[i * 4] >= thresh && p[i * 4 + 1] >= thresh && p[i * 4 + 2] >= thresh);
+      for (let x = 0; x < w; x++) { stack.push(x); stack.push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { stack.push(y * w); stack.push(y * w + w - 1); }
+      while (stack.length) {
+        const i = stack.pop();
+        if (i < 0 || i >= w * h || seen[i] || !isBg(i)) continue;
+        seen[i] = 1; p[i * 4 + 3] = 0;
+        const x = i % w, y = (i - x) / w;
+        if (x > 0) stack.push(i - 1);
+        if (x < w - 1) stack.push(i + 1);
+        if (y > 0) stack.push(i - w);
+        if (y < h - 1) stack.push(i + w);
+      }
+      cx.putImageData(id, 0, 0);
+    }
+
     async function tightCrop(uri, opts) {
       if (!uri) return null;
       try {
@@ -2110,6 +2136,9 @@
         const w0 = img.naturalWidth, h0 = img.naturalHeight;
         const c = document.createElement('canvas'); c.width = w0; c.height = h0;
         const cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
+        // A JPEG carries no alpha, so its white field has to be keyed out before
+        // the crop has anything to trim against.
+        if (opts && opts.keyBg) keyBorderBackground(cx, w0, h0, opts.keyBg === true ? 232 : opts.keyBg);
         const a = cx.getImageData(0, 0, w0, h0).data;
         let minX = w0, minY = h0, maxX = -1, maxY = -1;
         for (let y = 0; y < h0; y++) for (let x = 0; x < w0; x++) {
@@ -2141,15 +2170,25 @@
         toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
         toDataUri('/logos/qr.png').then(v => v || toDataUri('/logos/qr.svg')),
         toDataUri('/logos/Willow_Sports.png').then(v => v || toDataUri('/logos/willow.png')),
-        toDataUri('/logos/cpl.png').then(v => v || toDataUri('/logos/cpl.svg')),
+        toDataUri('/logos/cpl.png')
+          .then(v => v || toDataUri('/logos/cpl.svg'))
+          .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.jpeg')))
+          .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.png'))),
         toDataUri('/logos/Willow_Sports_white.png').then(v => v || toDataUri('/logos/willow-white.png')),
       ]);
       // Trim both marks; keep a dark-background version of the Willow lockup.
-      const [willowTrim, willowLift, logoTrim, cplTrim, willowWhiteTrim] = await Promise.all([
+      const [willowTrim, willowLift, logoTrim, cplTrim, cplLift, willowWhiteTrim] = await Promise.all([
         tightCrop(willow), tightCrop(willow, { liftDark: 72 }),
-        tightCrop(logo), tightCrop(cpl), tightCrop(willowWhite),
+        tightCrop(logo),
+        // The CPL mark arrives as a JPEG on a white field: key the field out, then
+        // trim. The dark variant additionally lifts its near-black wordmark so it
+        // stays visible on the navy card without putting a plate behind it.
+        tightCrop(cpl, { keyBg: true }),
+        tightCrop(cpl, { keyBg: true, liftDark: 90 }),
+        tightCrop(willowWhite),
       ]);
-      BRAND = { logo: logoTrim || logo, qr, willow: willowTrim || willow, cpl: cplTrim || cpl,
+      BRAND = { logo: logoTrim || logo, qr, willow: willowTrim || willow,
+                cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
                 willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift };
     }
     // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each

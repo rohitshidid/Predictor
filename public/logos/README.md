@@ -52,3 +52,10 @@ otherwise the league's short code runs ahead of the title ("CPL POWER RANKINGS")
 (error-correction level H, 2-module quiet zone). It is deliberately NOT run
 through the auto-crop that trims the other marks — cropping would eat the quiet
 zone and stop it scanning. Regenerate it if the destination URL ever changes.
+
+`CPL logo.jpeg` is the league mark shown top-left on both templates. It arrives as
+a JPEG on a white field, so at load time the white background is flood-filled from
+the border to transparent (a global white-key would punch holes through the star's
+white gaps), then trimmed. On dark placements its near-black wordmark is lifted to
+white so the mark stays visible without a plate behind it. A transparent PNG named
+`cpl.png` takes precedence if you ever supply one.
