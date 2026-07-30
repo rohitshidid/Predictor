@@ -1804,7 +1804,7 @@
       // Footer is the methodology line alone now — the mark, the QR and the
       // learn-more link all live together in the header block.
       s += `<text x="${pad}" y="${H - footerH + 38}" font-size="12.5" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      s += willowMark(W - pad, H - footerH + 10, 84, 52, transparent ? P.ink : P.muted, halo, transparent);
+      s += willowMark(W - pad, H - footerH + 8, 92, 58, transparent ? P.ink : P.muted, halo, transparent);
       s += `</svg>`;
       return s;
     }
@@ -1822,7 +1822,8 @@
     // (public/logos/Willow_Sports_white.png): the stock artwork's wordmark is
     // navy, which is close to invisible on the CPL navy card and on a night feed.
     function willowMark(rx, y, w, h, inkColor, halo, dark) {
-      const art = (dark && BRAND.willowWhite) ? BRAND.willowWhite : BRAND.willow;
+      // Supplied knockout wins; otherwise the generated dark variant; else stock.
+      const art = dark ? (BRAND.willowWhite || BRAND.willowDark || BRAND.willow) : BRAND.willow;
       if (art) {
         return `<image x="${rx - w}" y="${y}" width="${w}" height="${h}" href="${art}" preserveAspectRatio="xMidYMid meet"${dark && !BRAND.willowWhite ? halo || '' : ''}/>`;
       }
@@ -1952,7 +1953,7 @@
       // Same footer contract as the broadcast graphic: the methodology line
       // alone, with the mark, QR and learn-more link together in the header.
       s += `<text x="${pad}" y="${cardY + cardH + 48}" font-size="14" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      s += willowMark(W - pad, cardY + cardH + 12, 104, 64, CPL.ink, halo, true);
+      s += willowMark(W - pad, cardY + cardH + 10, 116, 72, CPL.ink, halo, true);
       s += `</svg>`;
       return s;
     }
@@ -2072,6 +2073,48 @@
           fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b);
         })).catch(() => null);
     }
+    // The supplied Willow lockup sits in a 1920x1080 frame with wide transparent
+    // margins, so fitting it into a box rendered the mark at a fraction of the
+    // space. Trimming to the artwork's true bounding box lets it fill the box.
+    // `liftDark` additionally repaints near-black pixels white, which turns the
+    // navy wordmark legible on a dark card or a night feed while leaving the red
+    // icon alone — a proper dark-background treatment rather than a white plate.
+    function loadImageEl(src) {
+      return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+    }
+    async function tightCrop(uri, opts) {
+      if (!uri) return null;
+      try {
+        const img = await loadImageEl(uri);
+        const w0 = img.naturalWidth, h0 = img.naturalHeight;
+        const c = document.createElement('canvas'); c.width = w0; c.height = h0;
+        const cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
+        const a = cx.getImageData(0, 0, w0, h0).data;
+        let minX = w0, minY = h0, maxX = -1, maxY = -1;
+        for (let y = 0; y < h0; y++) for (let x = 0; x < w0; x++) {
+          if (a[(y * w0 + x) * 4 + 3] > 12) {
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX < 0) return uri;                       // fully transparent, leave it
+        const w = maxX - minX + 1, h = maxY - minY + 1;
+        const out = document.createElement('canvas'); out.width = w; out.height = h;
+        const ox = out.getContext('2d');
+        ox.drawImage(c, minX, minY, w, h, 0, 0, w, h);
+        if (opts && opts.liftDark) {
+          const id = ox.getImageData(0, 0, w, h), p = id.data;
+          for (let i = 0; i < p.length; i += 4) {
+            if (p[i + 3] < 12) continue;
+            const lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+            if (lum < opts.liftDark) { p[i] = 255; p[i + 1] = 255; p[i + 2] = 255; }
+          }
+          ox.putImageData(id, 0, 0);
+        }
+        return out.toDataURL('image/png');
+      } catch { return uri; }
+    }
+
     async function loadBrand() {
       const [logo, qr, willow, cpl, willowWhite] = await Promise.all([
         toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
@@ -2080,7 +2123,13 @@
         toDataUri('/logos/cpl.png').then(v => v || toDataUri('/logos/cpl.svg')),
         toDataUri('/logos/Willow_Sports_white.png').then(v => v || toDataUri('/logos/willow-white.png')),
       ]);
-      BRAND = { logo, qr, willow, cpl, willowWhite };
+      // Trim both marks; keep a dark-background version of the Willow lockup.
+      const [willowTrim, willowLift, logoTrim, cplTrim, willowWhiteTrim] = await Promise.all([
+        tightCrop(willow), tightCrop(willow, { liftDark: 72 }),
+        tightCrop(logo), tightCrop(cpl), tightCrop(willowWhite),
+      ]);
+      BRAND = { logo: logoTrim || logo, qr, willow: willowTrim || willow, cpl: cplTrim || cpl,
+                willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift };
     }
     // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each
     // one is inlined once at boot and reused by every export. Needs STATE, so it
