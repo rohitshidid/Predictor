@@ -129,6 +129,12 @@ function playMatch(id, dateISO, home, away) {
   };
 }
 
+// CPL 2026 is a 39-match season, not the 42 a full double round robin would
+// give, so the shuffled fixture list is capped. That leaves the schedule
+// deliberately uneven — which is realistic, and is also the case where strength
+// of schedule carries real information.
+const SEASON_MATCHES = 39;
+
 function buildSchedule() {
   const matches = [];
   let id = 1;
@@ -140,7 +146,7 @@ function buildSchedule() {
     const k = Math.floor(rnd() * (i + 1));
     [pairs[i], pairs[k]] = [pairs[k], pairs[i]];
   }
-  for (const [home, away] of pairs) {
+  for (const [home, away] of pairs.slice(0, SEASON_MATCHES)) {
     matches.push(playMatch(id++, new Date(day).toISOString(), home, away));
     day = new Date(day.getTime() + 12 * 3600 * 1000);
   }

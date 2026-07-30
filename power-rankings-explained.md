@@ -28,7 +28,7 @@ Think of it as a **school report card**. Instead of one exam, each team is grade
 
 **Why momentum isn't simply "the last five".** Recent matches count far more than old ones, fading smoothly rather than stopping dead at a cut-off. In practice the most recent match carries about 35% of this grade, and the last five together about 88%.
 
-**The score and the arrows.** The nine graded subjects combine into a score out of 100; teams typically land between about **30 and 70**. Nobody scores 100 — that would mean leading every category at once. The **▲/▼ arrows** show movement against the previous published ranking: ▲2 means two places gained.
+**The score and the arrows.** The nine graded subjects combine into one index, which is then published on a **70–89 rating scale** — the range broadcast and print audiences are used to seeing. The conversion is a fixed piece of arithmetic applied identically to every team, so it changes the numbers on the page but never the order. The **▲/▼ arrows** show movement against the previous published ranking: ▲2 means two places gained, and a team that has not moved simply shows nothing.
 
 **Nothing here is opinion.** Most published power rankings are a writer's judgement call. This one is arithmetic: run the same matches through it twice and you get the same table, every time.
 
@@ -89,6 +89,8 @@ Each raw metric maps onto [0,1] via `norm(x) = clamp((x − min)/(max − min))`
 score = 100 × Σ ( w_k · n_k )
 ```
 weights `0.30, 0.15, 0.15, 0.12, 0.12, 0.05, 0.05, 0.04, 0.02`, summing to exactly 1.00. **Ties** break on win% then rolling NRR. **Delta** = previous rank − current rank.
+
+**Published rating.** The raw index is what every calculation and audit record uses; graphics carry a presentation figure mapped from it — `rating = 70 + (index−15)/70 × 19`, clamped to `[70, 89]`. The constants are fixed in config, not derived from the current table, so ratings are comparable week to week, and the map is strictly increasing — a change of units, never of order.
 
 **Choosing the weights.** They are editorial, set by cricket judgement and stored in `weights.config.json` so they can be changed without touching the engine. An earlier set was fitted by maximising rank correlation against latent team strength over 300 synthetic seasons; that fit was withdrawn because the generator derived phase splits directly from strength, so it over-credited the powerplay and death-overs terms. The fitting method transfers unchanged to real data — only the target needs to become actual results.
 

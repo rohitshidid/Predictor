@@ -40,3 +40,10 @@ Two extra files are picked up automatically by the PNG/SVG/PDF export:
 Drop the files in and they appear on the next page load — no code change. The
 logo is drawn into a 92×26 box and is right-aligned, so a transparent-background
 PNG with a wide aspect ratio works best. The QR is drawn into a 54×54 box.
+
+`Willow_Sports.png` is the Willow Sports lockup shown bottom-right on every
+template. It is a portrait mark (icon over wordmark) on a 16:9 transparent
+canvas with navy type, so it is drawn into a near-square box on a light plate —
+navy artwork is illegible on the CPL navy card and on a night feed without one.
+`cpl.png` is optional: supply it for a league mark top-left on the CPL template,
+otherwise the league's short code runs ahead of the title ("CPL POWER RANKINGS").

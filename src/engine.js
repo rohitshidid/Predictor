@@ -284,6 +284,16 @@ function formRecord(t, window) {
   return { wins: recent.filter((r) => r.win).length, of: recent.length };
 }
 
+// Map the raw 0-100 index onto the published band. Order-preserving; clamped so
+// an extreme outlier cannot escape the band.
+function displayScore(raw, cfg) {
+  if (!cfg) return raw;
+  const { rawMin = 0, rawMax = 100, outMin = 0, outMax = 100 } = cfg;
+  if (rawMax === rawMin) return outMin;
+  const t = (raw - rawMin) / (rawMax - rawMin);
+  return Math.max(outMin, Math.min(outMax, outMin + t * (outMax - outMin)));
+}
+
 const OPTIONAL_KEYS = ['expectedWins', 'tossLeverage', 'chaseSet', 'top4Consistency', 'bowlingConcentration'];
 
 // Rank the league. `lastWeek` maps teamName -> previous rank for the ▲/▼ delta.
@@ -301,6 +311,11 @@ function rank(data, config, lastWeek = {}) {
   const ballsQuota = (config.match && config.match.ballsQuota) || 120;
   const quotaOvers = (config.match && config.match.oversQuota) || ballsQuota / 6;
   const mCfg = config.winQuality || { min: -40, max: 40 };
+  // Presentation band. The raw index stays the number every downstream
+  // calculation and audit uses; `scoreDisplay` is what gets published. The
+  // transform is affine with FIXED constants, so it is stable week to week and
+  // strictly increasing — the ordering is mathematically untouched.
+  const dCfgS = config.scoreDisplay;
 
   const teams = collect(data);
   const list = Object.values(teams);
@@ -389,7 +404,7 @@ function rank(data, config, lastWeek = {}) {
       chaseWinPct: cs.chase, setWinPct: cs.set, chaseSetVersatility: cs.versatility,
       top4Mean: t4.mean, top4Std: t4.std, top4Consistency: t4.score,
       bowlConcentration: bowl.concentration, bowlingResilience: bowl.resilience,
-      streak: streakOf(t), normalized: n, score,
+      streak: streakOf(t), normalized: n, score, scoreDisplay: displayScore(score, dCfgS),
     };
   });
 

@@ -1674,6 +1674,22 @@
     // whatever machine renders it. Small metadata stays in the humanist sans —
     // the mix is deliberate.
     const DISP = "'DIN Condensed','DIN Alternate','Avenir Next Condensed','Oswald','Roboto Condensed','Arial Narrow',Impact,'Haettenschweiler',sans-serif";
+    // Willow asked for the fine print under each team name to go, keeping at most
+    // the streak — it is the one thing not stated anywhere else on the graphic.
+    function streakLine(r) {
+      const st = r.streak;
+      if (!st || !st.len || st.len < 2) return '';
+      return `${st.len}-match ${st.type === 'W' ? 'winning' : 'losing'} streak`;
+    }
+    // A team that has not moved used to print a bare "—", which read as a stray
+    // dash in a column of its own. Nothing is drawn now unless there is movement.
+    function movementText(r) {
+      if (r.movement === 'up') return `\u25B2${r.delta}`;
+      if (r.movement === 'down') return `\u25BC${Math.abs(r.delta)}`;
+      if (r.movement === 'new') return 'NEW';
+      return '';
+    }
+
     function crestSvgAt(name, cx, cy, r) {
       const t = teamMeta(name), p = t.primary || '#334155', sec = t.secondary || '#94a3b8', sh = t.short || '?';
       const fs = sh.length >= 3 ? 13 : 16;
@@ -1692,12 +1708,12 @@
       // rh carries two lines now — team name plus its one-line AI summary. The
       // header carries three right-hand lines (mark, learn-more, season) so it
       // is deeper than it was; the footer is down to the methodology line alone.
-      const W = 940, pad = 20, headerH = 104, rh = 72, footerH = 36;
+      const W = 940, pad = 20, headerH = 104, rh = 76, footerH = 72;
       const H = headerH + n * rh + footerH;
       const P = transparent
         ? { A: '#7aa7ff', ink: '#ffffff', muted: 'rgba(255,255,255,.72)', line: 'rgba(255,255,255,.16)', up: '#4ade80', down: '#ff7a6e', card: 'rgba(9,12,18,.62)' }
         : { A: '#0b5cff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee', up: '#12864f', down: '#c0392b', card: '#ffffff' };
-      const colScore = W - pad - 20, colMv = W - pad - 96, colStats = W - pad - 150;
+      const colScore = W - pad - 20, colMv = W - pad - 104, colStats = W - pad - 168;
       // Header and footer sit outside the row plates, straight on the feed. A
       // soft drop shadow lifts them off a bright pitch without the sticker
       // outline a stroke halo gives at title size.
@@ -1763,7 +1779,7 @@
       // is the same destination, so the two belong in one block.
       s += `<text x="${brandR}" y="58" font-size="11.5" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Learn more: ` +
         `<tspan font-size="12.5" font-weight="700" opacity="1">www.champhunt.in/powerranking</tspan></text>`;
-      s += `<text x="${brandR}" y="78" font-size="12.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)} · ${st.matchCount} matches</text>`;
+      s += `<text x="${brandR}" y="78" font-size="12.5" font-weight="600" fill="${hInk}" opacity="${hOp}" text-anchor="end"${halo}>Season ${esc(st.season)}</text>`;
       // Over open feed the rule is what separates header from rows. On the
       // opaque plate the band's own bottom edge already does that, and a rule
       // drawn across a gradient reads as a seam.
@@ -1771,26 +1787,46 @@
       rows.forEach((r, i) => {
         const y = headerH + i * rh, ch = rh - 8, cyc = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="11" fill="${P.card}" stroke="${P.line}"/>`;
-        s += `<text x="${pad + 30}" y="${cyc}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
-        s += teamMarkAt(r.name, pad + 80, cyc, 16);
+        s += `<text x="${pad + 32}" y="${cyc}" font-family="${DISP}" font-size="34" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += teamMarkAt(r.name, pad + 86, cyc, 19);
         // Name and summary stack on the left; the numerics stay optically
         // centred on the row so the right-hand columns still scan as a column.
-        s += `<text x="${pad + 108}" y="${cyc - 11}" font-family="${DISP}" font-size="22" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 30).toUpperCase())} <tspan font-size="13" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
-        // Runs from the name's left edge to a hair short of the stats column.
-        const line = blurbLine(r.name, colStats - (pad + 108) - 14, 11.5);
-        if (line) s += `<text x="${pad + 108}" y="${cyc + 13}" font-size="11.5" fill="${P.muted}" dominant-baseline="central">${esc(line)}</text>`;
-        const stats = `${r.won}-${r.lost} · ${Math.round(r.winPct * 100)}% · ${r.formRecord.wins}/${r.formRecord.of} form`;
-        s += `<text x="${colStats}" y="${cyc}" font-size="12" fill="${P.muted}" text-anchor="end" dominant-baseline="central">${esc(stats)}</text>`;
-        const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
-        const mvc = r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.muted;
-        s += `<text x="${colMv}" y="${cyc}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
-        s += `<text x="${colScore}" y="${cyc}" font-family="${DISP}" font-size="28" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.score.toFixed(1)}</text>`;
+        const sl = streakLine(r);
+        const nameY = sl ? cyc - 12 : cyc;
+        s += `<text x="${pad + 118}" y="${nameY}" font-family="${DISP}" font-size="26" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 28).toUpperCase())} <tspan font-size="15" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        if (sl) s += `<text x="${pad + 118}" y="${cyc + 16}" font-size="13.5" fill="${P.muted}" dominant-baseline="central">${esc(sl)}</text>`;
+        s += `<text x="${colStats}" y="${cyc}" font-family="${DISP}" font-size="22" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.won}-${r.lost}</text>`;
+        const mv = movementText(r);
+        const mvc = r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.A;
+        if (mv) s += `<text x="${colMv}" y="${cyc}" font-size="16" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
+        s += `<text x="${colScore}" y="${cyc}" font-family="${DISP}" font-size="32" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.scoreDisplay.toFixed(1)}</text>`;
       });
       // Footer is the methodology line alone now — the mark, the QR and the
       // learn-more link all live together in the header block.
-      s += `<text x="${pad}" y="${H - footerH + 22}" font-size="11.5" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += `<text x="${pad}" y="${H - footerH + 38}" font-size="12.5" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += willowMark(W - pad, H - footerH + 10, 84, 52, transparent ? P.ink : P.muted, halo, transparent);
       s += `</svg>`;
       return s;
+    }
+
+    // Willow Sports mark, bottom-right on every template. Right-aligned inside a
+    // box whose RIGHT edge is `rx`, so the corner stays flush whatever the
+    // artwork's aspect ratio. Falls back to a wordmark if the file is absent.
+    // The supplied artwork is a PORTRAIT lockup (icon over "WILLOW" over
+    // "SPORTS") centred on a 16:9 transparent canvas, and its wordmark is navy.
+    // Two consequences: fitting it by height inside a wide box renders it
+    // tiny, and navy type disappears on a dark plate or a night feed. So it
+    // gets a near-square box and sits on a light plate with clear space.
+    // Drawn with no plate, so the mark keys straight onto the feed or the card.
+    // `dark` placements prefer a white-knockout asset when one is supplied
+    // (public/logos/Willow_Sports_white.png): the stock artwork's wordmark is
+    // navy, which is close to invisible on the CPL navy card and on a night feed.
+    function willowMark(rx, y, w, h, inkColor, halo, dark) {
+      const art = (dark && BRAND.willowWhite) ? BRAND.willowWhite : BRAND.willow;
+      if (art) {
+        return `<image x="${rx - w}" y="${y}" width="${w}" height="${h}" href="${art}" preserveAspectRatio="xMidYMid meet"${dark && !BRAND.willowWhite ? halo || '' : ''}/>`;
+      }
+      return `<text x="${rx}" y="${y + h / 2}" font-family="${DISP}" font-size="${Math.round(h * 0.46)}" font-weight="700" letter-spacing=".4" fill="${inkColor}" text-anchor="end" dominant-baseline="central"${halo || ''}>WILLOW SPORTS</text>`;
     }
 
     // ---- CPL website template ----------------------------------------------
@@ -1818,20 +1854,22 @@
     // Stat columns, centred, in the order CPL lists them. `Points` becomes
     // `Rating` — a power ranking has no league points, and printing the score
     // under CPL's own header would read as an official standing, which it isn't.
+    // Willow asked for the total-matches column to go: W and L already imply it.
+    // The remaining columns spread into the space, which is what buys the larger
+    // type an email read on a phone needs.
     const CPL_COLS = [
-      { label: 'Matches',       x: 640,  get: (r) => String(r.played) },
-      { label: 'Won',           x: 745,  get: (r) => String(r.won) },
-      { label: 'Loss',          x: 850,  get: (r) => String(r.lost) },
-      { label: 'Net Run Rate',  x: 975,  get: (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}` },
-      { label: 'Form',          x: 1080, get: (r) => `${r.formRecord.wins}/${r.formRecord.of}` },
-      { label: 'Rating',        x: 1190, get: (r) => r.score.toFixed(1), strong: true },
+      { label: 'Won',           x: 700,  get: (r) => String(r.won) },
+      { label: 'Loss',          x: 810,  get: (r) => String(r.lost) },
+      { label: 'Net Run Rate',  x: 950,  get: (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}` },
+      { label: 'Form',          x: 1075, get: (r) => `${r.formRecord.wins}/${r.formRecord.of}` },
+      { label: 'Rating',        x: 1195, get: (r) => r.scoreDisplay.toFixed(1), strong: true },
     ];
     function cplTableSvg(opts) {
       const st = STATE, rows = st.ranking, n = rows.length;
       const mode = (opts && opts.bg) || cplBackground();
       const B = CPL_BG[mode] || CPL_BG.solid;
       const W = 1280, pad = 36, rh = 92;
-      const titleH = 112, colHeadH = 64, cardPadB = 26, footerH = 40;
+      const titleH = 112, colHeadH = 64, cardPadB = 26, footerH = 84;
       const cardY = titleH, cardH = colHeadH + n * rh + cardPadB;
       const H = titleH + cardH + footerH;
       const scale = (opts && opts.scale) || 1;
@@ -1845,7 +1883,16 @@
 
       // Title block. CPL sets its heading in a wide, tracked-out lime caps face;
       // the condensed display stack is the closest match that renders anywhere.
-      s += `<text x="${pad}" y="56" font-family="${DISP}" font-size="40" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>POWER RANKINGS</text>`;
+      // League mark top-left. Without the artwork the league's short code runs
+      // ahead of the title instead — Willow accepted either.
+      let titleX = pad;
+      if (BRAND.cpl) {
+        const clH = 56, clW = 84;
+        s += `<image x="${pad}" y="12" width="${clW}" height="${clH}" href="${BRAND.cpl}" preserveAspectRatio="xMinYMid meet"/>`;
+        titleX = pad + clW + 18;
+      }
+      const lead = BRAND.cpl ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
+      s += `<text x="${titleX}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="3" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
       // "Powered by" + partner mark, top right — same block as the broadcast
       // graphic, so the two templates carry identical attribution. The mark runs
       // larger here than in the overlay: this table is 1280 wide against the
@@ -1868,43 +1915,44 @@
       // is the same destination, so the two belong in one block.
       s += `<text x="${brandR}" y="62" font-size="12" fill="${B.muted}" text-anchor="end"${halo}>Learn more: ` +
         `<tspan font-size="13" font-weight="700" fill="${CPL.accent}">www.champhunt.in/powerranking</tspan></text>`;
-      s += `<text x="${brandR}" y="86" font-size="13" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)} · ${st.matchCount} MATCHES</text>`;
+      s += `<text x="${brandR}" y="86" font-size="13" font-weight="600" fill="${B.muted}" text-anchor="end"${halo}>${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}</text>`;
 
       // The card: one hairline lime keyline, generously rounded, nothing else.
       s += `<rect x="${pad}" y="${cardY}" width="${W - 2 * pad}" height="${cardH}" rx="10" fill="${B.card}" stroke="${CPL.accent}" stroke-width="1.5"${B.shadow ? ' filter="url(#cplsh)"' : ''}/>`;
 
       const colHeadY = cardY + 40;
-      s += `<text x="${pad + 60}" y="${colHeadY}" font-size="13" fill="${B.muted}"${halo}>Team</text>`;
+      s += `<text x="${pad + 64}" y="${colHeadY}" font-size="15" fill="${B.muted}"${halo}>Team</text>`;
       for (const c of CPL_COLS) {
-        s += `<text x="${c.x}" y="${colHeadY}" font-size="13" fill="${B.muted}" text-anchor="middle"${halo}>${esc(c.label)}</text>`;
+        s += `<text x="${c.x}" y="${colHeadY}" font-size="15" fill="${B.muted}" text-anchor="middle"${halo}>${esc(c.label)}</text>`;
       }
 
       rows.forEach((r, i) => {
         const y = cardY + colHeadH + i * rh, cy = y + rh / 2;
         // Rule *under* every row but the last, matching CPL's open-ended list.
         if (i < n - 1) s += `<rect x="${pad + 24}" y="${y + rh}" width="${W - 2 * pad - 48}" height="1" fill="${B.line}"/>`;
-        s += `<text x="${pad + 26}" y="${cy}" font-size="15" font-weight="600" fill="${CPL.ink}" dominant-baseline="central"${halo}>${r.rank}</text>`;
-        s += teamMarkAt(r.name, pad + 68, cy, 19);
+        s += `<text x="${pad + 26}" y="${cy}" font-size="19" font-weight="700" fill="${CPL.ink}" dominant-baseline="central"${halo}>${r.rank}</text>`;
+        s += teamMarkAt(r.name, pad + 72, cy, 23);
         // Name over summary. The AI line is the reason this row is two-deep, so
         // it gets the full run to the movement column rather than a token strip.
-        s += `<text x="${pad + 98}" y="${cy - 13}" font-family="${DISP}" font-size="24" font-weight="700" letter-spacing=".6" fill="${CPL.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 32).toUpperCase())}</text>`;
-        // Runs from the name's left edge to a hair short of the movement column.
-        const line = blurbLine(r.name, (pad + 540) - 22 - (pad + 98) - 14, 12);
-        if (line) s += `<text x="${pad + 98}" y="${cy + 14}" font-size="12" fill="${B.muted}" dominant-baseline="central"${halo}>${esc(line)}</text>`;
+        const sl = streakLine(r);
+        const nmY = sl ? cy - 14 : cy;
+        s += `<text x="${pad + 108}" y="${nmY}" font-family="${DISP}" font-size="28" font-weight="700" letter-spacing=".6" fill="${CPL.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 30).toUpperCase())}</text>`;
+        if (sl) s += `<text x="${pad + 108}" y="${cy + 16}" font-size="14.5" fill="${B.muted}" dominant-baseline="central"${halo}>${esc(sl)}</text>`;
         // Movement rides with the name rather than taking a column of its own —
         // CPL's table has no such column and adding one breaks the rhythm.
-        const mv = r.movement === 'up' ? `▲${r.delta}` : r.movement === 'down' ? `▼${Math.abs(r.delta)}` : r.movement === 'same' ? '—' : 'NEW';
-        const mvc = r.movement === 'up' ? CPL.up : r.movement === 'down' ? CPL.down : CPL.muted;
-        s += `<text x="${pad + 540}" y="${cy}" font-size="13" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
+        const mv = movementText(r);
+        const mvc = r.movement === 'up' ? CPL.up : r.movement === 'down' ? CPL.down : CPL.accent;
+        if (mv) s += `<text x="${pad + 560}" y="${cy}" font-size="17" font-weight="700" fill="${mvc}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
         for (const c of CPL_COLS) {
           const strong = c.strong ? ` font-weight="700"` : '';
-          s += `<text x="${c.x}" y="${cy}" font-size="15" fill="${CPL.ink}"${strong} text-anchor="middle" dominant-baseline="central"${halo}>${esc(c.get(r))}</text>`;
+          s += `<text x="${c.x}" y="${cy}" font-size="${c.strong ? 22 : 19}" fill="${CPL.ink}"${strong} text-anchor="middle" dominant-baseline="central"${halo}>${esc(c.get(r))}</text>`;
         }
       });
 
       // Same footer contract as the broadcast graphic: the methodology line
       // alone, with the mark, QR and learn-more link together in the header.
-      s += `<text x="${pad}" y="${cardY + cardH + 25}" font-size="12" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += `<text x="${pad}" y="${cardY + cardH + 48}" font-size="14" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += willowMark(W - pad, cardY + cardH + 12, 104, 64, CPL.ink, halo, true);
       s += `</svg>`;
       return s;
     }
@@ -2016,7 +2064,7 @@
     // ---- broadcast branding assets ----
     // The exported SVG is rasterized through an <img>, which cannot fetch
     // anything external, so both marks must be inlined as data URIs.
-    let BRAND = { logo: null, qr: null };
+    let BRAND = { logo: null, qr: null, willow: null, cpl: null, willowWhite: null };
     function toDataUri(url) {
       return fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error('missing')))
         .then(b => new Promise((res, rej) => {
@@ -2025,11 +2073,14 @@
         })).catch(() => null);
     }
     async function loadBrand() {
-      const [logo, qr] = await Promise.all([
+      const [logo, qr, willow, cpl, willowWhite] = await Promise.all([
         toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
         toDataUri('/logos/qr.png').then(v => v || toDataUri('/logos/qr.svg')),
+        toDataUri('/logos/Willow_Sports.png').then(v => v || toDataUri('/logos/willow.png')),
+        toDataUri('/logos/cpl.png').then(v => v || toDataUri('/logos/cpl.svg')),
+        toDataUri('/logos/Willow_Sports_white.png').then(v => v || toDataUri('/logos/willow-white.png')),
       ]);
-      BRAND = { logo, qr };
+      BRAND = { logo, qr, willow, cpl, willowWhite };
     }
     // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each
     // one is inlined once at boot and reused by every export. Needs STATE, so it

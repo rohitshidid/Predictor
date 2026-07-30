@@ -76,5 +76,12 @@
     "_note": "Mean signed margin in RUNS over ALL matches (wins and losses).",
     "min": -40,
     "max": 40
+  },
+  "scoreDisplay": {
+    "_note": "Presentation band. The raw index (0-100) is mapped onto a published range by a FIXED affine transform, so it is stable week to week and strictly order-preserving \u2014 the ranking is untouched. Editorial choice for legibility, documented in power-rankings-explained.md.",
+    "rawMin": 15,
+    "rawMax": 85,
+    "outMin": 70,
+    "outMax": 89
   }
 }

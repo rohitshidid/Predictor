@@ -2,8 +2,7 @@
   "season": "2026",
   "league": "Caribbean Premier League",
   "leagueShort": "CPL",
-  "region": "Caribbean",
-  "generatedAt": "2026-07-23T22:29:17.195Z",
+  "generatedAt": "2026-07-30T00:15:14.898Z",
   "note": "Synthetic, self-consistent snapshot with real team names. Standings are derived from `matches` by the engine.",
   "teams": [
     {
@@ -14,7 +13,7 @@
         "primary": "#C8102E",
         "secondary": "#F5C518"
       },
-      "logo": "/logos/tkr.svg"
+      "logo": "/logos/tkr.png"
     },
     {
       "name": "Guyana Amazon Warriors",
@@ -24,7 +23,7 @@
         "primary": "#16A34A",
         "secondary": "#F5C518"
       },
-      "logo": "/logos/gaw.svg"
+      "logo": "/logos/gaw.png"
     },
     {
       "name": "Antigua & Barbuda Falcons",
@@ -54,7 +53,7 @@
         "primary": "#1D4ED8",
         "secondary": "#FACC15"
       },
-      "logo": "/logos/slk.svg"
+      "logo": "/logos/slk.png"
     },
     {
       "name": "St Kitts & Nevis Patriots",
@@ -1947,150 +1946,6 @@
         "St Kitts & Nevis Patriots": {
           "available": 3,
           "squad": 3
-        }
-      }
-    },
-    {
-      "id": 40,
-      "date": "2024-04-11T02:00:00.000Z",
-      "home": "Guyana Amazon Warriors",
-      "away": "Barbados Royals",
-      "venueHomeTeam": "Guyana Amazon Warriors",
-      "tossWinner": "Guyana Amazon Warriors",
-      "battingFirst": "Barbados Royals",
-      "winner": "Guyana Amazon Warriors",
-      "innings": [
-        {
-          "batting": "Barbados Royals",
-          "bowling": "Guyana Amazon Warriors",
-          "runs": 135,
-          "balls": 120,
-          "overs": 20,
-          "ppRuns": 43,
-          "deathRuns": 47,
-          "deathBalls": 30,
-          "top4": 83,
-          "wktsLost": 7,
-          "bowlTop2": 4
-        },
-        {
-          "batting": "Guyana Amazon Warriors",
-          "bowling": "Barbados Royals",
-          "runs": 145,
-          "balls": 115,
-          "overs": 19.2,
-          "ppRuns": 41,
-          "deathRuns": 40,
-          "deathBalls": 25,
-          "top4": 83,
-          "wktsLost": 10,
-          "bowlTop2": 6
-        }
-      ],
-      "stars": {
-        "Guyana Amazon Warriors": {
-          "available": 5,
-          "squad": 5
-        },
-        "Barbados Royals": {
-          "available": 3,
-          "squad": 4
-        }
-      }
-    },
-    {
-      "id": 41,
-      "date": "2024-04-11T14:00:00.000Z",
-      "home": "Guyana Amazon Warriors",
-      "away": "Jamaica Kingsmen",
-      "venueHomeTeam": "Guyana Amazon Warriors",
-      "tossWinner": "Guyana Amazon Warriors",
-      "battingFirst": "Guyana Amazon Warriors",
-      "winner": "Guyana Amazon Warriors",
-      "innings": [
-        {
-          "batting": "Guyana Amazon Warriors",
-          "bowling": "Jamaica Kingsmen",
-          "runs": 160,
-          "balls": 120,
-          "overs": 20,
-          "ppRuns": 50,
-          "deathRuns": 56,
-          "deathBalls": 30,
-          "top4": 102,
-          "wktsLost": 6,
-          "bowlTop2": 4
-        },
-        {
-          "batting": "Jamaica Kingsmen",
-          "bowling": "Guyana Amazon Warriors",
-          "runs": 128,
-          "balls": 120,
-          "overs": 20,
-          "ppRuns": 38,
-          "deathRuns": 42,
-          "deathBalls": 30,
-          "top4": 73,
-          "wktsLost": 6,
-          "bowlTop2": 5
-        }
-      ],
-      "stars": {
-        "Guyana Amazon Warriors": {
-          "available": 5,
-          "squad": 5
-        },
-        "Jamaica Kingsmen": {
-          "available": 3,
-          "squad": 3
-        }
-      }
-    },
-    {
-      "id": 42,
-      "date": "2024-04-12T02:00:00.000Z",
-      "home": "Barbados Royals",
-      "away": "Trinbago Knight Riders",
-      "venueHomeTeam": "Barbados Royals",
-      "tossWinner": "Barbados Royals",
-      "battingFirst": "Trinbago Knight Riders",
-      "winner": "Trinbago Knight Riders",
-      "innings": [
-        {
-          "batting": "Trinbago Knight Riders",
-          "bowling": "Barbados Royals",
-          "runs": 143,
-          "balls": 120,
-          "overs": 20,
-          "ppRuns": 46,
-          "deathRuns": 50,
-          "deathBalls": 30,
-          "top4": 87,
-          "wktsLost": 5,
-          "bowlTop2": 2
-        },
-        {
-          "batting": "Barbados Royals",
-          "bowling": "Trinbago Knight Riders",
-          "runs": 136,
-          "balls": 120,
-          "overs": 20,
-          "ppRuns": 43,
-          "deathRuns": 45,
-          "deathBalls": 30,
-          "top4": 78,
-          "wktsLost": 10,
-          "bowlTop2": 5
-        }
-      ],
-      "stars": {
-        "Barbados Royals": {
-          "available": 4,
-          "squad": 4
-        },
-        "Trinbago Knight Riders": {
-          "available": 4,
-          "squad": 5
         }
       }
     }
