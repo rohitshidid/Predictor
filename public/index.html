@@ -1173,9 +1173,12 @@
     function logoHtml(name) {
       const t = teamMeta(name);
       const crest = logoSvg(name);
-      if (!t.logo) return crest;
+      // Prefer the already-resolved data URI (extension-agnostic); fall back to
+      // the raw path on first paint, then to the drawn crest.
+      const src = TEAM_LOGOS[name] || t.logo;
+      if (!src) return crest;
       return `<span class="logowrap">` +
-        `<img class="teamimg" src="${esc(t.logo)}" alt="${esc(name)} logo" width="34" height="34" ` +
+        `<img class="teamimg" src="${esc(src)}" alt="${esc(name)} logo" width="34" height="34" ` +
         `onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';">` +
         `<span class="crest" style="display:none;">${crest}</span>` +
         `</span>`;
@@ -2196,10 +2199,28 @@
     // runs after the first applyState; a missing file just leaves the entry null
     // and that team falls back to the drawn colour badge.
     let TEAM_LOGOS = {};
+    // The data file names every crest as <short>.png, but the files on disk are a
+    // mix of .png, .svg and .jpeg — which is why three teams silently fell back to
+    // the drawn badge. Resolution now ignores the extension in the data and tries
+    // the formats we serve, so whatever the artwork happens to be is picked up.
+    const LOGO_EXTS = ['.png', '.svg', '.webp', '.jpeg', '.jpg', '.gif'];
+    async function resolveLogo(pathFromData) {
+      if (!pathFromData) return null;
+      const base = String(pathFromData).replace(/\.[a-z0-9]+$/i, '');
+      const first = await toDataUri(pathFromData);
+      if (first) return first;
+      for (const ext of LOGO_EXTS) {
+        const uri = await toDataUri(base + ext);
+        if (uri) return uri;
+      }
+      return null;
+    }
     async function loadTeamLogos() {
       const teams = (STATE && STATE.teams) || [];
-      const pairs = await Promise.all(teams.map(async (t) => [t.name, t.logo ? await toDataUri(t.logo) : null]));
+      const pairs = await Promise.all(teams.map(async (t) => [t.name, await resolveLogo(t.logo)]));
       TEAM_LOGOS = Object.fromEntries(pairs);
+      const missing = teams.filter((t) => !TEAM_LOGOS[t.name]).map((t) => t.short);
+      if (missing.length) console.warn('[logos] no artwork found for:', missing.join(', '));
     }
     // A team's mark inside a square box centred on (cx, cy): the licensed logo
     // if we have it, otherwise the deterministic crest badge.

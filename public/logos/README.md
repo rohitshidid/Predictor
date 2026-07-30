@@ -23,8 +23,11 @@ Name each file by the team's short code (lowercase), matching the `logo` field i
 
 - **PNG with a transparent background** works best (square-ish, ~128px+).
 - `.svg`, `.webp`, `.jpg`, and `.gif` are also served.
-- To use a different extension, update that team's `logo` path in the data file
-  (and in `src/generateSeason.js` if you regenerate the season).
+- **The extension does not have to match the data file.** Team logos are resolved
+  by trying `.png`, `.svg`, `.webp`, `.jpeg`, `.jpg`, `.gif` in turn, so
+  `tkr.svg` is found even though the season data names `tkr.png`. Any team with no
+  artwork at all logs a `[logos]` warning in the console and falls back to the
+  drawn colour badge.
 
 > These are third-party trademarks. Only add logo files you are licensed to use.
 
