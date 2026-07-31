@@ -795,6 +795,9 @@
         <button id="dlFrame"
           title="Download a finished 1920x1080 broadcast frame: the keyed overlay composited onto the selected backdrop still">1080p
           frame</button>
+        <button id="dlSocial"
+          title="Download a 1080x1350 social tile (4:5 feed portrait). The colourway follows the Template switch: Willow gives the light tile, CPL the dark one.">Social
+          tile</button>
         <label class="bgopt" id="frameBgOpt"
           title="Backdrop still for the broadcast frame. Drop images into public/backgrounds/ and they appear here.">
           Backdrop
@@ -2083,6 +2086,102 @@
       return s;
     }
 
+    // ---- social tile, 1080x1350 -----------------------------------------------
+    // The feed format (4:5 portrait) rather than a scaled-down landscape table.
+    // Dropping the broadcast graphic into a portrait frame would band the top and
+    // bottom with empty space and shrink the type to nothing on a phone, so the
+    // tile is laid out for its own proportions: one full-width column of rows,
+    // set large, with the branding stacked above and below it instead of beside.
+    //
+    // Both colourways come from one function. `light` carries the Willow header
+    // gradient over a pale page; `dark` is the CPL navy card with its lime accent.
+    // The palettes are the same values the landscape templates use, so the tile
+    // reads as part of the set rather than a different product.
+    const SOCIAL_W = 1080, SOCIAL_H = 1350;
+    function socialTileSvg(opts) {
+      const st = STATE, rows = st.ranking, n = rows.length;
+      const dark = ((opts && opts.theme) || 'light') === 'dark';
+      const W = SOCIAL_W, H = SOCIAL_H, pad = 52;
+      const P = dark
+        ? { page: CPL.bg, card: '#11112c', ink: CPL.ink, muted: CPL.muted, line: CPL.line,
+            A: CPL.accent, up: CPL.up, down: CPL.down, title: CPL.accent }
+        : { page: '#f4f6f9', card: '#ffffff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee',
+            A: '#0b5cff', up: '#12864f', down: '#c0392b', title: '#ffffff' };
+      const scale = (opts && opts.scale) || 1;
+      SVG_LINKS = [];
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
+      s += `<rect width="${W}" height="${H}" fill="${P.page}"/>`;
+      // Header band on the light tile; the dark tile's page is already navy and a
+      // band would only add a seam.
+      //
+      // The band runs violet the whole way across rather than reproducing the
+      // broadcast graphic's pale-to-violet sweep. On the landscape graphic the
+      // title sits beside the Champhunt mark, so the pale end carries dark title
+      // type and the violet end carries the white mark. Here the title runs the
+      // full width UNDER both, so a horizontal sweep would put half of it on pale
+      // and half on violet — no single ink colour survives that. Violet throughout
+      // gives one white knockout that holds across the whole line.
+      const bandH = 300;
+      if (!dark) {
+        s += `<defs><linearGradient id="stg" x1="0" y1="0" x2="1" y2="0">` +
+          `<stop offset="0" stop-color="#7A46C9"/><stop offset="1" stop-color="#5E2FAE"/>` +
+          `</linearGradient></defs>`;
+        s += `<rect x="0" y="0" width="${W}" height="${bandH}" fill="url(#stg)"/>`;
+      }
+      // League mark top-left, attribution block top-right — the same corners the
+      // landscape templates use, so the eye finds them in the same places. Both
+      // tiles now put the mark on a dark field, so both take the lifted variant.
+      const cplArt = BRAND.cplDark || BRAND.cpl;
+      if (cplArt) s += `<image x="${pad}" y="34" width="132" height="132" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
+      s += brandBlock({
+        W, H, pad, blockT: 44, qrS: 76, gap: 20, logoW: 232,
+        capSize: 13, urlSize: 17.5, ctxSize: 15, ctxGap: 22, fallbackSize: 34,
+        capFill: dark ? P.muted : '#ffffff', capOpacity: dark ? null : '.92',
+        markFill: dark ? P.ink : '#ffffff', linkFill: dark ? P.A : '#ffffff',
+        ctx: `SEASON ${esc(st.season)}`,
+      });
+      // Title sits BELOW both corner blocks and spans the full width, so unlike
+      // the landscape card there is nothing flanking it — the slide centre and
+      // the optical centre are the same line here.
+      const tTrack = 4;
+      s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="66" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle">POWER RANKINGS</text>`;
+      s += `<text x="${W / 2}" y="282" font-size="16" font-weight="600" letter-spacing="4" fill="${P.title}" opacity=".78" text-anchor="middle">${esc(String(st.league).toUpperCase())}</text>`;
+
+      // Column heads, then the rows. One column of full-width plates, set big
+      // enough to survive a phone-sized feed thumbnail.
+      const rowTop = 332, rh = 117, colStats = 792, colMv = 884, colScore = W - pad;
+      s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}">TEAM</text>`;
+      s += `<text x="${colStats}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end">WON-LOSS</text>`;
+      s += `<text x="${colMv}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle">MOVE</text>`;
+      s += `<text x="${colScore}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end">RATING</text>`;
+      rows.forEach((r, i) => {
+        const y = rowTop + i * rh, ch = rh - 11, cy = y + ch / 2;
+        s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="14" fill="${P.card}" stroke="${P.line}"/>`;
+        s += `<text x="${pad + 40}" y="${cy}" font-family="${DISP}" font-size="46" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += teamMarkAt(r.name, pad + 100, cy, 27);
+        const sl = streakLine(r);
+        const nameY = sl ? cy - 14 : cy;
+        // 30, not 33: at 33 the longest name ("ANTIGUA & BARBUDA FALCONS ABF")
+        // ran 25 units INTO the won-loss column. Measured off the rendered run
+        // rather than estimated from a per-character width, which is what got it
+        // wrong the first time. 30 is also the same share of the canvas the name
+        // takes on the landscape graphic, so the two read at the same weight.
+        s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="30" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 26).toUpperCase())} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        if (sl) s += `<text x="${pad + 138}" y="${cy + 18}" font-size="17" fill="${P.muted}" dominant-baseline="central">${esc(sl)}</text>`;
+        s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.won}-${r.lost}</text>`;
+        const mv = movementText(r);
+        if (mv) s += `<text x="${colMv}" y="${cy}" font-size="21" font-weight="700" fill="${r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.A}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
+        s += `<text x="${colScore}" y="${cy}" font-family="${DISP}" font-size="44" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.scoreDisplay.toFixed(1)}</text>`;
+      });
+      // Same footer contract as the other two: methodology line left, Willow mark
+      // bottom-right, which is where Willow asked for it on every graphic.
+      const footY = rowTop + n * rh + 26;
+      s += `<text x="${pad}" y="${footY + 44}" font-size="16" fill="${P.muted}">Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += willowMark(W - pad, footY, 128, 80, P.ink, '', dark);
+      s += `</svg>`;
+      return s;
+    }
+
     // Template picker. Every download path goes through here, so the switch in
     // the export bar is the single place that decides which house style ships.
     function currentTemplate() { const sel = $('tplSelect'); return sel ? sel.value : 'willow'; }
@@ -2121,9 +2220,9 @@
     }
     // The template is in the filename: the same week is often exported in both
     // styles, and two files called cpl-power-rankings.png overwrite each other.
-    function exportName(ext) {
+    function exportName(ext, variant) {
       const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      return `${league}-power-rankings-${currentTemplate()}.${ext}`;
+      return `${league}-power-rankings-${variant || currentTemplate()}.${ext}`;
     }
 
     // ---- daily checkpoints ----
@@ -2473,6 +2572,18 @@
       await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('frame.png')); res(); }, 'image/png'));
     }
 
+    // Exactly 1080x1350, the feed's native size, so the upload resamples nothing.
+    // The tile is authored at that size, so scale 1 IS full resolution — there is
+    // no PNG-size control here for the same reason there is no point exporting a
+    // 4K version of a graphic the platform will hard-crop to 1080 wide.
+    // The colourway follows the template switch: Willow gives the light tile,
+    // CPL the dark one, so one button covers both without a second control.
+    async function downloadSocial() {
+      const theme = currentTemplate() === 'cpl' ? 'dark' : 'light';
+      const c = await rasterize(socialTileSvg({ theme, scale: 1 }), true);
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-1080x1350`)); res(); }, 'image/png'));
+    }
+
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
       const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: 3 }), true);
@@ -2536,6 +2647,7 @@
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
     $('dlFrame').addEventListener('click', () => downloadFrame().catch(e => $('err').textContent = e.message));
+    $('dlSocial').addEventListener('click', () => downloadSocial().catch(e => $('err').textContent = e.message));
     // Each template has its own background control — a two-state switch for the
     // broadcast graphic, a three-way for CPL. Only the relevant one is shown, so
     // the bar never offers a setting that does nothing.
