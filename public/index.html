@@ -2011,14 +2011,14 @@
       const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
       // Left of centre, and centred on the VERTICAL axis of the title band.
       //
-      // Horizontally this sits halfway between the two settings that came before
-      // it: flush against the league mark crowded the mark, and centring on the
-      // slide stranded it out on its own. Halfway back clears the mark and leaves
-      // the open space to the title's right rather than split either side of it.
-      // Expressed as a nudge off the flush-left position so the title and the
-      // mark stay related if the mark is ever resized.
+      // Horizontally the run sits a short way off the league mark: flush against
+      // it crowded the mark, and centring on the slide stranded it out on its own
+      // with space either side. This keeps a clear gap to the mark and lets the
+      // open space fall to the title's right in one piece. Expressed as a nudge
+      // off the flush-left position, so the title and the mark stay related if
+      // the mark is ever resized.
       const titleSize = 42, titleTrack = 3;
-      const titleX = (cplArt ? pad + clW + 20 : pad) + 132;
+      const titleX = (cplArt ? pad + clW + 20 : pad) + 66;
       // The run is all caps, so it has no descenders and its optical centre sits
       // half a cap-height above the baseline — the condensed display face measures
       // about 0.72em to cap height. Checked against the painted pixels of the
