@@ -2004,21 +2004,27 @@
       // League mark top-left. Without the artwork the league's short code runs
       // ahead of the title instead — Willow accepted either.
       const cplArt = BRAND.cplDark || BRAND.cpl;   // this card is always dark navy
+      const clW = 106;
       if (cplArt) {
-        const clH = 106, clW = 106;
-        s += `<image x="${pad}" y="6" width="${clW}" height="${clH}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
+        s += `<image x="${pad}" y="6" width="${clW}" height="${clW}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
       }
       const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
-      // Centred on the slide, not run out from behind the league mark. The mark
-      // sits left and the attribution block sits right, so a left-set title left
-      // the header visibly weighted to one side; centred, it reads as a title
-      // card. text-anchor="middle" centres the ADVANCE box, and SVG adds a full
-      // letter-space after the final glyph, so anchoring on W/2 alone leaves the
-      // visible run sitting fractionally left — half the tracking is added back.
-      // Checked by measuring the painted pixels of the rasterised title, not by
-      // assuming: ink centre lands within half a unit of W/2.
-      const titleTrack = 3;
-      s += `<text x="${W / 2 + titleTrack / 2}" y="58" font-family="${DISP}" font-size="42" font-weight="700" letter-spacing="${titleTrack}" fill="${CPL.accent}" text-anchor="middle"${halo}>${lead}POWER RANKINGS</text>`;
+      // Left of centre, and centred on the VERTICAL axis of the title band.
+      //
+      // Horizontally this sits halfway between the two settings that came before
+      // it: flush against the league mark crowded the mark, and centring on the
+      // slide stranded it out on its own. Halfway back clears the mark and leaves
+      // the open space to the title's right rather than split either side of it.
+      // Expressed as a nudge off the flush-left position so the title and the
+      // mark stay related if the mark is ever resized.
+      const titleSize = 42, titleTrack = 3;
+      const titleX = (cplArt ? pad + clW + 20 : pad) + 132;
+      // The run is all caps, so it has no descenders and its optical centre sits
+      // half a cap-height above the baseline — the condensed display face measures
+      // about 0.72em to cap height. Checked against the painted pixels of the
+      // rasterised title rather than assumed.
+      const titleY = titleH / 2 + (titleSize * 0.72) / 2;
+      s += `<text x="${titleX}" y="${titleY.toFixed(1)}" font-family="${DISP}" font-size="${titleSize}" font-weight="700" letter-spacing="${titleTrack}" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
       // Attribution block, top right — the same brandBlock() the broadcast
       // overlay draws, so the two templates carry identical attribution. Every
       // metric runs larger here: this table is 1280 wide against the graphic's
