@@ -2149,7 +2149,14 @@
 
       // Column heads, then the rows. One column of full-width plates, set big
       // enough to survive a phone-sized feed thumbnail.
-      const rowTop = 332, rh = 117, colStats = 792, colMv = 884, colScore = W - pad;
+      // The rating is inset from the card's right edge rather than anchored on it:
+      // at W - pad the glyphs landed exactly on the stroke and read as spilling
+      // out of the plate. Movement then centres in the gap the two numeric columns
+      // actually leave — between the won-loss figure's right edge and the rating's
+      // left edge — instead of on a hand-picked x. 86 is the widest rendered
+      // rating at 44px, measured rather than estimated.
+      const rowTop = 332, rh = 117, colStats = 792, colScore = W - pad - 26, ratingW = 86;
+      const colMv = (colStats + (colScore - ratingW)) / 2;
       s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}">TEAM</text>`;
       s += `<text x="${colStats}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end">WON-LOSS</text>`;
       s += `<text x="${colMv}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle">MOVE</text>`;
