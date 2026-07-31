@@ -2009,28 +2009,35 @@
         s += `<image x="${pad}" y="6" width="${clW}" height="${clW}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
       }
       const lead = cplArt ? '' : `${esc(String(st.leagueShort || 'CPL').toUpperCase())} `;
-      // Left of centre, and centred on the VERTICAL axis of the title band.
-      //
-      // Horizontally the run sits a short way off the league mark: flush against
-      // it crowded the mark, and centring on the slide stranded it out on its own
-      // with space either side. This keeps a clear gap to the mark and lets the
-      // open space fall to the title's right in one piece. Expressed as a nudge
-      // off the flush-left position, so the title and the mark stay related if
-      // the mark is ever resized.
+      // Attribution-block metrics, declared here rather than inline at the call
+      // below because the title centres itself in the gap this block leaves. Kept
+      // in one place so the two cannot drift apart.
+      const CPL_BRAND = { blockT: 16, qrS: 62, gap: 18, logoW: 200 };
+      // Centred in the GAP between the two blocks that flank it — the league mark
+      // on the left, the attribution lockup on the right — and on the vertical
+      // axis of the title band. Centring on the slide instead ignored those two,
+      // and because they are not the same width it read as off-centre even though
+      // it was not. Both edges are derived from the constants those blocks are
+      // actually drawn from, so the title re-centres itself if either is resized.
       const titleSize = 42, titleTrack = 3;
-      const titleX = (cplArt ? pad + clW + 20 : pad) + 66;
+      const markRight = cplArt ? pad + clW : pad;
+      const brandLeft = W - pad - CPL_BRAND.qrS - CPL_BRAND.gap - CPL_BRAND.logoW;
+      // text-anchor="middle" centres the ADVANCE box, and SVG adds a full
+      // letter-space after the final glyph, so half the tracking is added back to
+      // land the visible run on the mark. Checked against the painted pixels.
+      const titleX = (markRight + brandLeft) / 2 + titleTrack / 2;
       // The run is all caps, so it has no descenders and its optical centre sits
       // half a cap-height above the baseline — the condensed display face measures
       // about 0.72em to cap height. Checked against the painted pixels of the
       // rasterised title rather than assumed.
       const titleY = titleH / 2 + (titleSize * 0.72) / 2;
-      s += `<text x="${titleX}" y="${titleY.toFixed(1)}" font-family="${DISP}" font-size="${titleSize}" font-weight="700" letter-spacing="${titleTrack}" fill="${CPL.accent}"${halo}>${lead}POWER RANKINGS</text>`;
+      s += `<text x="${titleX}" y="${titleY.toFixed(1)}" font-family="${DISP}" font-size="${titleSize}" font-weight="700" letter-spacing="${titleTrack}" fill="${CPL.accent}" text-anchor="middle"${halo}>${lead}POWER RANKINGS</text>`;
       // Attribution block, top right — the same brandBlock() the broadcast
       // overlay draws, so the two templates carry identical attribution. Every
       // metric runs larger here: this table is 1280 wide against the graphic's
       // 940, and a web asset is read at desk distance, not glanced at.
       s += brandBlock({
-        W, H, pad, blockT: 16, qrS: 62, gap: 18, logoW: 200,
+        W, H, pad, ...CPL_BRAND,
         capSize: 10.5, urlSize: 13, ctxSize: 12.5, ctxGap: 18, fallbackSize: 32,
         capFill: B.muted, markFill: CPL.ink, linkFill: CPL.accent, halo,
         ctx: `${esc(String(st.league).toUpperCase())} · SEASON ${esc(st.season)}`,
