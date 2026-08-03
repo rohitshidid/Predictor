@@ -16,8 +16,10 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
-const SRC = path.join(ROOT, 'power-rankings-explained.md');
-const BASE = 'power-rankings-explained';
+// Defaults to the parameter write-up; pass a markdown path to build any other
+// document through the same pipeline (`node tools/build-doc.js cpl-2025.md`).
+const SRC = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'power-rankings-explained.md');
+const BASE = path.basename(SRC, '.md');
 
 // Layout knobs — tuned so the document lands on exactly two Letter pages.
 const PT = 8.55;          // body size (pt)
@@ -114,10 +116,13 @@ function toHtml(blocks) {
       case 'pre': return `<pre><code>${esc(b.text)}</code></pre>`;
       case 'hr': return '<hr>';
       case 'table': {
-        const cg = b.head.length === COLS.length
-          ? `<colgroup>${COLS.map((w) => `<col style="width:${(w * 100).toFixed(1)}%">`).join('')}</colgroup>` : '';
-        const th = b.head.map((h, n) => `<th class="c${n}">${runsToHtml(h)}</th>`).join('');
-        const tb = b.rows.map((r) => `<tr>${r.map((c, n) => `<td class="c${n}">${runsToHtml(c)}</td>`).join('')}</tr>`).join('');
+        // Same widths the .docx uses, so the two outputs stay in step.
+        const tuned = isTuned(b);
+        const cw = tuned ? COLS : contentFracs(b);
+        const cg = `<colgroup>${cw.map((w) => `<col style="width:${(w * 100).toFixed(1)}%">`).join('')}</colgroup>`;
+        const cls = (n) => (tuned ? ` class="c${n}"` : '');
+        const th = b.head.map((h, n) => `<th${cls(n)}>${runsToHtml(h)}</th>`).join('');
+        const tb = b.rows.map((r) => `<tr>${r.map((c, n) => `<td${cls(n)}>${runsToHtml(c)}</td>`).join('')}</tr>`).join('');
         return `<table>${cg}<thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
       }
       default: return '';
@@ -189,19 +194,49 @@ function paraXml(runs, opt = {}) {
   return `<w:p>${pPr}${runs.map((r) => runXml(r, opt)).join('')}</w:p>`;
 }
 
+// COLS and the centred/bold column treatment belong to ONE table — the parameter
+// table in power-rankings-explained.md — so they key off its actual headings, not
+// off "has four columns". Any other four-column table (a playoff bracket, say) was
+// getting a 4.5%-wide first column meant for a rank number.
+const TUNED_HEAD = ['#', 'What we measure', 'What it tells you', 'Counts for'];
+const isTuned = (b) => b.head.length === TUNED_HEAD.length
+  && b.head.every((h, n) => h.map((x) => x.t).join('').trim() === TUNED_HEAD[n]);
+
+// Column widths for tables that aren't the tuned four-column one. An even split
+// starves the one column carrying sentences and leaves date/number columns half
+// empty, so each column is sized by its longest cell — clamped, because one long
+// outlier should widen a column, not collapse every other one.
+function contentFracs(b) {
+  const longest = b.head.map((h, n) =>
+    b.rows.reduce((m, r) => Math.max(m, ((r[n] || []).map((x) => x.t).join('')).length),
+      h.map((x) => x.t).join('').length));
+  const w = longest.map((L) => Math.min(Math.max(L, 6), 46));
+  const total = w.reduce((a, c) => a + c, 0);
+  return w.map((x) => x / total);
+}
+
 function tableXml(b) {
-  const widths = COLS.map((f) => Math.round(CONTENT_TW * f));
+  // COLS is tuned for the four-column parameter table. Any other shape gets an
+  // even split rather than an undefined width, which Word renders as a collapsed
+  // column — the same fallback the HTML side already takes by dropping colgroup.
+  const nCol = b.head.length;
+  const tuned = isTuned(b);
+  const fracs = tuned ? COLS : contentFracs(b);
+  const widths = fracs.map((f) => Math.round(CONTENT_TW * f));
   const border = '<w:tblBorders>' +
     ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']
       .map((s) => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="D7DEE8"/>`).join('') +
     '</w:tblBorders>';
   const cell = (runs, n, isHead, shade) => {
-    const jc = (n === 0 || n === 3) ? '<w:jc w:val="center"/>' : '';
+    // The centred/bold treatment is the parameter table's rank and weight
+    // columns; on any other shape every column is plain left-aligned body text.
+    const keyed = tuned && (n === 0 || n === 3);
+    const jc = keyed ? '<w:jc w:val="center"/>' : '';
     return `<w:tc><w:tcPr><w:tcW w:w="${widths[n]}" w:type="dxa"/>` +
       `${shade ? `<w:shd w:val="clear" w:fill="${shade}"/>` : ''}` +
       `<w:vAlign w:val="top"/></w:tcPr>` +
-      paraXml(runs, { sz: isHead ? 7.4 : 8, bold: isHead || n === 3, after: 0, jc,
-                      color: isHead ? '0F172A' : (n === 0 ? '64748B' : '1E293B') }) +
+      paraXml(runs, { sz: isHead ? 7.4 : 8, bold: isHead || (keyed && n === 3), after: 0, jc,
+                      color: isHead ? '0F172A' : (keyed && n === 0 ? '64748B' : '1E293B') }) +
       '</w:tc>';
   };
   const head = `<w:tr><w:trPr><w:tblHeader/></w:trPr>${b.head.map((h, n) => cell(h, n, true, 'EEF2F8')).join('')}</w:tr>`;
@@ -291,15 +326,31 @@ ${toDocxBody(blocks)}
 function main() {
   const blocks = parse(fs.readFileSync(SRC, 'utf8'));
 
+  // Title comes from the document's own H1. It used to be hardcoded to the
+  // power-rankings title, so every OTHER document built through this pipeline
+  // shipped with the wrong name in the browser tab and in the PDF metadata.
+  const h1 = blocks.find((b) => b.type === 'h' && b.level === 1);
+  const title = h1 ? h1.runs.map((r) => r.t).join('') : BASE;
+
   const htmlPath = path.join(ROOT, `${BASE}.html`);
   fs.writeFileSync(htmlPath, `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>How the T20 Power Rankings Are Calculated</title>
+<title>${title.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</title>
 <style>${CSS}</style></head><body>
 ${toHtml(blocks)}
 </body></html>`);
   console.log(`[doc] wrote ${BASE}.html`);
 
-  const chromium = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+  // Headless Chrome renders the PDF. The single hardcoded Linux path meant the
+  // PDF was silently skipped on macOS while the HTML and DOCX were rewritten,
+  // so the PDF drifted out of date without anything saying so.
+  const chromium = [
+    process.env.CHROME_PATH,
+    '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/usr/bin/chromium',
+    '/usr/bin/google-chrome',
+  ].filter(Boolean).find((p) => fs.existsSync(p)) || '';
   if (fs.existsSync(chromium)) {
     execFileSync(chromium, ['--headless', '--disable-gpu', '--no-sandbox', '--no-pdf-header-footer',
       `--print-to-pdf=${path.join(ROOT, `${BASE}.pdf`)}`, `file://${htmlPath}`], { stdio: 'pipe' });

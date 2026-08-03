@@ -14,7 +14,7 @@ Name each file by the team's short code (lowercase), matching the `logo` field i
 | Trinbago Knight Riders | `tkr.png` |
 | Guyana Amazon Warriors | `gaw.png` |
 | Antigua & Barbuda Falcons | `abf.png` |
-| Barbados Royals | `br.png` |
+| Barbados Tridents | `bt.png` ⚠️ **missing** — the franchise rebranded from Barbados Royals in May 2026. `br.png` is the retired Royals crest and is no longer referenced; drop the licensed Tridents artwork in as `bt.png`, and set the real palette in `data/cpl_2026.json` (it still holds the Royals' pink/navy). Until then this team renders as a drawn colour badge. |
 | Saint Lucia Kings | `slk.png` |
 | St Kitts & Nevis Patriots | `snp.png` |
 | Jamaica Kingsmen | `jam.png` |

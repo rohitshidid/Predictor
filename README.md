@@ -62,7 +62,8 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 | Section | Description |
 |---|---|
 | **Left panel** | Live power rankings — teams ordered by score, with movement arrows (▲/▼) and a blurb for each team |
-| **Season panel** (top right) | Switch between *Baseline* (90-match historical seed) and *Fresh Start* (empty season) |
+| **Season panel** (top right) | Switch between *Baseline* — the 2026 season with every team's rating opening on what it earned in the real 2025 season, weighted by how much of that squad is still there and decaying as results arrive — and *Fresh Start*, which throws that history away and starts all seven level on 34.0 |
+| **Season carry-in** (per team) | Open a team's **Details** to see where its rating came from: the index carried in from 2025, what this season alone says, how much of the published number is still last season, and how much of the squad was retained |
 | **Simulate Match** (right) | Enter match details and press **Simulate Match** to append the result and instantly re-rank |
 | **Weights (live)** (bottom right) | Drag sliders to adjust how much each factor (Win %, NRR, Powerplay, etc.) contributes to the score. Rankings update instantly. |
 
@@ -111,12 +112,15 @@ Predictor/
 │   ├── blurbs.js           # AI blurb generation + critic gate
 │   ├── config.js           # Env-driven config (models, keys, thresholds)
 │   ├── simState.js         # In-memory state: matches, rankings, blurbs
+│   ├── priors.js           # Derives each team's 2026 opening rating from 2025
 │   ├── render.js           # Template blurb renderer (fallback when AI is off)
 │   ├── templates.js        # Blurb sentence templates
-│   └── generateSeason.js   # Generates synthetic IPL season data
+│   └── generateSeason.js   # Generates synthetic season data
 ├── data/
-│   ├── ipl_2024.json       # 90-match IPL 2024 snapshot (baseline seed)
-│   └── lastweek.json       # Last week's ranking snapshot (for ▲/▼ deltas)
+│   ├── cpl_2026.json           # 2026 starting state — teams, no matches yet
+│   ├── cpl_2025.json           # REAL CPL 2025 (34 matches) — source of the priors
+│   ├── cpl_2026_synthetic.json # Archived 39-match demo season (nothing loads it)
+│   └── lastweek.json           # Last week's ranking snapshot (for ▲/▼ deltas)
 ├── weights.config.json     # Ranking weights — tune here, not in code
 ├── parameters.md           # All ranking parameters explained in detail
 ├── structure.md            # Architecture and design decisions

@@ -16,6 +16,8 @@
       --down: #c0392b;
       --accent: #0b5cff;
       --chip: #eef1f5;
+      --carry: #8a6a04;
+      --carry-bg: rgba(245, 197, 24, .16);
       --chip2: #e7ebf1;
       --shadow: 0 1px 3px rgba(20, 30, 50, .06), 0 8px 24px rgba(20, 30, 50, .05);
     }
@@ -31,6 +33,8 @@
         --down: #ff6b5e;
         --accent: #5b8cff;
         --chip: #1e242e;
+        --carry: #f5c518;
+        --carry-bg: rgba(245, 197, 24, .12);
         --chip2: #262d38;
         --shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
       }
@@ -305,6 +309,35 @@
       font-size: 11.5px;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
+    }
+
+    /* Season carry-in. Where a rating came from matters most in the opening
+       weeks, when most of it is still last season — so it gets its own block
+       rather than being mixed in with this season's metrics. */
+    .carry {
+      margin-top: 9px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .carry-head {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .carrychip {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--carry-bg);
+      color: var(--carry);
+      white-space: nowrap;
     }
 
     .stats b {
@@ -1150,6 +1183,10 @@
             : r.movement === 'same' ? `<span class="mv same">—</span>` : `<span class="mv new">NEW</span>`;
         const srcBadge = b.source === 'ai' ? `<span class="src ai" title="AI-written, grounded-verified">AI ✓</span>`
           : `<span class="src template" title="Deterministic template">TEMPLATE</span>`;
+        const carryPct = Math.round((r.priorWeight || 0) * 100);
+        const carryChip = carryPct > 0
+          ? `<span class="carrychip" title="${carryPct}% of this rating is still last season's index — it decays as 2026 matches are played">${carryPct}% 2025</span>`
+          : '';
         const li = document.createElement('li');
         li.className = 'team';
         if (prevRanks && prevRanks[r.name] !== r.rank) li.classList.add('flash');
@@ -1165,6 +1202,7 @@
           <span><b>${Math.round(r.winPct * 100)}%</b> win</span>
           <span><b>${r.formRecord.wins}/${r.formRecord.of}</b> form</span>
           <span class="score"><b>${r.score.toFixed(1)}</b> score</span>
+          ${carryChip}
         </div>
         <details class="det">
           <summary>Details — all ranking metrics</summary>
@@ -1175,11 +1213,38 @@
             <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
             <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
           </div>
+          ${carryHtml(r)}
         </details>
       </div>`;
         ol.appendChild(li);
       }
     }
+    // Where a team's rating came from before this season produced any evidence.
+    // In the opening weeks most of the published number is last season, so the
+    // operator needs to be able to answer "why is this side rated here?" without
+    // reading the config — especially for a team whose 2025 record is being
+    // discounted because most of the squad has gone.
+    function carryHtml(r) {
+      const meta = (STATE.prior && STATE.prior.teams && STATE.prior.teams[r.name]) || null;
+      if (!meta || typeof r.priorIndex !== 'number') return '';
+      const pct = Math.round((r.priorWeight || 0) * 100);
+      const bits = [];
+      bits.push(`<span><b>${r.priorIndex.toFixed(1)}</b> carried in</span>`);
+      bits.push(`<span><b>${r.inSeasonScore.toFixed(1)}</b> this season</span>`);
+      bits.push(`<span><b>${pct}%</b> still 2025</span>`);
+      if (typeof meta.continuity === 'number') {
+        const sm = meta.squadMovement || {};
+        bits.push(`<span title="${sm.kept} of ${sm.squad2025} players from the 2025 squad are still here; ${sm.lost} left"><b>${Math.round(meta.continuity * 100)}%</b> squad kept</span>`);
+        if (typeof meta.rawIndex === 'number' && Math.abs(meta.rawIndex - meta.index) > 0.005) {
+          bits.push(`<span title="2025 index pulled toward the league mean because the squad turned over"><b>${fmtSigned(meta.index - meta.rawIndex, 1)}</b> continuity adj</span>`);
+        }
+      }
+      return `<div class="carry">
+        <div class="carry-head">Season carry-in — ${esc(meta.basis || '')}</div>
+        <div class="stats">${bits.join('')}</div>
+      </div>`;
+    }
+
     function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
     // Original crest badge — a monogram roundel in the team's brand colours.
@@ -1367,9 +1432,23 @@
         ? '— CricAPI feed ✓'
         : '— no CRICAPI_KEY, using AI search (less reliable)';
       $('sub').textContent = `Season ${data.season} · ${data.matchCount} matches · min blurb score ${data.minScore}`;
-      $('modeNote').textContent = data.mode === 'baseline'
-        ? 'Seeded from the 90-match snapshot. Simulated matches append on top.'
-        : 'Empty season — build the whole table by simulating matches.';
+      // Say plainly what the two modes mean, and — in baseline — how much of the
+      // published number is still last season rather than this one.
+      if (data.mode === 'baseline' && data.prior) {
+        const k = data.prior.halfLifeMatches;
+        const carry = Math.round((k / (k + data.matchCount)) * 100);
+        const shrunk = Object.values(data.prior.teams || {})
+          .filter(m => typeof m.continuity === 'number').length;
+        $('modeNote').textContent =
+          `Ratings open on the real ${data.prior.source.season} season (${data.prior.source.matches} matches), `
+          + `weighted by how much of each squad is still there`
+          + (shrunk ? ` (${shrunk} of ${data.ranking.length} teams).` : '.')
+          + ` Last season currently carries ${carry}% — it halves every ${k} matches played.`;
+      } else if (data.mode === 'baseline') {
+        $('modeNote').textContent = 'Seeded from last season. Match results append on top.';
+      } else {
+        $('modeNote').textContent = 'Empty season, no history — every team starts level on 34.0.';
+      }
       $('btnBaseline').classList.toggle('active', data.mode === 'baseline');
       $('btnFresh').classList.toggle('active', data.mode === 'fresh');
       renderList(prevRanks);
@@ -2131,11 +2210,22 @@
       // League mark top-left, attribution block top-right — the same corners the
       // landscape templates use, so the eye finds them in the same places. Both
       // tiles now put the mark on a dark field, so both take the lifted variant.
+      //
+      // The mark keeps its own size — it is the league's, and it carries a
+      // wordmark that stops reading if it is scaled down to match the block
+      // opposite. What it shares is a centre line, not an edge: it is a square
+      // emblem sitting against a three-line text block, so flushing either top
+      // or bottom leaves the other end hanging. Centred on the block's ink band
+      // (brandT to the season caption's baseline) the two corners balance and
+      // the mark stays inside the header band at full size.
+      const brandT = 44, brandQr = 76, brandCtxGap = 22;
+      const brandMid = brandT + (brandQr + brandCtxGap) / 2;
+      const cplBox = 132;
       const cplArt = BRAND.cplDark || BRAND.cpl;
-      if (cplArt) s += `<image x="${pad}" y="34" width="132" height="132" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
+      if (cplArt) s += `<image x="${pad}" y="${(brandMid - cplBox / 2).toFixed(2)}" width="${cplBox}" height="${cplBox}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
       s += brandBlock({
-        W, H, pad, blockT: 44, qrS: 76, gap: 20, logoW: 232,
-        capSize: 13, urlSize: 17.5, ctxSize: 15, ctxGap: 22, fallbackSize: 34,
+        W, H, pad, blockT: brandT, qrS: brandQr, gap: 20, logoW: 232,
+        capSize: 13, urlSize: 17.5, ctxSize: 15, ctxGap: brandCtxGap, fallbackSize: 34,
         capFill: dark ? P.muted : '#ffffff', capOpacity: dark ? null : '.92',
         markFill: dark ? P.ink : '#ffffff', linkFill: dark ? P.A : '#ffffff',
         ctx: `SEASON ${esc(st.season)}`,
@@ -2182,9 +2272,18 @@
       });
       // Same footer contract as the other two: methodology line left, Willow mark
       // bottom-right, which is where Willow asked for it on every graphic.
-      const footY = rowTop + n * rh + 26;
-      s += `<text x="${pad}" y="${footY + 44}" font-size="16" fill="${P.muted}">Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      s += willowMark(W - pad, footY, 128, 80, P.ink, '', dark);
+      //
+      // The footer hangs off the bottom margin rather than off the last row: the
+      // tile is a fixed 1350 and the rows never fill it, so measuring down from
+      // the rows left the mark floating ~90 clear of the corner with dead space
+      // beneath it. markH is the art's rendered height and markW is that height
+      // at the lockup's own 0.939 ratio — passing the old 128-wide box made
+      // xMidYMid centre a 75-wide mark inside it and hold it 26 short of the
+      // right margin the rows, the QR and the rating column all close on.
+      const markH = 80, markW = Math.round(markH * 0.939);
+      const markY = H - pad - markH;
+      s += `<text x="${pad}" y="${markY + markH / 2 + 6}" font-size="16" fill="${P.muted}">Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += willowMark(W - pad, markY, markW, markH, P.ink, '', dark);
       s += `</svg>`;
       return s;
     }

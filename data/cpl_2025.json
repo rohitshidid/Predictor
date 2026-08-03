@@ -1,0 +1,1636 @@
+{
+  "season": "2025",
+  "league": "Caribbean Premier League",
+  "leagueShort": "CPL",
+  "region": "Caribbean",
+  "source": "cpl-2025-season-review.md - Wikipedia 2025/2026 season pages (sourced to ESPNcricinfo), verified against cplt20.com",
+  "note": "Real CPL 2025 results, used ONLY to derive each team's 2026 starting prior (src/priors.js). Phase fields (ppRuns/deathRuns/deathBalls/top4/bowlTop2) are 0 because the review carries no ball-by-ball data - powerplay and death-overs therefore contribute an IDENTICAL constant to every team and cannot change the 2025 order.",
+  "corrections": [
+    "Match 15 (28 Aug, Daren Sammy): the review prints 'St Kitts & Nevis Patriots 180/3 (17) beat Saint Lucia Kings (H) 177/3'. The two team names are transposed. With them swapped, all six teams reproduce the published W/L/NR/Pts and NRR to three decimals; as printed, SLK and SNP are both wrong."
+  ],
+  "verification": "Reconstruction reproduces the published final league table exactly for all six teams: Pld, W, L, NR, Pts and NRR (3 dp).",
+  "teams": [
+    {
+      "name": "Saint Lucia Kings",
+      "short": "SLK"
+    },
+    {
+      "name": "Guyana Amazon Warriors",
+      "short": "GAW"
+    },
+    {
+      "name": "Trinbago Knight Riders",
+      "short": "TKR"
+    },
+    {
+      "name": "Antigua & Barbuda Falcons",
+      "short": "ABF"
+    },
+    {
+      "name": "St Kitts & Nevis Patriots",
+      "short": "SNP"
+    },
+    {
+      "name": "Barbados Royals",
+      "short": "BR"
+    }
+  ],
+  "matches": [
+    {
+      "id": 1,
+      "date": "2025-08-14T18:00:00.000Z",
+      "stage": "league",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Warner Park",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 121,
+          "balls": 103,
+          "overs": 17.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 125,
+          "balls": 90,
+          "overs": 15.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 2,
+      "date": "2025-08-15T18:00:00.000Z",
+      "stage": "league",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Guyana Amazon Warriors",
+      "venue": "Warner Park",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 153,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 154,
+          "balls": 104,
+          "overs": 17.3333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 5,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 3,
+      "date": "2025-08-16T18:00:00.000Z",
+      "stage": "league",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Barbados Royals",
+      "venue": "Sir Vivian Richards",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "battingFirst": "Barbados Royals",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 151,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Barbados Royals",
+          "runs": 152,
+          "balls": 118,
+          "overs": 19.6667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 4,
+      "date": "2025-08-17T18:00:00.000Z",
+      "stage": "league",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Trinbago Knight Riders",
+      "venue": "Warner Park",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 231,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 5,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 219,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 5,
+      "date": "2025-08-17T18:00:00.000Z",
+      "stage": "league",
+      "result": "no result",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Saint Lucia Kings",
+      "venue": "Sir Vivian Richards",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "battingFirst": null,
+      "winner": null,
+      "innings": [],
+      "note": "abandoned, rain"
+    },
+    {
+      "id": 6,
+      "date": "2025-08-19T18:00:00.000Z",
+      "stage": "league",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Saint Lucia Kings",
+      "venue": "Warner Park",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "battingFirst": "Saint Lucia Kings",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 200,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Saint Lucia Kings",
+          "runs": 197,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 7,
+      "date": "2025-08-20T18:00:00.000Z",
+      "stage": "league",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Trinbago Knight Riders",
+      "venue": "Sir Vivian Richards",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 167,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 159,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 8,
+      "date": "2025-08-21T18:00:00.000Z",
+      "stage": "league",
+      "home": "St Kitts & Nevis Patriots",
+      "away": "Barbados Royals",
+      "venue": "Warner Park",
+      "venueHomeTeam": "St Kitts & Nevis Patriots",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Barbados Royals",
+          "runs": 174,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 162,
+          "balls": 110,
+          "overs": 18.3333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 9,
+      "date": "2025-08-22T18:00:00.000Z",
+      "stage": "league",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "Guyana Amazon Warriors",
+      "venue": "Sir Vivian Richards",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 211,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 128,
+          "balls": 92,
+          "overs": 15.3333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 10,
+      "date": "2025-08-23T18:00:00.000Z",
+      "stage": "league",
+      "home": "Saint Lucia Kings",
+      "away": "Trinbago Knight Riders",
+      "venue": "Daren Sammy",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Saint Lucia Kings",
+          "runs": 183,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 165,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 11,
+      "date": "2025-08-24T18:00:00.000Z",
+      "stage": "league",
+      "home": "Antigua & Barbuda Falcons",
+      "away": "St Kitts & Nevis Patriots",
+      "venue": "Sir Vivian Richards",
+      "venueHomeTeam": "Antigua & Barbuda Falcons",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 133,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 9,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 137,
+          "balls": 118,
+          "overs": 19.6667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 12,
+      "date": "2025-08-24T18:00:00.000Z",
+      "stage": "league",
+      "result": "no result",
+      "home": "Saint Lucia Kings",
+      "away": "Barbados Royals",
+      "venue": "Daren Sammy",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "battingFirst": null,
+      "winner": null,
+      "innings": [],
+      "note": "abandoned, rain"
+    },
+    {
+      "id": 13,
+      "date": "2025-08-26T18:00:00.000Z",
+      "stage": "league",
+      "home": "Saint Lucia Kings",
+      "away": "Guyana Amazon Warriors",
+      "venue": "Daren Sammy",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Saint Lucia Kings",
+          "runs": 202,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 203,
+          "balls": 109,
+          "overs": 18.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 14,
+      "date": "2025-08-27T18:00:00.000Z",
+      "stage": "league",
+      "home": "Trinbago Knight Riders",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Brian Lara",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 146,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 152,
+          "balls": 112,
+          "overs": 18.6667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 2,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 15,
+      "date": "2025-08-28T18:00:00.000Z",
+      "stage": "league",
+      "home": "Saint Lucia Kings",
+      "away": "St Kitts & Nevis Patriots",
+      "venue": "Daren Sammy",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Saint Lucia Kings",
+          "runs": 177,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 180,
+          "balls": 102,
+          "overs": 17.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 16,
+      "date": "2025-08-29T18:00:00.000Z",
+      "stage": "league",
+      "home": "Trinbago Knight Riders",
+      "away": "Barbados Royals",
+      "venue": "Brian Lara",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "battingFirst": "Barbados Royals",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 178,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Barbados Royals",
+          "runs": 179,
+          "balls": 107,
+          "overs": 17.8333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 17,
+      "date": "2025-08-30T18:00:00.000Z",
+      "stage": "league",
+      "home": "Trinbago Knight Riders",
+      "away": "Guyana Amazon Warriors",
+      "venue": "Brian Lara",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 163,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 9,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 169,
+          "balls": 104,
+          "overs": 17.3333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 18,
+      "date": "2025-08-31T18:00:00.000Z",
+      "stage": "league",
+      "home": "Saint Lucia Kings",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Daren Sammy",
+      "venueHomeTeam": "Saint Lucia Kings",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Saint Lucia Kings",
+          "runs": 204,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 206,
+          "balls": 107,
+          "overs": 17.8333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 19,
+      "date": "2025-09-01T18:00:00.000Z",
+      "stage": "league",
+      "home": "Trinbago Knight Riders",
+      "away": "St Kitts & Nevis Patriots",
+      "venue": "Brian Lara",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 179,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 167,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 20,
+      "date": "2025-09-03T18:00:00.000Z",
+      "stage": "league",
+      "home": "Trinbago Knight Riders",
+      "away": "Saint Lucia Kings",
+      "venue": "Brian Lara",
+      "venueHomeTeam": "Trinbago Knight Riders",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Saint Lucia Kings",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Saint Lucia Kings",
+          "runs": 109,
+          "balls": 109,
+          "overs": 18.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 112,
+          "balls": 67,
+          "overs": 11.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 21,
+      "date": "2025-09-04T18:00:00.000Z",
+      "stage": "league",
+      "home": "Barbados Royals",
+      "away": "Guyana Amazon Warriors",
+      "venue": "Kensington Oval",
+      "venueHomeTeam": "Barbados Royals",
+      "battingFirst": "Barbados Royals",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 165,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Barbados Royals",
+          "runs": 170,
+          "balls": 118,
+          "overs": 19.6667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 22,
+      "date": "2025-09-05T18:00:00.000Z",
+      "stage": "league",
+      "home": "Barbados Royals",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Kensington Oval",
+      "venueHomeTeam": "Barbados Royals",
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Barbados Royals",
+          "runs": 188,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 187,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 23,
+      "date": "2025-09-06T18:00:00.000Z",
+      "stage": "league",
+      "home": "Guyana Amazon Warriors",
+      "away": "Trinbago Knight Riders",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 167,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 5,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 168,
+          "balls": 119,
+          "overs": 19.8333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 24,
+      "date": "2025-09-07T18:00:00.000Z",
+      "stage": "league",
+      "home": "Barbados Royals",
+      "away": "Saint Lucia Kings",
+      "venue": "Kensington Oval",
+      "venueHomeTeam": "Barbados Royals",
+      "battingFirst": "Barbados Royals",
+      "winner": "Barbados Royals",
+      "innings": [
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Saint Lucia Kings",
+          "runs": 191,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 5,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Barbados Royals",
+          "runs": 164,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 9,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 25,
+      "date": "2025-09-07T18:00:00.000Z",
+      "stage": "league",
+      "home": "Guyana Amazon Warriors",
+      "away": "St Kitts & Nevis Patriots",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 149,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 144,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 26,
+      "date": "2025-09-10T18:00:00.000Z",
+      "stage": "league",
+      "home": "Guyana Amazon Warriors",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Antigua & Barbuda Falcons",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 99,
+          "balls": 109,
+          "overs": 18.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 103,
+          "balls": 115,
+          "overs": 19.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 27,
+      "date": "2025-09-11T18:00:00.000Z",
+      "stage": "league",
+      "home": "Barbados Royals",
+      "away": "St Kitts & Nevis Patriots",
+      "venue": "Kensington Oval",
+      "venueHomeTeam": "Barbados Royals",
+      "battingFirst": "St Kitts & Nevis Patriots",
+      "winner": "St Kitts & Nevis Patriots",
+      "innings": [
+        {
+          "batting": "St Kitts & Nevis Patriots",
+          "bowling": "Barbados Royals",
+          "runs": 150,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "St Kitts & Nevis Patriots",
+          "runs": 149,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "St Kitts & Nevis Patriots": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 28,
+      "date": "2025-09-12T18:00:00.000Z",
+      "stage": "league",
+      "home": "Barbados Royals",
+      "away": "Trinbago Knight Riders",
+      "venue": "Kensington Oval",
+      "venueHomeTeam": "Barbados Royals",
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Barbados Royals",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Barbados Royals",
+          "runs": 166,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 172,
+          "balls": 114,
+          "overs": 19.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 3,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        },
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 29,
+      "date": "2025-09-13T18:00:00.000Z",
+      "stage": "league",
+      "home": "Guyana Amazon Warriors",
+      "away": "Saint Lucia Kings",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Saint Lucia Kings",
+          "runs": 188,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 185,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 30,
+      "date": "2025-09-14T18:00:00.000Z",
+      "stage": "league",
+      "home": "Guyana Amazon Warriors",
+      "away": "Barbados Royals",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Barbados Royals",
+          "runs": 189,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 6,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Barbados Royals",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 125,
+          "balls": 110,
+          "overs": 18.3333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Barbados Royals": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 31,
+      "date": "2025-09-16T18:00:00.000Z",
+      "stage": "Eliminator",
+      "home": "Trinbago Knight Riders",
+      "away": "Antigua & Barbuda Falcons",
+      "venue": "Providence",
+      "venueHomeTeam": null,
+      "battingFirst": "Antigua & Barbuda Falcons",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Antigua & Barbuda Falcons",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 166,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Antigua & Barbuda Falcons",
+          "runs": 168,
+          "balls": 105,
+          "overs": 17.5,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 1,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Antigua & Barbuda Falcons": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 32,
+      "date": "2025-09-17T18:00:00.000Z",
+      "stage": "Qualifier 1",
+      "home": "Guyana Amazon Warriors",
+      "away": "Saint Lucia Kings",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Guyana Amazon Warriors",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Saint Lucia Kings",
+          "runs": 157,
+          "balls": 119,
+          "overs": 19.8333,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 143,
+          "balls": 115,
+          "overs": 19.1667,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 10,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 33,
+      "date": "2025-09-19T18:00:00.000Z",
+      "stage": "Qualifier 2",
+      "home": "Trinbago Knight Riders",
+      "away": "Saint Lucia Kings",
+      "venue": "Providence",
+      "venueHomeTeam": null,
+      "battingFirst": "Trinbago Knight Riders",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Saint Lucia Kings",
+          "runs": 194,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 4,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Saint Lucia Kings",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 138,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Saint Lucia Kings": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    },
+    {
+      "id": 34,
+      "date": "2025-09-21T18:00:00.000Z",
+      "stage": "Final",
+      "home": "Guyana Amazon Warriors",
+      "away": "Trinbago Knight Riders",
+      "venue": "Providence",
+      "venueHomeTeam": "Guyana Amazon Warriors",
+      "battingFirst": "Guyana Amazon Warriors",
+      "winner": "Trinbago Knight Riders",
+      "innings": [
+        {
+          "batting": "Guyana Amazon Warriors",
+          "bowling": "Trinbago Knight Riders",
+          "runs": 130,
+          "balls": 120,
+          "overs": 20.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 8,
+          "bowlTop2": 0
+        },
+        {
+          "batting": "Trinbago Knight Riders",
+          "bowling": "Guyana Amazon Warriors",
+          "runs": 133,
+          "balls": 108,
+          "overs": 18.0,
+          "ppRuns": 0,
+          "deathRuns": 0,
+          "deathBalls": 0,
+          "top4": 0,
+          "wktsLost": 7,
+          "bowlTop2": 0
+        }
+      ],
+      "stars": {
+        "Trinbago Knight Riders": {
+          "available": 4,
+          "squad": 4
+        },
+        "Guyana Amazon Warriors": {
+          "available": 4,
+          "squad": 4
+        }
+      }
+    }
+  ]
+}

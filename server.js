@@ -17,6 +17,7 @@ const { rank } = require('./src/engine');
 const { blurbForTeam } = require('./src/blurbs');
 const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
+const priors = require('./src/priors');
 const { fetchMatch, providerName, quotaState, clearCache, cacheStats } = require('./src/liveMatch');
 const store = require('./src/checkpoints');
 const { buildSitePayload } = require('./src/publish');
@@ -70,8 +71,17 @@ function mergeSiteMeta(patch) {
   return siteMeta;
 }
 
+// The baseline carries the real 2025 season in as each team's opening rating;
+// Fresh Start ranks the same teams with no past at all. `priors` is derived from
+// data/cpl_2025.json by the same engine and the same weights, so a weight change
+// moves the carry-in and the live table together.
+function currentPriors() {
+  if (!sim.usePriors()) return null;
+  return priors.getPriors(config, sim.getTeams()).priors;
+}
+
 function currentRanking() {
-  return rank(sim.getData(), config, sim.getPrevRanks());
+  return rank(sim.getData(), config, sim.getPrevRanks(), currentPriors());
 }
 
 // Build the full state payload the client renders. Snapshots the order so the
@@ -101,6 +111,21 @@ function buildState(rows) {
     optionalWeights: config.optionalWeights || {},
     enabled: config.enabled || {},
     matchCount: sim.getData().matches.length,
+    // Where the opening ratings came from, so the operator can see the carry-in
+    // rather than having to trust it. Null in Fresh Start, which has no past.
+    prior: sim.usePriors()
+      ? (() => {
+          const p = priors.getPriors(config, sim.getTeams());
+          return {
+            enabled: config.prior ? config.prior.enabled !== false : false,
+            halfLifeMatches: (config.prior && config.prior.halfLifeMatches) || 4,
+            source: p.source,
+            leagueMean: p.leagueMean,
+            expansion: p.expansion,
+            teams: p.meta,
+          };
+        })()
+      : null,
     teams: sim.getTeams().map((t) => ({
       name: t.name,
       short: t.short,

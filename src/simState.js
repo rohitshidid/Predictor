@@ -1,8 +1,14 @@
 // In-memory simulator state. Holds the working season the engine ranks, plus the
 // mode toggle:
-//   - baseline: seeded from data/ipl_2024.json (the 90-match snapshot)
-//   - fresh:    same teams, ZERO matches — build the table from scratch
-// Switching mode fully repopulates (baseline) or clears (fresh) the match list.
+//   - baseline: the 2026 season as recorded in data/cpl_2026.json, with each
+//               team's rating OPENING on what it earned in the real 2025 season
+//               (src/priors.js) and that carry-in decaying as 2026 results land
+//   - fresh:    same teams, ZERO matches and NO carry-in — every side starts
+//               level on 34.0 and the table is built from scratch
+// The 2026 season opens 7 Aug 2026 with no matches played, so the two modes
+// currently differ only in whether last season is allowed to count. That is the
+// whole point of the toggle: Baseline answers "who is best going into 2026?",
+// Fresh Start answers "what if nobody had a past?".
 // `prevRanks` remembers the ranking BEFORE the last mutation so the ▲/▼ arrows
 // show how the just-finished match (or weight change) moved every team.
 const fs = require('node:fs');
@@ -45,6 +51,10 @@ const state = {
   getData: () => data,
   getTeams: () => data.teams,
   getPrevRanks: () => prevRanks,
+
+  // Only the baseline carries last season in. Fresh Start deliberately throws
+  // the 2025 evidence away so every team opens on the same 34.0.
+  usePriors: () => mode === 'baseline',
 
   // Remember the current order so the next render can diff against it.
   snapshot(ranks) {
@@ -102,9 +112,16 @@ const state = {
 
   // Append one simulated match. Assigns an id + timestamp after the latest match.
   appendMatch(match) {
+    // With an empty season there is no previous match to date from, so fall back
+    // to the published season start (7 Aug 2026) and finally to today. Reading
+    // the last element of an empty baseline used to throw here.
+    const seasonStart = BASELINE.seasonStart ? new Date(BASELINE.seasonStart) : null;
+    const lastBaseline = BASELINE.matches.length
+      ? new Date(BASELINE.matches[BASELINE.matches.length - 1].date)
+      : null;
     const lastDate = data.matches.length
       ? new Date(data.matches[data.matches.length - 1].date)
-      : new Date(BASELINE.matches[BASELINE.matches.length - 1].date);
+      : seasonStart || lastBaseline || new Date();
     const id = (data.matches.reduce((mx, m) => Math.max(mx, m.id || 0), 0) || 0) + 1;
     const record = { ...match, id, date: new Date(lastDate.getTime() + 12 * 3600 * 1000).toISOString() };
     data.matches.push(record);

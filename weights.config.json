@@ -77,6 +77,22 @@
     "min": -40,
     "max": 40
   },
+  "prior": {
+    "_note": "Season carry-in — what a team is worth before the new season has produced any evidence. With no matches played every metric collapses to its neutral value and EVERY team scores an identical 34.0, which asserts the champions and the bottom side are equal. Instead each team opens on the index it earned last season, derived by running this same engine and these same weights over data/cpl_2025.json (src/priors.js). The claim then decays: weight = halfLifeMatches / (halfLifeMatches + matchesPlayed), blended as weight*prior + (1-weight)*thisSeason. At 0 matches the published rating IS last season's index; at halfLifeMatches the prior carries half; at 10 matches about 29%. Order-affecting by design — that is the point — but the unblended in-season index stays on every row for audit. Set enabled=false to open every team level again (the Fresh Start behaviour).",
+    "enabled": true,
+    "halfLifeMatches": 4,
+    "expansionSigma": 1.0,
+    "_expansionNote": "A franchise with no previous-season record cannot be measured. Jamaica Kingsmen are new for 2026, so they open expansionSigma standard deviations below the six-team 2025 mean — a stated first-year discount rather than a silent guess. At 1.0 they open 6th of 7, above Barbados and below Saint Lucia. Set 0.0 to open them at the league mean instead, or negative to favour them. A rebranded franchise is NOT an expansion team: it inherits its predecessor's index via `priorFrom` in the season data (Barbados Tridents <- Barbados Royals).",
+    "continuity": {
+      "_note": "How much of last season's record to TRUST, given how much of the squad is still there. A team that kept its side is well described by its 2025 index; a team that lost half of it is not, so its prior is pulled toward the league mean: prior' = mean + lambda*(prior - mean), lambda = confidenceFloor + (1-confidenceFloor)*kept/squad2025. Per-team counts live in data/cpl_2026.json -> squadMovement, taken from the season review's movement tables.",
+      "enabled": true,
+      "confidenceFloor": 0.5,
+      "_floorNote": "The least a fully-rebuilt squad's 2025 record can be trusted. At 0.5, a team that lost everyone still keeps half its distance from the mean — last season is never worthless, because coaching, ground and core identity carry over. At 1.0 continuity is switched off entirely; at 0.0 a fully-churned team would sit exactly on the league mean.",
+      "_directionNote": "This is UNCERTAINTY, not punishment, and the distinction matters. Heavy churn makes a BAD 2025 record less predictive too, so a below-average side that rebuilt moves UP toward the mean, not down. Saint Lucia — the most-churned squad at 39% retained — therefore gains slightly despite losing their captain and leading spinner. Anyone wanting churn to actively penalise a team needs to value the individual players who left, which is an editorial judgement this project deliberately keeps out of the ordering.",
+      "_expansionNote": "Teams with no previous-season record are skipped. Jamaica's prior is already set by expansionSigma; regressing it toward the mean would silently undo that discount."
+    },
+    "_sourceNote": "The 2025 file carries no ball-by-ball data, so ppRuns/deathRuns/deathBalls are 0 for every innings. Powerplay dominance and death-overs net therefore evaluate to exactly 0.5 for all six teams and contribute an IDENTICAL 13.5 points to each — they shift the whole prior scale but cannot change the 2025 order. Re-derive the priors once a ball-by-ball 2025 source exists."
+  },
   "scoreDisplay": {
     "_note": "Presentation band. The raw index (0-100) is mapped onto a published range by a FIXED affine transform, so it is stable week to week and strictly order-preserving \u2014 the ranking is untouched. Editorial choice for legibility, documented in power-rankings-explained.md.",
     "rawMin": 15,

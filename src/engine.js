@@ -297,7 +297,10 @@ function displayScore(raw, cfg) {
 const OPTIONAL_KEYS = ['expectedWins', 'tossLeverage', 'chaseSet', 'top4Consistency', 'bowlingConcentration'];
 
 // Rank the league. `lastWeek` maps teamName -> previous rank for the ▲/▼ delta.
-function rank(data, config, lastWeek = {}) {
+// `priors` maps teamName -> the index it carried out of last season; supply it
+// to open a new season on last season's standing instead of a flat 34.0. See
+// src/priors.js and the `prior` block in weights.config.json.
+function rank(data, config, lastWeek = {}, priors = null) {
   const w = config.weights;
   const ow = config.optionalWeights || {};
   const enabled = config.enabled || {};
@@ -316,6 +319,7 @@ function rank(data, config, lastWeek = {}) {
   // transform is affine with FIXED constants, so it is stable week to week and
   // strictly increasing — the ordering is mathematically untouched.
   const dCfgS = config.scoreDisplay;
+  const pCfg = config.prior || {};
 
   const teams = collect(data);
   const list = Object.values(teams);
@@ -391,7 +395,31 @@ function rank(data, config, lastWeek = {}) {
     for (const k of OPTIONAL_KEYS) if (enabled[k]) score += (ow[k] || 0) * (n[k] || 0);
     score *= scale;
 
+    // Season carry-in. With no matches played every team scores an identical
+    // 34.0, which asserts that last season's champions and its bottom side are
+    // the same team. Instead a side opens on the index it earned last season,
+    // and that opening claim is worth less with every result this season until
+    // it is worth nothing:
+    //
+    //   weight = k / (k + played)      k = prior.halfLifeMatches
+    //   score  = weight·prior + (1 − weight)·thisSeason
+    //
+    // At 0 matches the weight is exactly 1, so the published number IS last
+    // season's index. At k matches the prior carries half. It never reaches
+    // zero but is negligible across a full season. The raw in-season index is
+    // kept on the row so every audit can still see the unblended figure.
+    const inSeasonScore = score;
+    let priorIndex = null;
+    let priorWeight = 0;
+    if (priors && pCfg.enabled !== false && typeof priors[t.name] === 'number') {
+      const k = typeof pCfg.halfLifeMatches === 'number' ? pCfg.halfLifeMatches : 4;
+      priorIndex = priors[t.name];
+      priorWeight = k > 0 ? k / (k + t.played) : 0;
+      score = priorWeight * priorIndex + (1 - priorWeight) * inSeasonScore;
+    }
+
     return {
+      inSeasonScore, priorIndex, priorWeight,
       name: t.name, short: t.short, played: t.played, won: t.won, lost: t.lost,
       winPct: wp, seasonNRR: season, rollingNRR: rNRR, nrrTrend: rNRR - season,
       form, formRecord: formRecord(t, window), marginAdjustedWin: margin,
