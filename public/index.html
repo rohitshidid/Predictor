@@ -2233,8 +2233,23 @@
       // Title sits BELOW both corner blocks and spans the full width, so unlike
       // the landscape card there is nothing flanking it — the slide centre and
       // the optical centre are the same line here.
-      const tTrack = 4;
-      s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="66" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle">POWER RANKINGS</text>`;
+      // Sized to fit rather than fixed. "PRESEASON POWER RANKINGS" is 24 characters
+      // against the 14 the heading used to carry, and at the old 66 it ran clean
+      // off both margins.
+      //
+      // Width is n x (0.664 x size + tracking), not a flat em-per-character:
+      // letter-spacing adds a FIXED amount per character that does not scale with
+      // the type size, so a single em/char factor is only right at one size and
+      // drifts everywhere else — which is what left the first attempt 6 units over
+      // the right margin. 0.664 is the face's own advance, measured off the
+      // rendered run. Inverting that for the target width gives the size directly.
+      // The cap means a short heading is unaffected: "POWER RANKINGS" still solves
+      // well above 66 and stays there.
+      const tTrack = 4, tMax = 66, tGutter = 24;
+      const titleText = 'PRESEASON POWER RANKINGS';
+      const tFit = ((W - 2 * pad - 2 * tGutter) / titleText.length - tTrack) / 0.664;
+      const tSize = Math.min(tMax, tFit);
+      s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="${tSize.toFixed(1)}" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle">${titleText}</text>`;
       s += `<text x="${W / 2}" y="282" font-size="16" font-weight="600" letter-spacing="4" fill="${P.title}" opacity=".78" text-anchor="middle">${esc(String(st.league).toUpperCase())}</text>`;
 
       // Column heads, then the rows. One column of full-width plates, set big
