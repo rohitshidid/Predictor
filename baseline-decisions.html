@@ -3,29 +3,35 @@
   :root{
     --ink:#0B1B3F; --paper:#F2F5FA; --gold:#F5C518; --red:#C8102E;
     --green:#16A34A; --slate:#5A6B8C;
-    --bg:var(--paper); --fg:var(--ink); --muted:#5A6B8C;
-    --rule:#C9D3E4; --rule-strong:#9DAEC9; --panel:#FFFFFF; --panel-2:#E9EEF7;
-    --accent:#B8890A; --accent-ink:#0B1B3F; --shadow:rgba(11,27,63,.07);
     --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
     --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
     --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   }
-  @media (prefers-color-scheme:dark){
-    :root{
-      --bg:#071026; --fg:#E7EDF8; --muted:#93A6C6; --rule:#1E3055;
-      --rule-strong:#33487A; --panel:#0D1B36; --panel-2:#132546;
-      --accent:#F5C518; --accent-ink:#0B1B3F; --shadow:rgba(0,0,0,.4);
-    }
-  }
-  :root[data-theme="dark"]{
+  /* Dark is the document's own setting, not a mirror of the reader's OS. It used
+     to sit behind `prefers-color-scheme`, so a reader on a light desktop — which
+     is most of them — never saw it. The palette is unchanged; only which one is
+     the default has moved. `color-scheme` matters as much as the variables here:
+     without it the native range-slider tracks and the scrollbar keep rendering
+     light on a dark page, which is exactly the seam that gives away a page that
+     has been recoloured rather than themed. `data-theme="light"` is kept as an
+     explicit opt-out and still wins on specificity. */
+  :root, :root[data-theme="dark"]{
+    color-scheme:dark;
     --bg:#071026; --fg:#E7EDF8; --muted:#93A6C6; --rule:#1E3055;
     --rule-strong:#33487A; --panel:#0D1B36; --panel-2:#132546;
     --accent:#F5C518; --accent-ink:#0B1B3F; --shadow:rgba(0,0,0,.4);
+    /* Jamaica carry no brand colour in the charts — they are the expansion side
+       with nothing to inherit — so their chip is deliberately neutral. The fixed
+       navy it used read as a solid chip on paper and as an empty outline on the
+       dark panel, the one chart mark the theme did not reach. */
+    --jam:#7F96BE;
   }
   :root[data-theme="light"]{
+    color-scheme:light;
     --bg:#F2F5FA; --fg:#0B1B3F; --muted:#5A6B8C; --rule:#C9D3E4;
     --rule-strong:#9DAEC9; --panel:#FFFFFF; --panel-2:#E9EEF7;
     --accent:#B8890A; --accent-ink:#0B1B3F; --shadow:rgba(11,27,63,.07);
+    --jam:#1F2A44;
   }
 
   *{box-sizing:border-box}
@@ -534,7 +540,7 @@ form&nbsp;&nbsp;&nbsp;0.12 &times; 0.5 = 6.0&nbsp;&nbsp;&nbsp;&nbsp;home/away&nb
       {s:"BT",  n:"Barbados Tridents",         w:2, l:7, i:39.17, c:"#E6007E"}
     ]
   };
-  var JAM_COLOR = "#1F2A44";
+  var JAM_COLOR = "var(--jam)";   // neutral chip, themed — see --jam above
   var FLAT = 34.0;
 
   // weights.config.json -> scoreDisplay. Fixed affine map, strictly increasing.
