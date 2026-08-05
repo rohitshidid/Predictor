@@ -858,6 +858,15 @@
           </select>
         </label>
         <label class="bgopt"
+          title="Multiplier for the exports that have a fixed native size — the social tile, the TV version and the 1080p frame. The graphic is vector, so 2x and 3x are genuinely more detail, not an upscale of a smaller bitmap. 1x gives each format's exact spec size.">
+          Detail
+          <select id="fixedScale">
+            <option value="1" selected>1&times; &middot; spec size</option>
+            <option value="2">2&times;</option>
+            <option value="3">3&times;</option>
+          </select>
+        </label>
+        <label class="bgopt"
           title="Pixel width of the exported PNG. The graphic is vector, so a larger raster is genuinely sharper — not an upscale.">
           PNG size
           <select id="pngRes">
@@ -2674,6 +2683,18 @@
     // out to a real broadcast raster width (3840 = 4K by default) so it is sharp
     // when the mixer scales it, rather than the old fixed 1880px.
     const SVG_W = 940, CPL_SVG_W = 1280;
+    // Multiplier for the exports whose output size is fixed by their format. The
+    // vector is re-rendered at the larger size rather than a small bitmap being
+    // scaled up, so it is real detail. Everything downstream — file names, the
+    // canvas, the PDF page — is derived from it rather than assuming 1x.
+    function fixedScale() {
+      const sel = $('fixedScale');
+      return sel ? Math.max(1, +sel.value || 1) : 1;
+    }
+    // PDFs get rendered a step finer than the screen exports: at 3x a 940-unit
+    // graphic lands near 370 DPI across the printable width, which is a print
+    // figure rather than a screen one, and Flate keeps it lossless at that size.
+    function pdfScale() { return 3 * fixedScale(); }
     function pngScale() {
       const sel = $('pngRes');
       return (sel ? +sel.value : 3840) / (currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W);
@@ -2727,18 +2748,19 @@
       const back = await loadImageEl('/backgrounds/' + encodeURIComponent(file));
       // Render the overlay at frame resolution rather than scaling a small
       // bitmap up, so the type stays vector-sharp at 1080p.
-      const inner = FRAME_H * (1 - 2 * FRAME_INSET);
+      const q = fixedScale(), FW = FRAME_W * q, FH = FRAME_H * q;
+      const inner = FH * (1 - 2 * FRAME_INSET);
       const unitW = currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W;
       const probe = buildTableSvg({ transparent: true, bg: 'translucent', scale: 1 });
       const unitH = +(/height="(\d+)"/.exec(probe) || [])[1] || unitW * 0.78;
-      const scale = Math.min(inner / unitH, (FRAME_W * (1 - 2 * FRAME_INSET)) / unitW);
+      const scale = Math.min(inner / unitH, (FW * (1 - 2 * FRAME_INSET)) / unitW);
       const table = await rasterize(buildTableSvg({ transparent: true, bg: 'translucent', scale }), false);
       const c = document.createElement('canvas');
-      c.width = FRAME_W; c.height = FRAME_H;
+      c.width = FW; c.height = FH;
       const ctx = c.getContext('2d');
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      drawCover(ctx, back, FRAME_W, FRAME_H);
-      ctx.drawImage(table, Math.round((FRAME_W - table.width) / 2), Math.round((FRAME_H - table.height) / 2));
+      drawCover(ctx, back, FW, FH);
+      ctx.drawImage(table, Math.round((FW - table.width) / 2), Math.round((FH - table.height) / 2));
       await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('frame.png')); res(); }, 'image/png'));
     }
 
@@ -2764,20 +2786,21 @@
       // scale 1 and read the height the SVG declares for itself.
       const probe = buildTableSvg({ transparent: tr, noWillow: true, scale: 1 });
       const unitH = +(/height="(\d+)"/.exec(probe) || [])[1] || unitW * 0.78;
-      const scale = Math.min((TV_H * (1 - 2 * TV_INSET)) / unitH,
-        (TV_W * (1 - 2 * TV_INSET)) / unitW);
+      const q = fixedScale(), FW = TV_W * q, FH = TV_H * q;
+      const scale = Math.min((FH * (1 - 2 * TV_INSET)) / unitH,
+        (FW * (1 - 2 * TV_INSET)) / unitW);
       // Rasterized at frame scale, not scaled up afterwards, so the type stays
       // vector-sharp. opaque=false either way: on the solid path the plate is
       // painted onto the frame below, which covers the whole 1920x1080.
       const table = await rasterize(buildTableSvg({ transparent: tr, noWillow: true, scale }), false);
       const c = document.createElement('canvas');
-      c.width = TV_W; c.height = TV_H;
+      c.width = FW; c.height = FH;
       const ctx = c.getContext('2d');
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      if (!tr) { ctx.fillStyle = tvPlate(); ctx.fillRect(0, 0, TV_W, TV_H); }
-      ctx.drawImage(table, Math.round((TV_W - table.width) / 2), Math.round((TV_H - table.height) / 2));
+      if (!tr) { ctx.fillStyle = tvPlate(); ctx.fillRect(0, 0, FW, FH); }
+      ctx.drawImage(table, Math.round((FW - table.width) / 2), Math.round((FH - table.height) / 2));
       await new Promise(res => c.toBlob(b => {
-        saveBlob(b, exportName('png', `tv-${tr ? 'transparent' : 'solid'}-1920x1080`)); res();
+        saveBlob(b, exportName('png', `tv-${tr ? 'transparent' : 'solid'}-${FW}x${FH}`)); res();
       }, 'image/png'));
     }
 
@@ -2790,35 +2813,35 @@
     function socialTheme() { return currentTemplate() === 'cpl' ? 'dark' : 'light'; }
     async function downloadSocial() {
       const theme = socialTheme();
-      const c = await rasterize(socialTileSvg({ theme, scale: 1 }), true);
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-1080x1350`)); res(); }, 'image/png'));
+      const c = await rasterize(socialTileSvg({ theme, scale: fixedScale() }), true);
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-${c.width}x${c.height}`)); res(); }, 'image/png'));
     }
     // Keyed tile: alpha preserved, so it drops straight onto a photograph or a
     // feed post's own background. Rasterized with opaque=false — flattening onto
     // white here is exactly what the export is for avoiding.
     async function downloadSocialTransparent() {
       const theme = socialTheme();
-      const c = await rasterize(socialTileSvg({ theme, transparent: true, scale: 1 }), false);
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-transparent-1080x1350`)); res(); }, 'image/png'));
+      const c = await rasterize(socialTileSvg({ theme, transparent: true, scale: fixedScale() }), false);
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-transparent-${c.width}x${c.height}`)); res(); }, 'image/png'));
     }
     // PDF carries a JPEG, which has no alpha, so the tile goes on its solid
     // colourway whatever the PNG buttons are set to. The URL under the Champhunt
     // mark survives as a real /Link annotation, same as the landscape exports.
     async function downloadSocialPdf() {
       const theme = socialTheme();
-      const c = await rasterize(socialTileSvg({ theme, scale: 2 }), true);
+      const c = await rasterize(socialTileSvg({ theme, scale: pdfScale() }), true);
       const links = SVG_LINKS.slice();   // captured by the render just above
-      const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
-      saveBlob(new Blob([buildPdf(jpeg, c.width, c.height, links)], { type: 'application/pdf' }),
+      const img = await flateRgb(c);
+      saveBlob(new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }),
         exportName('pdf', `social-${theme}-1080x1350`));
     }
 
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
     async function downloadPdf() {
-      const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: 3 }), true);
+      const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: pdfScale() }), true);
       const links = SVG_LINKS.slice();   // captured by the render just above
-      const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
-      saveBlob(new Blob([buildPdf(jpeg, c.width, c.height, links)], { type: 'application/pdf' }), exportName('pdf'));
+      const img = await flateRgb(c);
+      saveBlob(new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }), exportName('pdf'));
     }
     function jpegBytes(dataUrl) {
       const bin = atob(dataUrl.split(',')[1]);
@@ -2827,7 +2850,26 @@
       return u;
     }
     // Minimal single-image PDF (embeds the table as a JPEG). No library.
-    function buildPdf(jpeg, imgW, imgH, links) {
+    // Raw RGB out of the canvas, zlib-compressed for /FlateDecode. The exports
+    // were embedding JPEG (/DCTDecode), which is the wrong codec for this
+    // picture: flat colour fields and hard type edges are exactly what DCT rings
+    // around, and at 0.96 the halo was visible on every letter and every keyline.
+    // Flate is lossless and compresses flat colour extremely well, so the file
+    // barely grows. Alpha is dropped deliberately — a PDF page has no
+    // transparency here, and the canvas was already flattened onto white.
+    async function flateRgb(canvas) {
+      const ctx = canvas.getContext('2d');
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const rgb = new Uint8Array(canvas.width * canvas.height * 3);
+      for (let i = 0, j = 0; i < data.length; i += 4, j += 3) {
+        rgb[j] = data[i]; rgb[j + 1] = data[i + 1]; rgb[j + 2] = data[i + 2];
+      }
+      const cs = new CompressionStream('deflate');   // zlib wrapper, which is what FlateDecode expects
+      const packed = await new Response(new Blob([rgb]).stream().pipeThrough(cs)).arrayBuffer();
+      return new Uint8Array(packed);
+    }
+
+    function buildPdf(jpeg, imgW, imgH, links, filter) {
       const margin = 24, pageW = 595.28, drawW = pageW - 2 * margin, drawH = drawW * imgH / imgW, pageH = drawH + 2 * margin;
       const enc = new TextEncoder(); const chunks = []; let len = 0; const off = [];
       const put = (d) => { const b = (typeof d === 'string') ? enc.encode(d) : d; chunks.push(b); len += b.length; };
@@ -2847,7 +2889,7 @@
       const content = `q ${drawW.toFixed(2)} 0 0 ${drawH.toFixed(2)} ${margin.toFixed(2)} ${margin.toFixed(2)} cm /Im0 Do Q`;
       obj(4, `<< /Length ${enc.encode(content).length} >>\nstream\n${content}\nendstream`);
       off[5] = len;
-      put(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);
+      put(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /${filter || 'DCTDecode'} /Length ${jpeg.length} >>\nstream\n`);
       put(jpeg); put('\nendstream\nendobj\n');
       for (const a of ann) {
         obj(a.num, `<< /Type /Annot /Subtype /Link /Border [0 0 0] /H /N /Rect [`
