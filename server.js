@@ -89,12 +89,24 @@ function currentRanking() {
 // NEXT action's arrows diff against this one.
 function buildState(rows) {
   const ranking = rows || currentRanking();
+  // Preseason context for the deterministic blurb: with nothing played, every
+  // in-season figure is zero, so the line is written from the carry-in and the
+  // projection instead. Null in Fresh Start, which has no past to describe.
+  const priorPack = sim.usePriors() ? priors.getPriors(config, sim.getTeams()) : null;
+  const blurbCtx = priorPack
+    ? {
+        prior: priorPack.meta,
+        forecast: predict.forecast(priorPack.priors),
+        priorSeason: (priorPack.source && priorPack.source.season) || null,
+        seasonStarted: sim.getData().matches.length > 0,
+      }
+    : null;
   const blurbs = {};
   for (const r of ranking) {
     const cached = blurbCache[r.name];
     blurbs[r.name] = cached
       ? { text: cached.text, source: cached.source }
-      : { text: templateBlurb(r), source: 'template' };
+      : { text: templateBlurb(r, blurbCtx), source: 'template' };
   }
   sim.snapshot(ranking);
   return {
