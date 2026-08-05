@@ -2281,12 +2281,23 @@
       // actually leave — between the won-loss figure's right edge and the rating's
       // left edge — instead of on a hand-picked x. 86 is the widest rendered
       // rating at 44px, measured rather than estimated.
+      // Show the forecast only while the season is genuinely unplayed. The moment
+      // a result exists the real record is the honest column, and a graphic that
+      // kept projecting over the top of it would be lying by omission.
+      const fc = (STATE.matchCount === 0 && STATE.forecast) ? STATE.forecast : null;
       const rowTop = 332, rh = 117, colStats = 792, colScore = W - pad - 26, ratingW = 86;
       const colMv = (colStats + (colScore - ratingW)) / 2;
       s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}"${halo}>TEAM</text>`;
-      s += `<text x="${colStats}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>WON-LOSS</text>`;
-      s += `<text x="${colMv}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle"${halo}>MOVE</text>`;
-      s += `<text x="${colScore}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>RATING</text>`;
+      // The won-loss head runs two lines on the tile, because the figure under it
+      // is a PROJECTION, not a record — every side has played nothing. Saying so
+      // in the column head is the only place a reader is guaranteed to look
+      // before reading the number. The other heads sit on the lower line so all
+      // four share a baseline.
+      const headY = rowTop - 14, headY2 = headY - 19;
+      s += `<text x="${colStats}" y="${fc ? headY2 : headY}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>WIN-LOSS</text>`;
+      if (fc) s += `<text x="${colStats}" y="${headY}" font-size="12.5" letter-spacing=".05em" fill="${P.muted}" text-anchor="end"${halo}>(PREDICTION FOR ${esc(st.season)})</text>`;
+      s += `<text x="${colMv}" y="${headY}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle"${halo}>MOVE</text>`;
+      s += `<text x="${colScore}" y="${headY}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>RATING</text>`;
       rows.forEach((r, i) => {
         const y = rowTop + i * rh, ch = rh - 11, cy = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="14" fill="${P.card}" stroke="${P.line}"/>`;
@@ -2301,7 +2312,8 @@
         // takes on the landscape graphic, so the two read at the same weight.
         s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="30" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 26).toUpperCase())} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
         if (sl) s += `<text x="${pad + 138}" y="${cy + 18}" font-size="17" fill="${P.muted}" dominant-baseline="central"${halo}>${esc(sl)}</text>`;
-        s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${r.won}-${r.lost}</text>`;
+        const rec = fc && fc.teams[r.name] ? fc.teams[r.name] : r;
+        s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${rec.won}-${rec.lost}</text>`;
         const mv = movementText(r);
         if (mv) s += `<text x="${colMv}" y="${cy}" font-size="21" font-weight="700" fill="${r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.A}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
         s += `<text x="${colScore}" y="${cy}" font-family="${DISP}" font-size="44" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${r.scoreDisplay.toFixed(1)}</text>`;

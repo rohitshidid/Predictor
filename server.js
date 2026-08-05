@@ -18,6 +18,7 @@ const { blurbForTeam } = require('./src/blurbs');
 const { templateBlurb } = require('./src/templates');
 const sim = require('./src/simState');
 const priors = require('./src/priors');
+const predict = require('./src/predict');
 const { fetchMatch, providerName, quotaState, clearCache, cacheStats } = require('./src/liveMatch');
 const store = require('./src/checkpoints');
 const { buildSitePayload } = require('./src/publish');
@@ -111,6 +112,13 @@ function buildState(rows) {
     optionalWeights: config.optionalWeights || {},
     enabled: config.enabled || {},
     matchCount: sim.getData().matches.length,
+    // Preseason forecast: each side's projected league record, computed from the
+    // same priors the opening ratings come from. Null in Fresh Start, which has
+    // no past to project from. The graphics show it only while nothing has been
+    // played — once results exist the real record is the honest column.
+    forecast: sim.usePriors()
+      ? predict.forecast(priors.getPriors(config, sim.getTeams()).priors)
+      : null,
     // Where the opening ratings came from, so the operator can see the carry-in
     // rather than having to trust it. Null in Fresh Start, which has no past.
     prior: sim.usePriors()
