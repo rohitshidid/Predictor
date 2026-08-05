@@ -1204,10 +1204,12 @@
         </div>
         <p class="blurb">${esc(b.text)}</p>
         <div class="headline">
-          <span><b>${r.won}-${r.lost}</b> W-L</span>
+          ${(STATE.matchCount === 0 && STATE.forecast && STATE.forecast.teams[r.name])
+            ? `<span title="Projected league record for ${esc(STATE.season)} — nothing has been played yet. Switches to the real record on the first result."><b>${STATE.forecast.teams[r.name].won}-${STATE.forecast.teams[r.name].lost}</b> W-L <em style="font-style:normal;opacity:.7">(pred)</em></span>`
+            : `<span><b>${r.won}-${r.lost}</b> W-L</span>`}
           <span><b>${Math.round(r.winPct * 100)}%</b> win</span>
           <span><b>${r.formRecord.wins}/${r.formRecord.of}</b> form</span>
-          <span class="score"><b>${r.score.toFixed(1)}</b> score</span>
+          <span class="score" title="The published rating, on the 70-89 band. This is the number that goes out on the graphics; the raw index it maps from is under Details."><b>${r.scoreDisplay.toFixed(1)}</b> rating</span>
           ${carryChip}
         </div>
         <details class="det">
@@ -1217,7 +1219,8 @@
             <span><b>${fmtSigned(r.nrrTrend, 2)}</b> trend</span>
             <span><b>${fmtSigned(r.powerplayDominance, 2)}</b> PP</span>
             <span><b>${fmtSigned(r.deathOversNet, 0)}</b> death</span>
-            <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>${optChips(r)}
+            <span><b>${r.starsAvailable}/${r.squadStars}</b> stars</span>
+            <span title="The engine's own index, before the fixed affine map onto the published 70-89 band. Every audit record is in these units."><b>${r.score.toFixed(1)}</b> raw index</span>${optChips(r)}
           </div>
           ${carryHtml(r)}
         </details>
@@ -2615,6 +2618,13 @@
       TEAM_LOGOS = Object.fromEntries(pairs);
       const missing = teams.filter((t) => !TEAM_LOGOS[t.name]).map((t) => t.short);
       if (missing.length) console.warn('[logos] no artwork found for:', missing.join(', '));
+      // Repaint. The list is drawn by applyState() BEFORE this resolves, so on
+      // first paint logoHtml() falls back to the raw path out of the data file —
+      // and that path is <short>.png for every team, while three of the crests on
+      // disk are .svg. Those 404'd, the onerror swapped in the drawn badge, and
+      // nothing ever re-rendered, so TKR, GAW and SLK kept a badge for the whole
+      // session with their artwork sitting resolved in TEAM_LOGOS the entire time.
+      if (STATE && STATE.ranking) renderList();
     }
     // A team's mark inside a square box centred on (cx, cy): the licensed logo
     // if we have it, otherwise the deterministic crest badge.

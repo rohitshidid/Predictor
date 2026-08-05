@@ -75,18 +75,20 @@ pixel turned that white and erased it. The boundary is found from the artwork �
 the first fully-transparent row-gap under the topmost content block — so it is not
 hardcoded to this particular logo.
 
-## Barbados: rename outstanding
+## Barbados: the rename
 
 The franchise became the **Barbados Tridents** in May 2026, so `data/cpl_2026.json`
-asks for `bt.png`. Only `br.png` — the Royals' pink crown — is on disk, so that row
-falls back to the drawn colour badge on every graphic.
+asks for `bt.png`. That file is now present and `br.png` — the old Royals crown —
+is no longer referenced by any team.
 
-The palette in the data file has been moved to the Tridents' blue and gold
-(`#0057A8` / `#F5C518`), read off the supplied artwork rather than from a brand
-sheet, so treat those two values as provisional until someone confirms them.
+The palette moved with it, to the Tridents' blue and gold (`#0057A8` / `#F5C518`).
+Those two values were read off the supplied artwork rather than a brand sheet, so
+treat them as provisional until someone confirms them against a brand guide.
 
-Dropping `bt.png` in is all that is needed — the loader already resolves it, and
-no code changes. A transparent-background PNG is required: unlike the CPL league
-mark, team crests are inlined as supplied and are **not** background-keyed, so a
-logo on a white field renders as a white square on the navy card and on a keyed
-feed. Every crest currently in this folder ships on alpha.
+**The crest arrived on a white field and was keyed before being committed.** Team
+crests are inlined exactly as supplied and are **not** background-keyed at load
+time — only the CPL league mark is — so a logo on a white square renders as a white
+square on the navy card and over a keyed feed. Every crest in this folder now ships
+on alpha. The key was a border flood-fill (never a global white-to-transparent,
+which would punch through any white enclosed by the artwork), followed by a trim to
+the true bounding box: 500x500 on a white field became 371x449 on alpha.
