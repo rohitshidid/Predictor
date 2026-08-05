@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>CPL 2026 preseason power rankings</title>
 <style>
   :root{
@@ -26,7 +27,7 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--serif);
     font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:760px;margin:0 auto;padding:0 24px 88px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px 88px}
   p{margin:0 0 1.1em;max-width:66ch}
   a{color:inherit}
 
@@ -40,7 +41,13 @@
     padding:14px 0 0;display:flex;gap:18px;flex-wrap:wrap}
 
   /* ---- the ranked list ---- */
-  .listhead{display:grid;grid-template-columns:44px 1fr 92px 74px;gap:14px;align-items:end;
+  /* One horizontal band per team on a desktop, so the ranked list uses the full
+     measure instead of leaving both margins empty. It folds to a stacked card
+     below 900px, where a five-column band would crush the blurb to two words a
+     line. Both shapes are driven by named areas rather than two sets of
+     hand-counted column spans. */
+  .listhead{display:grid;grid-template-columns:64px 290px 1fr 124px 96px;gap:18px;align-items:end;
+    grid-template-areas:"rank who blurb wl rt";
     font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.14em;
     text-transform:uppercase;color:var(--muted);padding:0 0 9px;
     border-bottom:1px solid var(--rule-strong)}
@@ -52,8 +59,24 @@
   .listhead small{display:block;font-size:9.5px;letter-spacing:.06em;font-weight:700;
     opacity:.8;margin-top:3px}
 
-  .team{display:grid;grid-template-columns:44px 1fr 92px 74px;gap:14px;
+  .team{display:grid;grid-template-columns:64px 290px 1fr 124px 96px;gap:18px;
+    grid-template-areas:"rank who blurb wl rt";
     align-items:start;padding:22px 0;border-bottom:1px solid var(--rule)}
+  .team .rank{grid-area:rank} .team .who{grid-area:who}
+  .team .blurb{grid-area:blurb} .team .wl{grid-area:wl} .team .rt{grid-area:rt}
+  .listhead .h-rank{grid-area:rank} .listhead .h-who{grid-area:who}
+  .listhead .h-blurb{grid-area:blurb} .listhead .h-wl{grid-area:wl}
+  .listhead .h-rt{grid-area:rt}
+
+  /* Season facts sit beside the intro rather than under it, so the space to the
+     right of a 66ch paragraph carries something. */
+  .lede{display:grid;grid-template-columns:1fr 300px;gap:44px;align-items:start;margin-bottom:34px}
+  .facts{border:1px solid var(--rule);border-radius:3px;background:var(--panel);padding:18px 20px}
+  .facts h2{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  .facts dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:7px 14px;
+    font-family:var(--sans);font-size:13px}
+  .facts dt{color:var(--muted)} .facts dd{margin:0;text-align:right;font-weight:700}
   .rank{font-family:var(--sans);font-size:30px;font-weight:800;line-height:1;
     color:var(--accent);font-variant-numeric:tabular-nums;padding-top:2px}
   .name{font-family:var(--sans);font-weight:800;font-size:19px;letter-spacing:-.01em;
@@ -76,11 +99,19 @@
     padding-top:18px;border-top:1px solid var(--rule);color:var(--muted)}
   .more a{font-weight:700;color:var(--fg)}
 
+  @media (max-width:980px){
+    .lede{grid-template-columns:1fr;gap:26px}
+    .listhead,.team{grid-template-columns:44px 1fr 92px 74px;gap:14px;
+      grid-template-areas:"rank who wl rt" ". blurb blurb blurb"}
+    .listhead{grid-template-areas:"rank who wl rt"}
+    .listhead .h-blurb{display:none}
+  }
   @media (max-width:620px){
     .listhead,.team{grid-template-columns:32px 1fr 64px 56px;gap:9px}
     .rank{font-size:23px} .name{font-size:17px} .wl{font-size:15px} .rt{font-size:20px}
     .listhead{font-size:9.5px;letter-spacing:.1em}
     .listhead small{font-size:8px}
+    .blurb{font-size:15px}
   }
 </style>
 
@@ -89,26 +120,44 @@
     <p class="eyebrow">Republic Bank CPL &middot; 2026 &middot; Preseason</p>
     <h1>CPL 2026 preseason power rankings</h1>
     <p class="standfirst">Nobody has bowled a ball yet, so this is a projection, not a
-      table. Trinbago start on top because champions usually do — but the gap behind them
+      table. Trinbago start on top because champions usually do &mdash; but the gap behind them
       is thinner than last September made it look.</p>
     <p class="byline"><span>Champhunt &middot; Willow Sports</span><span>Before round one</span></p>
   </div>
 
-  <p>Seven teams this year, up from six. Jamaica are back after seven years away, Barbados
-    are the Tridents again, and everyone plays ten league games instead of eight. That is
-    the shape of it. What follows is where each side starts and why.</p>
+  <div class="lede">
+    <div>
+    <p>Seven teams this year, up from six. Jamaica are back after seven years away, Barbados
+      are the Tridents again, and everyone plays ten league games instead of eight. That is
+      the shape of it. What follows is where each side starts and why.</p>
 
-  <p>One thing worth saying before the list: a preseason ranking is not last season's
-    table with the names shuffled. Saint Lucia <em>finished top</em> in 2025 and start
-    fifth here, because they lost their captain, their leading spinner and Tim David in
-    one off-season. Trinbago finished third and start first, because they won the thing.
-    The order below is what the numbers say once you account for who actually left.</p>
+    <p>One thing worth saying before the list: a preseason ranking is not last season's
+      table with the names shuffled. Saint Lucia <em>finished top</em> in 2025 and start
+      fifth here, because they lost their captain, their leading spinner and Tim David in
+      one off-season. Trinbago finished third and start first, because they won the thing.
+      The order below is what the numbers say once you account for who actually left.</p>
+    </div>
+    <div class="facts">
+      <h2>Season at a glance</h2>
+      <dl>
+        <dt>Edition</dt><dd>14th</dd>
+        <dt>Teams</dt><dd>7</dd>
+        <dt>Matches</dt><dd>39</dd>
+        <dt>League games each</dt><dd>10</dd>
+        <dt>Window</dt><dd>7 Aug &ndash; 20 Sep</dd>
+        <dt>Venues</dt><dd>8</dd>
+        <dt>Final</dt><dd>Kensington Oval</dd>
+        <dt>Holders</dt><dd>Trinbago</dd>
+      </dl>
+    </div>
+  </div>
 
   <div class="listhead">
-    <div>#</div>
-    <div>Team</div>
-    <div class="c">Win&ndash;Loss<small>(Prediction for 2026)</small></div>
-    <div class="r">Rating</div>
+    <div class="h-rank">#</div>
+    <div class="h-who">Team</div>
+    <div class="h-blurb">The read</div>
+    <div class="h-wl c">Win&ndash;Loss<small>(Prediction for 2026)</small></div>
+    <div class="h-rt r">Rating</div>
   </div>
   <p style="font-family:var(--sans);font-size:12px;color:var(--muted);margin:12px 0 0">
     Arrows show movement against the 2025 final league table. Guyana finished second and
@@ -116,98 +165,84 @@
 
   <div class="team">
     <div class="rank">1</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#C8102E"></span>Trinbago Knight Riders
-        <span class="mv up">&#9650; 2</span></p>
-      <p class="blurb">Champions, and they had to do it the hard way — third in the league on
+    <div class="who"><p class="name"><span class="chip" style="background:#C8102E"></span>Trinbago Knight Riders
+        <span class="mv up">&#9650; 2</span></p></div>
+      <p class="blurb">Champions, and they had to do it the hard way &mdash; third in the league on
         net run rate, then three straight in the playoffs. Andre Russell and Keacy Carty have
         gone to Jamaica, which is a real cost. But this is the same core that has won five
         titles, and nobody else starts with that.</p>
-    </div>
     <div class="wl">6&ndash;4</div>
     <div class="rt">83.1</div>
   </div>
 
   <div class="team">
     <div class="rank">2</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#16A34A"></span>Guyana Amazon Warriors</p>
+    <div class="who"><p class="name"><span class="chip" style="background:#16A34A"></span>Guyana Amazon Warriors</p></div>
       <p class="blurb">Runners-up, and the most complete side on paper last year: Shai Hope's
         491 runs and Imran Tahir's 23 wickets both led the league. They have lost three players
         to Jamaica and Moeen Ali to Antigua. Nabi and Gurbaz arrive. Still the team most likely
         to beat Trinbago to it.</p>
-    </div>
     <div class="wl">6&ndash;4</div>
     <div class="rt">81.2</div>
   </div>
 
   <div class="team">
     <div class="rank">3</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#1E3A8A"></span>Antigua &amp; Barbuda Falcons
-        <span class="mv up">&#9650; 1</span></p>
+    <div class="who"><p class="name"><span class="chip" style="background:#1E3A8A"></span>Antigua &amp; Barbuda Falcons
+        <span class="mv up">&#9650; 1</span></p></div>
       <p class="blurb">Made the playoffs on points and were carried there by results rather
-        than margins — their net run rate was the worst of the top four by some distance.
+        than margins &mdash; their net run rate was the worst of the top four by some distance.
         Moeen Ali comes in to captain, with Evin Lewis, Shadab Khan and Kusal Perera. A better
         squad than last year's, starting from a shakier base than the table suggested.</p>
-    </div>
     <div class="wl">5&ndash;5</div>
     <div class="rt">79.5</div>
   </div>
 
   <div class="team">
     <div class="rank">4</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#0E7490"></span>St Kitts &amp; Nevis Patriots
-        <span class="mv up">&#9650; 1</span></p>
+    <div class="who"><p class="name"><span class="chip" style="background:#0E7490"></span>St Kitts &amp; Nevis Patriots
+        <span class="mv up">&#9650; 1</span></p></div>
       <p class="blurb">Fifth last year and the quietest improvers of the off-season. Obed McCoy,
         Johnson Charles, Wanindu Hasaranga and Dasun Shanaka all arrive. The churn is enormous
-        — most of last year's overseas contingent has gone — so the floor is low and the
+        &mdash; most of last year's overseas contingent has gone &mdash; so the floor is low and the
         ceiling is the highest outside the top two.</p>
-    </div>
     <div class="wl">5&ndash;5</div>
     <div class="rt">79.4</div>
   </div>
 
   <div class="team">
     <div class="rank">5</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#1D4ED8"></span>Saint Lucia Kings
-        <span class="mv down">&#9660; 4</span></p>
+    <div class="who"><p class="name"><span class="chip" style="background:#1D4ED8"></span>Saint Lucia Kings
+        <span class="mv down">&#9660; 4</span></p></div>
       <p class="blurb">The hardest team to place. They topped the 2025 table with the best net
         run rate in the league, then lost David Wiese, Tabraiz Shamsi and Tim David. Noor Ahmad,
         Theekshana and Asalanka are good replacements. But you cannot lose your captain and
         your leading spinner and start where you finished.</p>
-    </div>
     <div class="wl">5&ndash;5</div>
     <div class="rt">79.2</div>
   </div>
 
   <div class="team">
     <div class="rank">6</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#111827"></span>Jamaica Kingsmen
-        <span class="mv new">NEW</span></p>
+    <div class="who"><p class="name"><span class="chip" style="background:#111827"></span>Jamaica Kingsmen
+        <span class="mv new">NEW</span></p></div>
       <p class="blurb">The expansion side, and the one entry here that is a stated assumption
-        rather than a measurement — there is no 2025 record to inherit, so they open a fixed
+        rather than a measurement &mdash; there is no 2025 record to inherit, so they open a fixed
         distance below the league average. Rovman Powell captains, Andre Russell comes home,
         and eight of the off-season's 23 moves went to Jamaica. Sixth is a placeholder they may
         make look silly.</p>
-    </div>
     <div class="wl">4&ndash;6</div>
     <div class="rt">77.6</div>
   </div>
 
   <div class="team">
     <div class="rank">7</div>
-    <div>
-      <p class="name"><span class="chip" style="background:#E6007E"></span>Barbados Tridents
-        <span class="mv down">&#9660; 1</span></p>
+    <div class="who"><p class="name"><span class="chip" style="background:#0057A8"></span>Barbados Tridents
+        <span class="mv down">&#9660; 1</span></p></div>
       <p class="blurb">New name, same problem. Two wins in ten last season was the worst record
         in the league, and Rovman Powell has left for Jamaica. Motie, Chris Green and George
-        Linde arrive to steady the bowling. The rebrand does not reset the record — they inherit
+        Linde arrive to steady the bowling. The rebrand does not reset the record &mdash; they inherit
         the Royals' season, because it was the same squad.</p>
-    </div>
     <div class="wl">4&ndash;6</div>
     <div class="rt">77.1</div>
   </div>
