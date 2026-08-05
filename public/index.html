@@ -831,6 +831,12 @@
         <button id="dlSocial"
           title="Download a 1080x1350 social tile (4:5 feed portrait). The colourway follows the Template switch: Willow gives the light tile, CPL the dark one.">Social
           tile</button>
+        <button id="dlSocialPng"
+          title="Download the social tile as a transparent PNG, with an alpha channel so it can be laid over a photograph">Tile
+          PNG &middot; transparent</button>
+        <button id="dlSocialPdf"
+          title="Download the social tile as a PDF. Always on the solid colourway — PDF has no alpha channel.">Tile
+          PDF</button>
         <label class="bgopt" id="frameBgOpt"
           title="Backdrop still for the broadcast frame. Drop images into public/backgrounds/ and they appear here.">
           Backdrop
@@ -2085,7 +2091,7 @@
       // the condensed display stack is the closest match that renders anywhere.
       // League mark top-left. Without the artwork the league's short code runs
       // ahead of the title instead — Willow accepted either.
-      const cplArt = BRAND.cplDark || BRAND.cpl;   // this card is always dark navy
+      const cplArt = BRAND.cplDark || BRAND.cpl;   // lifted variant reads on band, navy and open picture alike   // this card is always dark navy
       const clW = 106;
       if (cplArt) {
         s += `<image x="${pad}" y="6" width="${clW}" height="${clW}" href="${cplArt}" preserveAspectRatio="xMinYMid meet"/>`;
@@ -2180,16 +2186,30 @@
     function socialTileSvg(opts) {
       const st = STATE, rows = st.ranking, n = rows.length;
       const dark = ((opts && opts.theme) || 'light') === 'dark';
+      // Keyed build: no page fill and no header band, so the tile can be dropped
+      // straight onto a photograph. The row plates stay — smoked rather than
+      // solid — because without them the figures sit on open picture and the
+      // columns stop reading as a table. Every glyph carries the drop shadow for
+      // the same reason the broadcast overlay does: white on a bright sky is the
+      // one thing that disappears.
+      const transparent = !!(opts && opts.transparent);
       const W = SOCIAL_W, H = SOCIAL_H, pad = 52;
-      const P = dark
+      const P = transparent
+        ? { page: null, card: 'rgba(9,12,18,.62)', ink: '#ffffff', muted: 'rgba(255,255,255,.74)',
+            line: 'rgba(255,255,255,.16)', A: dark ? CPL.accent : '#7aa7ff',
+            up: '#4ade80', down: '#ff7a6e', title: '#ffffff' }
+        : dark
         ? { page: CPL.bg, card: '#11112c', ink: CPL.ink, muted: CPL.muted, line: CPL.line,
             A: CPL.accent, up: CPL.up, down: CPL.down, title: CPL.accent }
         : { page: '#f4f6f9', card: '#ffffff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee',
             A: '#0b5cff', up: '#12864f', down: '#c0392b', title: '#ffffff' };
+      const halo = transparent ? ' filter="url(#sth)"' : '';
       const scale = (opts && opts.scale) || 1;
       SVG_LINKS = [];
       let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">`;
-      s += `<rect width="${W}" height="${H}" fill="${P.page}"/>`;
+      if (transparent) s += `<defs><filter id="sth" x="-20%" y="-40%" width="140%" height="180%">` +
+        `<feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#04070d" flood-opacity=".9"/></filter></defs>`;
+      if (P.page) s += `<rect width="${W}" height="${H}" fill="${P.page}"/>`;
       // Header band on the light tile; the dark tile's page is already navy and a
       // band would only add a seam.
       //
@@ -2201,7 +2221,7 @@
       // and half on violet — no single ink colour survives that. Violet throughout
       // gives one white knockout that holds across the whole line.
       const bandH = 300;
-      if (!dark) {
+      if (!dark && !transparent) {
         s += `<defs><linearGradient id="stg" x1="0" y1="0" x2="1" y2="0">` +
           `<stop offset="0" stop-color="#7A46C9"/><stop offset="1" stop-color="#5E2FAE"/>` +
           `</linearGradient></defs>`;
@@ -2226,8 +2246,9 @@
       s += brandBlock({
         W, H, pad, blockT: brandT, qrS: brandQr, gap: 20, logoW: 232,
         capSize: 13, urlSize: 17.5, ctxSize: 15, ctxGap: brandCtxGap, fallbackSize: 34,
-        capFill: dark ? P.muted : '#ffffff', capOpacity: dark ? null : '.92',
-        markFill: dark ? P.ink : '#ffffff', linkFill: dark ? P.A : '#ffffff',
+        capFill: dark || transparent ? P.muted : '#ffffff', capOpacity: dark || transparent ? null : '.92',
+        markFill: transparent ? '#ffffff' : (dark ? P.ink : '#ffffff'),
+        linkFill: transparent ? '#ffffff' : (dark ? P.A : '#ffffff'), halo,
         ctx: `SEASON ${esc(st.season)}`,
       });
       // Title sits BELOW both corner blocks and spans the full width, so unlike
@@ -2249,8 +2270,8 @@
       const titleText = 'PRESEASON POWER RANKINGS';
       const tFit = ((W - 2 * pad - 2 * tGutter) / titleText.length - tTrack) / 0.664;
       const tSize = Math.min(tMax, tFit);
-      s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="${tSize.toFixed(1)}" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle">${titleText}</text>`;
-      s += `<text x="${W / 2}" y="282" font-size="16" font-weight="600" letter-spacing="4" fill="${P.title}" opacity=".78" text-anchor="middle">${esc(String(st.league).toUpperCase())}</text>`;
+      s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="${tSize.toFixed(1)}" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle"${halo}>${titleText}</text>`;
+      s += `<text x="${W / 2}" y="282" font-size="16" font-weight="600" letter-spacing="4" fill="${P.title}" opacity=".78" text-anchor="middle"${halo}>${esc(String(st.league).toUpperCase())}</text>`;
 
       // Column heads, then the rows. One column of full-width plates, set big
       // enough to survive a phone-sized feed thumbnail.
@@ -2262,14 +2283,14 @@
       // rating at 44px, measured rather than estimated.
       const rowTop = 332, rh = 117, colStats = 792, colScore = W - pad - 26, ratingW = 86;
       const colMv = (colStats + (colScore - ratingW)) / 2;
-      s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}">TEAM</text>`;
-      s += `<text x="${colStats}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end">WON-LOSS</text>`;
-      s += `<text x="${colMv}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle">MOVE</text>`;
-      s += `<text x="${colScore}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end">RATING</text>`;
+      s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}"${halo}>TEAM</text>`;
+      s += `<text x="${colStats}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>WON-LOSS</text>`;
+      s += `<text x="${colMv}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="middle"${halo}>MOVE</text>`;
+      s += `<text x="${colScore}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}" text-anchor="end"${halo}>RATING</text>`;
       rows.forEach((r, i) => {
         const y = rowTop + i * rh, ch = rh - 11, cy = y + ch / 2;
         s += `<rect x="${pad}" y="${y}" width="${W - 2 * pad}" height="${ch}" rx="14" fill="${P.card}" stroke="${P.line}"/>`;
-        s += `<text x="${pad + 40}" y="${cy}" font-family="${DISP}" font-size="46" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central">${r.rank}</text>`;
+        s += `<text x="${pad + 40}" y="${cy}" font-family="${DISP}" font-size="46" font-weight="700" fill="${P.A}" text-anchor="middle" dominant-baseline="central"${halo}>${r.rank}</text>`;
         s += teamMarkAt(r.name, pad + 100, cy, 27);
         const sl = streakLine(r);
         const nameY = sl ? cy - 14 : cy;
@@ -2278,12 +2299,12 @@
         // rather than estimated from a per-character width, which is what got it
         // wrong the first time. 30 is also the same share of the canvas the name
         // takes on the landscape graphic, so the two read at the same weight.
-        s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="30" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central">${esc(truncate(r.name, 26).toUpperCase())} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
-        if (sl) s += `<text x="${pad + 138}" y="${cy + 18}" font-size="17" fill="${P.muted}" dominant-baseline="central">${esc(sl)}</text>`;
-        s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.won}-${r.lost}</text>`;
+        s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="30" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 26).toUpperCase())} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        if (sl) s += `<text x="${pad + 138}" y="${cy + 18}" font-size="17" fill="${P.muted}" dominant-baseline="central"${halo}>${esc(sl)}</text>`;
+        s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${r.won}-${r.lost}</text>`;
         const mv = movementText(r);
-        if (mv) s += `<text x="${colMv}" y="${cy}" font-size="21" font-weight="700" fill="${r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.A}" text-anchor="middle" dominant-baseline="central">${mv}</text>`;
-        s += `<text x="${colScore}" y="${cy}" font-family="${DISP}" font-size="44" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central">${r.scoreDisplay.toFixed(1)}</text>`;
+        if (mv) s += `<text x="${colMv}" y="${cy}" font-size="21" font-weight="700" fill="${r.movement === 'up' ? P.up : r.movement === 'down' ? P.down : P.A}" text-anchor="middle" dominant-baseline="central"${halo}>${mv}</text>`;
+        s += `<text x="${colScore}" y="${cy}" font-family="${DISP}" font-size="44" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${r.scoreDisplay.toFixed(1)}</text>`;
       });
       // Same footer contract as the other two: methodology line left, Willow mark
       // bottom-right, which is where Willow asked for it on every graphic.
@@ -2297,8 +2318,8 @@
       // right margin the rows, the QR and the rating column all close on.
       const markH = 80, markW = Math.round(markH * 0.939);
       const markY = H - pad - markH;
-      s += `<text x="${pad}" y="${markY + markH / 2 + 6}" font-size="16" fill="${P.muted}">Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      s += willowMark(W - pad, markY, markW, markH, P.ink, '', dark);
+      s += `<text x="${pad}" y="${markY + markH / 2 + 6}" font-size="16" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += willowMark(W - pad, markY, markW, markH, P.ink, halo, dark || transparent);
       s += `</svg>`;
       return s;
     }
@@ -2699,10 +2720,30 @@
     // 4K version of a graphic the platform will hard-crop to 1080 wide.
     // The colourway follows the template switch: Willow gives the light tile,
     // CPL the dark one, so one button covers both without a second control.
+    function socialTheme() { return currentTemplate() === 'cpl' ? 'dark' : 'light'; }
     async function downloadSocial() {
-      const theme = currentTemplate() === 'cpl' ? 'dark' : 'light';
+      const theme = socialTheme();
       const c = await rasterize(socialTileSvg({ theme, scale: 1 }), true);
       await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-1080x1350`)); res(); }, 'image/png'));
+    }
+    // Keyed tile: alpha preserved, so it drops straight onto a photograph or a
+    // feed post's own background. Rasterized with opaque=false — flattening onto
+    // white here is exactly what the export is for avoiding.
+    async function downloadSocialTransparent() {
+      const theme = socialTheme();
+      const c = await rasterize(socialTileSvg({ theme, transparent: true, scale: 1 }), false);
+      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-transparent-1080x1350`)); res(); }, 'image/png'));
+    }
+    // PDF carries a JPEG, which has no alpha, so the tile goes on its solid
+    // colourway whatever the PNG buttons are set to. The URL under the Champhunt
+    // mark survives as a real /Link annotation, same as the landscape exports.
+    async function downloadSocialPdf() {
+      const theme = socialTheme();
+      const c = await rasterize(socialTileSvg({ theme, scale: 2 }), true);
+      const links = SVG_LINKS.slice();   // captured by the render just above
+      const jpeg = jpegBytes(c.toDataURL('image/jpeg', 0.96));
+      saveBlob(new Blob([buildPdf(jpeg, c.width, c.height, links)], { type: 'application/pdf' }),
+        exportName('pdf', `social-${theme}-1080x1350`));
     }
 
     // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
@@ -2769,6 +2810,8 @@
     $('dlSvg').addEventListener('click', downloadSvg);
     $('dlFrame').addEventListener('click', () => downloadFrame().catch(e => $('err').textContent = e.message));
     $('dlSocial').addEventListener('click', () => downloadSocial().catch(e => $('err').textContent = e.message));
+    $('dlSocialPng').addEventListener('click', () => downloadSocialTransparent().catch(e => $('err').textContent = e.message));
+    $('dlSocialPdf').addEventListener('click', () => downloadSocialPdf().catch(e => $('err').textContent = e.message));
     // Each template has its own background control — a two-state switch for the
     // broadcast graphic, a three-way for CPL. Only the relevant one is shown, so
     // the bar never offers a setting that does nothing.
