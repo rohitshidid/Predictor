@@ -102,10 +102,23 @@ function formSequence(results, n = 5) {
  * @param {object}   o.prevRanks   teamName -> rank before the last mutation
  * @param {object}   o.meta        operator-set fields (week, headline, nextMatch…)
  */
-function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {} }) {
-  const rows = rank(data, config, prevRanks);
+function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {},
+                           priors = null, forecast = null, blurbCtx = null }) {
+  // Ranked WITH the carry-in, exactly as the app and the graphics do. Without it
+  // the published table was a different computation from the one on screen:
+  // harmless once a season is under way and the prior has decayed off, and
+  // completely wrong at week zero, where the prior IS the rating and every side
+  // would have published as identical.
+  const rows = rank(data, config, prevRanks, priors);
   const collected = collect(data);
   const teamMeta = Object.fromEntries((data.teams || []).map((t) => [t.name, t]));
+
+  const wk = Math.round(Number(meta.week));
+  const week = Number.isFinite(wk) && wk >= 0 ? wk : 1;
+  // Preseason means nothing has been played. Week 0 is the label for that state,
+  // but the MATCH LIST is what decides it — a mislabelled week must not be able
+  // to publish projections over the top of real results.
+  const preseason = (data.matches || []).length === 0;
 
   const weights = config.weights || {};
   const optionalWeights = config.optionalWeights || {};
@@ -136,6 +149,7 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
     const cached = blurbs[r.name];
     const c = collected[r.name] || { results: [] };
     const prev = typeof prevRanks[r.name] === 'number' ? prevRanks[r.name] : r.rank;
+    const fc = preseason && forecast && forecast.teams ? forecast.teams[r.name] : null;
 
     return {
       rank: r.rank,
@@ -150,15 +164,23 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
       color: (tm.colors && tm.colors.primary) || '#334155',
       secondary: (tm.colors && tm.colors.secondary) || '#94a3b8',
       logo: tm.logo || null,
-      rating: Math.round(r.score * 10) / 10,
+      // The PUBLISHED rating, on the 70-89 band — the figure on the graphics and in
+      // the app. This emitted `score`, the engine's raw index, so the site was
+      // handed 34-67 where the screen said 75-84. The raw index still ships
+      // alongside, because every audit record is expressed in it.
+      rating: Math.round(r.scoreDisplay * 10) / 10,
+      index: Math.round(r.score * 10) / 10,
       played: r.played,
-      w: r.won,
-      l: r.lost,
+      // Preseason, the record on screen is the PROJECTION, so that is what the
+      // site gets — flagged, never passed off as a result.
+      w: fc ? fc.won : r.won,
+      l: fc ? fc.lost : r.lost,
+      recordIsProjected: !!fc,
       nrr: signed(r.seasonNRR),
       rollingNrr: signed(r.rollingNRR),
       form: formSequence(c.results),
       streak: r.streak,
-      blurb: cached && cached.text ? cached.text : templateBlurb(r),
+      blurb: cached && cached.text ? cached.text : templateBlurb(r, blurbCtx),
       blurbSource: cached && cached.source ? cached.source : 'template',
       // Per-factor marks, 0-100, keyed exactly as `factors[].key`. These replace
       // the front-end's placeholder bars, which were generated from a sine wave.
@@ -199,8 +221,9 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
     season: String(data.season),
     region,
 
-    week: Number(meta.week) || 1,
-    weekLabel: meta.weekLabel || `Week ${Number(meta.week) || 1}`,
+    week,
+    weekLabel: meta.weekLabel || (week === 0 ? 'Preseason' : `Week ${week}`),
+    preseason,
     publishedAt: new Date().toISOString(),
     matchCount: (data.matches || []).length,
 

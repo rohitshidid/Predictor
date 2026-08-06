@@ -52,7 +52,12 @@ let siteMeta = { ...DEFAULT_SITE_META };
 function mergeSiteMeta(patch) {
   if (!patch || typeof patch !== 'object') return siteMeta;
   const next = { ...siteMeta };
-  if (patch.week != null) next.week = Math.max(1, Math.min(52, Math.round(+patch.week) || 1));
+  // Week 0 is the preseason baseline, so the floor is 0, not 1 — and `|| 1` would
+  // have turned a legitimate 0 into 1 before the clamp ever ran.
+  if (patch.week != null) {
+    const w = Math.round(+patch.week);
+    next.week = Number.isFinite(w) ? Math.max(0, Math.min(52, w)) : next.week;
+  }
   for (const k of ['site', 'weekLabel', 'headline', 'subhead', 'region', 'workedExampleAbbr']) {
     if (typeof patch[k] === 'string') next[k] = patch[k].trim().slice(0, 240);
   }
@@ -256,12 +261,26 @@ function buildCheckpoint() {
 // The website's copy of today's table. Same ranked rows as the graphic — only
 // the shape differs (derived figures instead of the match list).
 function buildPublishPayload() {
+  // Ranked from the same inputs the screen is, carry-in and all, so the site and
+  // the graphic cannot disagree.
+  const priorPack = sim.usePriors() ? priors.getPriors(config, sim.getTeams()) : null;
+  const forecast = priorPack ? predict.forecast(priorPack.priors) : null;
   return buildSitePayload({
     data: sim.getData(),
     config,
     blurbs: blurbCache,
     prevRanks: sim.getPrevRanks(),
     meta: siteMeta,
+    priors: priorPack ? priorPack.priors : null,
+    forecast,
+    blurbCtx: priorPack
+      ? {
+          prior: priorPack.meta,
+          forecast,
+          priorSeason: (priorPack.source && priorPack.source.season) || null,
+          seasonStarted: sim.getData().matches.length > 0,
+        }
+      : null,
   });
 }
 
