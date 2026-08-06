@@ -2965,7 +2965,10 @@
     function publishMeta() {
       const local = $('pubNextIso').value; // "YYYY-MM-DDTHH:mm" in the operator's zone
       return {
-        week: +$('pubWeek').value || 1,
+        // Week 0 is the preseason baseline and it is FALSY, so `|| 1` silently
+        // turned it into week 1 — the same trap the server clamp and the payload
+        // builder each had. Parse it, then fall back only when it is not a number.
+        week: (() => { const w = Math.round(+$('pubWeek').value); return Number.isFinite(w) ? w : 1; })(),
         headline: $('pubHeadline').value.trim(),
         workedExampleAbbr: $('pubWorked').value,
         nextMatch: local
@@ -2977,6 +2980,9 @@
       const { payload } = await api('/api/publish', publishMeta());
       return payload;
     }
+    // The week goes in the filename, so a run of these sorts in order on disk.
+    // `p.week` is read back off the payload the server actually built rather than
+    // off the input, so the name can never disagree with the document inside it.
     function publishName(p) {
       const league = (p.leagueShort || p.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
       return `${league}-week-${p.week}-site.json`;
