@@ -66,6 +66,23 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 | **Season carry-in** (per team) | Open a team's **Details** to see where its rating came from: the index carried in from 2025, what this season alone says, how much of the published number is still last season, and how much of the squad was retained |
 | **Simulate Match** (right) | Enter match details and press **Simulate Match** to append the result and instantly re-rank |
 | **Weights (live)** (bottom right) | Drag sliders to adjust how much each factor (Win %, NRR, Powerplay, etc.) contributes to the score. Rankings update instantly. |
+| **Compare two checkpoints** (Season panel) | Pick an earlier checkpoint and a later one. The later file becomes the live table; the earlier one becomes the order every ▲/▼ is measured against, and it stays pinned as you simulate further matches — so a whole week reads as one movement instead of as whatever the last match did. A pill in the header names the pinned point whenever one is set. |
+| **📦 Download ZIP** (export bar) | One archive with every deliverable: both house styles, keyed and solid, tables, 16:9 TV frames, social tiles, PDFs, vectors and the website JSON — plus a `README.txt` naming each file and printing the table it was built from |
+
+### Movement, and what it is measured against
+
+By default the arrows compare the current table with the previous render, which
+answers "what did that match just do". Pin a comparison instead — via **Compare
+two checkpoints** — and they answer "where is everyone against the baseline".
+Under a pinned comparison a side that has not played can still carry an arrow,
+because the table moved underneath it; that is the comparison working, which is
+why the header says which mode is in force. **Unpin** goes back to day-to-day.
+
+Pinning a comparison clears the saved AI summaries. Each one opens on the
+movement it was written under ("Up one spot to 3"), so against a new comparison
+they contradict the arrow beside them. They fall back to the deterministic
+template line, which derives its movement from the ranking it is handed and is
+true by construction; press **AI-write all** for prose again.
 
 ---
 

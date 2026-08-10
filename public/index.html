@@ -807,6 +807,11 @@
       <span class="pill on" id="buildPill"
         title="Deploy marker — if you don't see this pill, you're on a cached OLD version; hard-reload.">build&nbsp;4 ·
         labels&nbsp;✓</span>
+      <!-- Only shown while a comparison is pinned. An arrow beside a side that
+           has not played is correct under an anchor and a bug without one, so
+           the operator must be able to see which of the two they are looking
+           at without opening a panel. -->
+      <span class="pill" id="anchorPill" style="display:none"></span>
       <span class="sub" id="sub"></span>
     </div>
 
@@ -814,6 +819,9 @@
     <div>
       <div class="exportbar">
         <span class="exportlabel">Download table:</span>
+        <button id="dlZip"
+          title="Everything, in one archive: both house styles, keyed and solid, tables, TV frames, social tiles, PDFs, vectors and the website JSON — each at the top of its format's quality range, named so the folder reads cold.">&#128230;
+          Download ZIP</button>
         <label class="bgopt"
           title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; CPL matches the cplt20.com points-table styling.">
           Template
@@ -915,6 +923,31 @@
           <button id="btnRestore" class="ghost" style="flex:0 0 auto;">Restore</button>
         </div>
         <div class="note" id="cpNote"></div>
+
+        <!-- Compare two checkpoints. The later file becomes the live table and
+             the earlier one becomes the point every arrow is measured from, so a
+             whole week reads as one movement instead of as whatever the last
+             match happened to do. The anchor survives simulating further
+             matches — that is the point of pinning it. -->
+        <label style="margin-top:14px;">Compare two checkpoints</label>
+        <div class="note" style="margin-top:0;">The later file becomes the table; the earlier one becomes
+          what the &#9650;/&#9660; column measures against. It stays pinned as you simulate on top.</div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <span style="flex:0 0 42px;color:var(--muted);font-size:12px;">From</span>
+          <input type="file" id="cmpFrom" accept="application/json,.json" style="flex:1;font-size:12px;"
+            title="The earlier checkpoint — the preseason baseline, or the start of the week">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+          <span style="flex:0 0 42px;color:var(--muted);font-size:12px;">To</span>
+          <input type="file" id="cmpTo" accept="application/json,.json" style="flex:1;font-size:12px;"
+            title="The later checkpoint — the table you want to publish. Leave empty to re-pin the anchor without changing the season.">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="btnCompare" class="ghost" style="flex:1;">Compare &amp; load</button>
+          <button id="btnAnchorClear" class="ghost" style="flex:0 0 auto;"
+            title="Go back to ordinary day-to-day arrows">Unpin</button>
+        </div>
+        <div class="note" id="cmpNote"></div>
       </div>
 
       <!-- Publish to the website. A checkpoint is a restore file; this is the
@@ -1472,6 +1505,15 @@
       }
       $('btnBaseline').classList.toggle('active', data.mode === 'baseline');
       $('btnFresh').classList.toggle('active', data.mode === 'fresh');
+      const ap = $('anchorPill');
+      if (ap) {
+        ap.style.display = data.anchor ? '' : 'none';
+        ap.textContent = data.anchor ? `▲▼ vs ${data.anchor.label || 'pinned point'}` : '';
+        ap.className = 'pill on';
+        ap.title = data.anchor
+          ? 'Movement is measured against a pinned earlier checkpoint, not against the previous render. A side that has not played can still carry an arrow — that is the comparison working, not a fault.'
+          : '';
+      }
       renderList(prevRanks);
       renderOptional();
       renderWeights();
@@ -2284,8 +2326,13 @@
       // rendered run. Inverting that for the target width gives the size directly.
       // The cap means a short heading is unaffected: "POWER RANKINGS" still solves
       // well above 66 and stays there.
+      // The heading was hardcoded to the preseason wording, so every tile
+      // exported after the season started went out claiming nothing had been
+      // played while the rows beside it showed real results. It is keyed off the
+      // match count for the same reason the win-loss column is: the preseason is
+      // a state the data knows it is in, not a setting to remember to change.
       const tTrack = 4, tMax = 66, tGutter = 24;
-      const titleText = 'PRESEASON POWER RANKINGS';
+      const titleText = st.matchCount === 0 ? 'PRESEASON POWER RANKINGS' : 'POWER RANKINGS';
       const tFit = ((W - 2 * pad - 2 * tGutter) / titleText.length - tTrack) / 0.664;
       const tSize = Math.min(tMax, tFit);
       s += `<text x="${W / 2 + tTrack / 2}" y="248" font-family="${DISP}" font-size="${tSize.toFixed(1)}" font-weight="700" letter-spacing="${tTrack}" fill="${P.title}" text-anchor="middle"${halo}>${titleText}</text>`;
@@ -2356,7 +2403,25 @@
 
     // Template picker. Every download path goes through here, so the switch in
     // the export bar is the single place that decides which house style ships.
-    function currentTemplate() { const sel = $('tplSelect'); return sel ? sel.value : 'willow'; }
+    // While the ZIP is being assembled every export has to be produced in a
+    // combination the operator is NOT currently looking at — both templates,
+    // keyed and solid, at full detail. Rather than flipping the real controls
+    // (which repaints the page and leaves them wrong if anything throws), the
+    // four readers below consult an override that the ZIP sets for the duration
+    // of one build and always clears in a finally. Null is the ordinary case:
+    // the controls decide, exactly as before.
+    let EXPORT_OVERRIDE = null;
+    function withExportSettings(over, fn) {
+      const prev = EXPORT_OVERRIDE;
+      EXPORT_OVERRIDE = over;
+      return Promise.resolve()
+        .then(fn)
+        .finally(() => { EXPORT_OVERRIDE = prev; });
+    }
+    function currentTemplate() {
+      if (EXPORT_OVERRIDE && EXPORT_OVERRIDE.template) return EXPORT_OVERRIDE.template;
+      const sel = $('tplSelect'); return sel ? sel.value : 'willow';
+    }
     function buildTableSvg(opts) {
       return currentTemplate() === 'cpl' ? cplTableSvg(opts) : tableSvg(opts);
     }
@@ -2455,6 +2520,56 @@
         fillTeamSelects();
         $('cpNote').textContent = `Restored ${file} — ${STATE.matchCount} matches.`;
       } catch (e) { $('err').textContent = 'Restore failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+
+    // ---- compare two checkpoints ----------------------------------------------
+    // Hand the server both files: the later one becomes the live season, the
+    // earlier one becomes the order every ▲/▼ is measured from. The pin outlives
+    // further simulation, so the week can be built up match by match and every
+    // export still reads against the same starting point.
+    async function readJsonFile(input) {
+      const f = input && input.files && input.files[0];
+      if (!f) return null;
+      let parsed;
+      try { parsed = JSON.parse(await f.text()); }
+      catch { throw new Error(`${f.name} is not valid JSON`); }
+      return { name: f.name, json: parsed };
+    }
+    async function compareCheckpoints() {
+      $('err').textContent = '';
+      const from = await readJsonFile($('cmpFrom'));
+      const to = await readJsonFile($('cmpTo'));
+      if (!from && !to) { $('cmpNote').textContent = 'Choose at least one file.'; return; }
+      overlay(true, 'Comparing checkpoints…');
+      try {
+        const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+        const state = await api('/api/checkpoint/compare', {
+          from: from && from.json, to: to && to.json,
+          fromName: from && from.name, toName: to && to.name,
+        });
+        applyState(state, prev);
+        fillTeamSelects();
+        const c = state.compare || {};
+        const moved = state.ranking.filter(r => r.movement === 'up' || r.movement === 'down').length;
+        $('cmpNote').textContent = from
+          ? `Measuring against ${from.name}${c.fromMatches != null ? ` (${c.fromMatches} matches)` : ''}`
+            + (to ? ` — table is ${to.name} (${state.matchCount} matches).` : ' — season unchanged.')
+            + ` ${moved} of ${state.ranking.length} sides have moved.`
+            + (state.droppedBlurbs
+              ? ` ${state.droppedBlurbs} saved summaries were written against a different comparison and opened on the wrong movement, so they are back to the template line — run AI-write all for prose.`
+              : '')
+          : `Loaded ${to.name} — ${state.matchCount} matches. No comparison pinned.`;
+      } catch (e) { $('err').textContent = 'Compare failed: ' + e.message; }
+      finally { overlay(false); }
+    }
+    async function unpinAnchor() {
+      $('err').textContent = '';
+      overlay(true, 'Unpinning…');
+      try {
+        applyState(await api('/api/anchor/clear', {}));
+        $('cmpNote').textContent = 'Unpinned — arrows are back to day-to-day.';
+      } catch (e) { $('err').textContent = 'Unpin failed: ' + e.message; }
       finally { overlay(false); }
     }
 
@@ -2671,11 +2786,15 @@
       }
       return g;
     }
-    function cplBackground() { const sel = $('cplBg'); return sel ? sel.value : 'solid'; }
+    function cplBackground() {
+      if (EXPORT_OVERRIDE && EXPORT_OVERRIDE.cplBg) return EXPORT_OVERRIDE.cplBg;
+      const sel = $('cplBg'); return sel ? sel.value : 'solid';
+    }
     // Each template owns its own background control; this is the one answer the
     // rasterizer needs — whether to keep the alpha channel or flatten onto white.
     function isTransparent() {
       if (currentTemplate() === 'cpl') return cplBackground() !== 'solid';
+      if (EXPORT_OVERRIDE && typeof EXPORT_OVERRIDE.transparent === 'boolean') return EXPORT_OVERRIDE.transparent;
       const cb = $('bgTransparent');
       return !cb || cb.checked;
     }
@@ -2688,27 +2807,54 @@
     // scaled up, so it is real detail. Everything downstream — file names, the
     // canvas, the PDF page — is derived from it rather than assuming 1x.
     function fixedScale() {
+      if (EXPORT_OVERRIDE && EXPORT_OVERRIDE.fixedScale) return EXPORT_OVERRIDE.fixedScale;
       const sel = $('fixedScale');
       return sel ? Math.max(1, +sel.value || 1) : 1;
     }
     // PDFs get rendered a step finer than the screen exports: at 3x a 940-unit
     // graphic lands near 370 DPI across the printable width, which is a print
     // figure rather than a screen one, and Flate keeps it lossless at that size.
-    function pdfScale() { return 3 * fixedScale(); }
+    //
+    // The ZIP caps this at the base 3x rather than stacking the Detail
+    // multiplier on top. 3x on a Detail of 3 is a 9,720 x 12,150 page — about
+    // 118 megapixels, needing ~350 MB of contiguous buffer to flatten and
+    // deflate — which is not a sharper PDF so much as a tab that stops
+    // responding. 370 DPI is already past what the format is being used for.
+    function pdfScale() {
+      if (EXPORT_OVERRIDE && EXPORT_OVERRIDE.pdfScale) return EXPORT_OVERRIDE.pdfScale;
+      return 3 * fixedScale();
+    }
     function pngScale() {
+      if (EXPORT_OVERRIDE && EXPORT_OVERRIDE.pngWidth) {
+        return EXPORT_OVERRIDE.pngWidth / (currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W);
+      }
       const sel = $('pngRes');
       return (sel ? +sel.value : 3840) / (currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W);
     }
-    function downloadSvg() {
-      saveBlob(new Blob([buildTableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }), exportName('svg'));
+    // Every export below is written as a `build…` that returns {name, blob} and
+    // a one-line `download…` that saves it. The ZIP needs the bytes without a
+    // download prompt for each of twenty files, and the buttons need a
+    // download — splitting them here means both go through exactly the same
+    // rendering path, so a file in the ZIP cannot differ from the same file
+    // pulled from its own button.
+    const toPngBlob = (c) => new Promise(res => c.toBlob(res, 'image/png'));
+
+    function buildSvgExport() {
+      return {
+        name: exportName('svg'),
+        blob: new Blob([buildTableSvg({ transparent: isTransparent() })], { type: 'image/svg+xml' }),
+      };
     }
-    async function downloadPng() {
+    function downloadSvg() { const f = buildSvgExport(); saveBlob(f.blob, f.name); }
+
+    async function buildPngExport() {
       const tr = isTransparent();
       const c = await rasterize(buildTableSvg({ transparent: tr, scale: pngScale() }), !tr);
       // toBlob keeps the full 8-bit RGBA buffer; PNG is lossless, so there is
       // no quality setting to trade off here — only the raster size above.
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png')); res(); }, 'image/png'));
+      return { name: exportName('png'), blob: await toPngBlob(c), w: c.width, h: c.height };
     }
+    async function downloadPng() { const f = await buildPngExport(); saveBlob(f.blob, f.name); }
     // ---- broadcast frame ------------------------------------------------------
     // The deliverable Willow actually puts to air is a finished 16:9 frame — the
     // keyed overlay already sitting on a stadium still — not a bare table the
@@ -2742,7 +2888,7 @@
       const w = img.naturalWidth * s, h = img.naturalHeight * s;
       ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
     }
-    async function downloadFrame() {
+    async function buildFrameExport() {
       const file = $('frameBg') && $('frameBg').value;
       if (!file) throw new Error('no backdrop still installed — add one to public/backgrounds/');
       const back = await loadImageEl('/backgrounds/' + encodeURIComponent(file));
@@ -2761,8 +2907,9 @@
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       drawCover(ctx, back, FW, FH);
       ctx.drawImage(table, Math.round((FW - table.width) / 2), Math.round((FH - table.height) / 2));
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('frame.png')); res(); }, 'image/png'));
+      return { name: exportName('frame.png'), blob: await toPngBlob(c), w: FW, h: FH, backdrop: file };
     }
+    async function downloadFrame() { const f = await buildFrameExport(); saveBlob(f.blob, f.name); }
 
     // ---- TV version -----------------------------------------------------------
     // What the gallery actually ingests: exactly 1920x1080, every time, whatever
@@ -2778,7 +2925,7 @@
     // template reads its Background dropdown instead, same as every other export.
     const TV_W = 1920, TV_H = 1080, TV_INSET = 0.05;
     function tvPlate() { return currentTemplate() === 'cpl' ? CPL.bg : '#f4f6f9'; }
-    async function downloadTv() {
+    async function buildTvExport() {
       const tr = isTransparent();
       const unitW = currentTemplate() === 'cpl' ? CPL_SVG_W : SVG_W;
       // The table is authored in fixed units and its height grows with the field,
@@ -2799,10 +2946,12 @@
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       if (!tr) { ctx.fillStyle = tvPlate(); ctx.fillRect(0, 0, FW, FH); }
       ctx.drawImage(table, Math.round((FW - table.width) / 2), Math.round((FH - table.height) / 2));
-      await new Promise(res => c.toBlob(b => {
-        saveBlob(b, exportName('png', `tv-${tr ? 'transparent' : 'solid'}-${FW}x${FH}`)); res();
-      }, 'image/png'));
+      return {
+        name: exportName('png', `tv-${tr ? 'transparent' : 'solid'}-${FW}x${FH}`),
+        blob: await toPngBlob(c), w: FW, h: FH, transparent: tr,
+      };
     }
+    async function downloadTv() { const f = await buildTvExport(); saveBlob(f.blob, f.name); }
 
     // Exactly 1080x1350, the feed's native size, so the upload resamples nothing.
     // The tile is authored at that size, so scale 1 IS full resolution — there is
@@ -2811,38 +2960,313 @@
     // The colourway follows the template switch: Willow gives the light tile,
     // CPL the dark one, so one button covers both without a second control.
     function socialTheme() { return currentTemplate() === 'cpl' ? 'dark' : 'light'; }
-    async function downloadSocial() {
+    async function buildSocialExport() {
       const theme = socialTheme();
       const c = await rasterize(socialTileSvg({ theme, scale: fixedScale() }), true);
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-${c.width}x${c.height}`)); res(); }, 'image/png'));
+      return { name: exportName('png', `social-${theme}-${c.width}x${c.height}`), blob: await toPngBlob(c), w: c.width, h: c.height, theme };
     }
+    async function downloadSocial() { const f = await buildSocialExport(); saveBlob(f.blob, f.name); }
     // Keyed tile: alpha preserved, so it drops straight onto a photograph or a
     // feed post's own background. Rasterized with opaque=false — flattening onto
     // white here is exactly what the export is for avoiding.
-    async function downloadSocialTransparent() {
+    async function buildSocialTransparentExport() {
       const theme = socialTheme();
       const c = await rasterize(socialTileSvg({ theme, transparent: true, scale: fixedScale() }), false);
-      await new Promise(res => c.toBlob(b => { saveBlob(b, exportName('png', `social-${theme}-transparent-${c.width}x${c.height}`)); res(); }, 'image/png'));
+      return { name: exportName('png', `social-${theme}-transparent-${c.width}x${c.height}`), blob: await toPngBlob(c), w: c.width, h: c.height, theme };
     }
+    async function downloadSocialTransparent() { const f = await buildSocialTransparentExport(); saveBlob(f.blob, f.name); }
     // PDF carries a JPEG, which has no alpha, so the tile goes on its solid
     // colourway whatever the PNG buttons are set to. The URL under the Champhunt
     // mark survives as a real /Link annotation, same as the landscape exports.
-    async function downloadSocialPdf() {
+    async function buildSocialPdfExport() {
       const theme = socialTheme();
       const c = await rasterize(socialTileSvg({ theme, scale: pdfScale() }), true);
       const links = SVG_LINKS.slice();   // captured by the render just above
       const img = await flateRgb(c);
-      saveBlob(new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }),
-        exportName('pdf', `social-${theme}-1080x1350`));
+      return {
+        name: exportName('pdf', `social-${theme}-1080x1350`),
+        blob: new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }),
+        w: c.width, h: c.height, theme,
+      };
     }
+    async function downloadSocialPdf() { const f = await buildSocialPdfExport(); saveBlob(f.blob, f.name); }
 
-    // PDF embeds a JPEG, which has no alpha — always exported on a solid plate.
-    async function downloadPdf() {
+    // PDF embeds a Flate-compressed RGB image, which has no alpha — always
+    // exported on a solid plate.
+    async function buildPdfExport() {
       const c = await rasterize(buildTableSvg({ transparent: false, bg: 'solid', scale: pdfScale() }), true);
       const links = SVG_LINKS.slice();   // captured by the render just above
       const img = await flateRgb(c);
-      saveBlob(new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }), exportName('pdf'));
+      return {
+        name: exportName('pdf'),
+        blob: new Blob([buildPdf(img, c.width, c.height, links, 'FlateDecode')], { type: 'application/pdf' }),
+        w: c.width, h: c.height,
+      };
     }
+    async function downloadPdf() { const f = await buildPdfExport(); saveBlob(f.blob, f.name); }
+    // ---- ZIP writer -----------------------------------------------------------
+    // Hand-rolled for the same reason the PDF writer is: this project ships no
+    // dependencies and a browser has no zip primitive. Only what a ZIP reader
+    // actually requires — local headers, a central directory, an end record.
+    // No zip64: the largest bundle here is a few hundred megabytes, well inside
+    // the 4 GB the 32-bit fields hold.
+    //
+    // PNG and PDF arrive already compressed, so deflating them again costs time
+    // and saves nothing — those go in stored. SVG and JSON are text and shrink
+    // by roughly ten to one, so those go through deflate-raw, which is what a
+    // ZIP entry's method 8 means (the PDF's FlateDecode wants the zlib wrapper
+    // instead — same algorithm, different framing, and mixing them up produces
+    // a file every reader rejects).
+    const CRC_TABLE = (() => {
+      const t = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+        t[n] = c >>> 0;
+      }
+      return t;
+    })();
+    function crc32(u8) {
+      let c = 0xFFFFFFFF;
+      for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+      return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+    async function deflateRaw(u8) {
+      const cs = new CompressionStream('deflate-raw');
+      return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(cs)).arrayBuffer());
+    }
+    // MS-DOS packed date/time — the only timestamp a base ZIP entry carries.
+    function dosStamp(d) {
+      return {
+        time: ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31),
+        date: (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31),
+      };
+    }
+    // entries: [{ name, blob|text, deflate }]
+    async function makeZip(entries, onProgress) {
+      const enc = new TextEncoder();
+      const { time, date } = dosStamp(new Date());
+      const parts = [], central = [];
+      let offset = 0;
+      for (let i = 0; i < entries.length; i++) {
+        const e = entries[i];
+        if (onProgress) onProgress(i, entries.length, e.name);
+        const raw = e.text != null
+          ? enc.encode(e.text)
+          : new Uint8Array(await e.blob.arrayBuffer());
+        const deflate = e.deflate === true;
+        const body = deflate ? await deflateRaw(raw) : raw;
+        const nameBytes = enc.encode(e.name);
+        const crc = crc32(raw);
+
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(6, 0x0800, true);          // UTF-8 file names
+        local.setUint16(8, deflate ? 8 : 0, true);
+        local.setUint16(10, time, true); local.setUint16(12, date, true);
+        local.setUint32(14, crc, true);
+        local.setUint32(18, body.length, true);
+        local.setUint32(22, raw.length, true);
+        local.setUint16(26, nameBytes.length, true);
+        local.setUint16(28, 0, true);
+        parts.push(new Uint8Array(local.buffer), nameBytes, body);
+
+        const cd = new DataView(new ArrayBuffer(46));
+        cd.setUint32(0, 0x02014b50, true);
+        cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+        cd.setUint16(8, 0x0800, true);
+        cd.setUint16(10, deflate ? 8 : 0, true);
+        cd.setUint16(12, time, true); cd.setUint16(14, date, true);
+        cd.setUint32(16, crc, true);
+        cd.setUint32(20, body.length, true);
+        cd.setUint32(24, raw.length, true);
+        cd.setUint16(28, nameBytes.length, true);
+        cd.setUint32(42, offset, true);
+        central.push(new Uint8Array(cd.buffer), nameBytes);
+
+        offset += 30 + nameBytes.length + body.length;
+      }
+      const cdSize = central.reduce((s, p) => s + p.length, 0);
+      const end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, entries.length, true);
+      end.setUint16(10, entries.length, true);
+      end.setUint32(12, cdSize, true);
+      end.setUint32(16, offset, true);
+      return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+    }
+
+    // ---- the complete bundle ---------------------------------------------------
+    // One click, every deliverable, at the top of each format's quality range:
+    // both house styles, keyed and solid, the tiles, the PDFs, the vectors and
+    // the website JSON. Named so the folder can be opened cold — the format, the
+    // colourway and the pixel size are all in the file name, and a README maps
+    // every file to what it is for.
+    const ZIP_PNG_WIDTH = 3840;   // 4K across the table's own width
+    const ZIP_DETAIL = 3;         // tile, TV and frame rendered at 3x their spec size
+    const ZIP_PDF_SCALE = 3;      // ~370 DPI; see pdfScale() for why it is not 9
+
+    function zipFolderName(payload) {
+      const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const wk = payload && Number.isFinite(payload.week) ? `week-${payload.week}` : 'week';
+      const d = new Date();
+      return `${league}-power-rankings-${wk}-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
+    }
+
+    async function buildBundle(onProgress) {
+      const files = [];
+      const notes = [];
+      const add = (path, f, what) => { files.push({ name: path, blob: f.blob }); notes.push([path, what]); };
+
+      // The website JSON first: it is the only thing that needs the server, so a
+      // failure there is reported before twenty rasters have been rendered.
+      let payload = null;
+      try { payload = await buildPublish(); } catch (e) { notes.push(['(website JSON)', 'FAILED: ' + e.message]); }
+
+      const step = (msg) => { if (onProgress) onProgress(msg); };
+      const hasBackdrop = !!($('frameBg') && $('frameBg').value);
+
+      for (const template of ['willow', 'cpl']) {
+        const dir = template === 'willow' ? 'willow-broadcast' : 'cpl-website';
+        // "Keyed" is the alpha build in both styles; the two templates spell it
+        // differently in their own controls (a checkbox vs a dropdown), which is
+        // why both keys are set rather than one.
+        const keyed = { template, transparent: true, cplBg: 'translucent', fixedScale: ZIP_DETAIL, pngWidth: ZIP_PNG_WIDTH, pdfScale: ZIP_PDF_SCALE };
+        const solid = { template, transparent: false, cplBg: 'solid', fixedScale: ZIP_DETAIL, pngWidth: ZIP_PNG_WIDTH, pdfScale: ZIP_PDF_SCALE };
+        const keyedWord = template === 'cpl' ? 'translucent' : 'transparent';
+
+        await withExportSettings(keyed, async () => {
+          step(`${dir}: table PNG (keyed)`);
+          const png = await buildPngExport();
+          add(`${dir}/01-table-${png.w}x${png.h}-${keyedWord}.png`, png,
+            `Ranking table, ${png.w}x${png.h}, alpha channel kept — key this over a feed or a photograph.`);
+          step(`${dir}: table SVG`);
+          add(`${dir}/04-table-vector.svg`, buildSvgExport(),
+            'Ranking table as vector artwork. Scales to any size with no loss; open in Illustrator/Figma.');
+          step(`${dir}: TV 1920x1080 (keyed)`);
+          const tv = await buildTvExport();
+          add(`${dir}/05-tv-1920x1080-${keyedWord}-${ZIP_DETAIL}x.png`, tv,
+            `Broadcast deliverable at exactly 16:9, rendered ${ZIP_DETAIL}x (${tv.w}x${tv.h}), alpha kept for the mixer's key input.`);
+          if (hasBackdrop) {
+            step(`${dir}: 1080p frame`);
+            const fr = await buildFrameExport();
+            add(`${dir}/10-broadcast-frame-1920x1080-${ZIP_DETAIL}x.png`, fr,
+              `Finished 16:9 frame — the keyed overlay already composited onto ${fr.backdrop}. Ready to air as-is.`);
+          }
+        });
+
+        await withExportSettings(solid, async () => {
+          step(`${dir}: table PNG (solid)`);
+          const png = await buildPngExport();
+          add(`${dir}/02-table-${png.w}x${png.h}-solid.png`, png,
+            `Ranking table, ${png.w}x${png.h}, on its solid plate — for anywhere without a key.`);
+          step(`${dir}: table PDF`);
+          const pdf = await buildPdfExport();
+          add(`${dir}/03-table-print.pdf`, pdf,
+            `Ranking table for print, lossless at ${pdf.w}x${pdf.h} (~370 DPI). The Champhunt URL is a live link.`);
+          step(`${dir}: TV 1920x1080 (solid)`);
+          const tv = await buildTvExport();
+          add(`${dir}/06-tv-1920x1080-solid-${ZIP_DETAIL}x.png`, tv,
+            `The same 16:9 deliverable on a solid plate, ${tv.w}x${tv.h}.`);
+          step(`${dir}: social tile`);
+          const so = await buildSocialExport();
+          add(`${dir}/07-social-tile-1080x1350-${so.theme}-${ZIP_DETAIL}x.png`, so,
+            `4:5 feed portrait, ${so.theme} colourway, ${so.w}x${so.h}. Post as-is.`);
+          step(`${dir}: social tile (transparent)`);
+          const st = await buildSocialTransparentExport();
+          add(`${dir}/08-social-tile-1080x1350-${st.theme}-transparent-${ZIP_DETAIL}x.png`, st,
+            'The same tile with the background keyed out, to lay over a photograph.');
+          step(`${dir}: social tile PDF`);
+          const sp = await buildSocialPdfExport();
+          add(`${dir}/09-social-tile-1080x1350-${sp.theme}.pdf`, sp,
+            `The tile for print, lossless at ${sp.w}x${sp.h}. PDF has no alpha, so it is always on the solid colourway.`);
+        });
+      }
+
+      return { files, notes, payload };
+    }
+
+    // A plain-text index, so opening the folder cold answers "which file is
+    // which" without opening any of them.
+    function bundleReadme(notes, payload, folder) {
+      const L = [];
+      L.push(folder);
+      L.push('='.repeat(folder.length));
+      L.push('');
+      L.push(`${STATE.league} ${STATE.season} — power rankings`);
+      L.push(`Built ${new Date().toLocaleString()} · ${STATE.matchCount} matches played`
+        + (payload ? ` · ${payload.weekLabel}` : ''));
+      L.push(STATE.anchor
+        ? `Movement (the up/down column) is measured against ${STATE.anchor.label}. A side that has not`
+          + ' played can still carry an arrow: the table moved under it.'
+        : 'Movement is measured against the previous render.');
+      L.push('');
+      L.push('THE TABLE IN THIS BUNDLE');
+      for (const r of STATE.ranking) {
+        const mv = r.movement === 'up' ? `+${r.delta}` : r.movement === 'down' ? `${r.delta}` : r.movement === 'new' ? 'new' : '  ';
+        L.push(`  ${String(r.rank).padStart(2)}  ${r.name.padEnd(28)} ${(r.won + '-' + r.lost).padEnd(5)} ${String(mv).padStart(4)}   ${r.scoreDisplay.toFixed(1)}`);
+      }
+      L.push('');
+      L.push('FILES');
+      let dir = '';
+      // Listed in the order the numbers imply, not the order they were rendered
+      // in — the keyed and solid variants of each format are built in two passes
+      // so the export settings are only flipped twice, which interleaves 01, 04,
+      // 05 with 02, 03, 06 and makes the index look shuffled.
+      for (const [path, what] of notes.slice().sort((a, b) => a[0].localeCompare(b[0]))) {
+        const d = path.split('/')[0];
+        if (d !== dir) { dir = d; L.push(''); L.push(`  ${dir}/`); }
+        L.push(`    ${path.split('/').slice(1).join('/')}`);
+        L.push(`        ${what}`);
+      }
+      L.push('');
+      L.push('QUALITY');
+      L.push(`  Tables are rendered ${ZIP_PNG_WIDTH}px wide; tiles, TV frames and broadcast frames at ${ZIP_DETAIL}x their`);
+      L.push('  spec size; PDFs at ~370 DPI, lossless (Flate, not JPEG). Everything is rasterized');
+      L.push('  from vector at the target size — nothing here is an upscale of a smaller bitmap.');
+      return L.join('\n');
+    }
+
+    async function downloadZip() {
+      $('err').textContent = '';
+      const btn = $('dlZip');
+      if (btn) btn.disabled = true;
+      overlay(true, 'Building the bundle…');
+      try {
+        const { files, notes, payload } = await buildBundle(msg => overlay(true, `Rendering — ${msg}`));
+        const folder = zipFolderName(payload);
+        const entries = files.map(f => ({ name: `${folder}/${f.name}`, blob: f.blob }));
+        // Text entries deflate well, so they are the two that get compressed.
+        if (payload) {
+          entries.push({
+            name: `${folder}/data/${publishName(payload)}`,
+            text: JSON.stringify(payload, null, 2), deflate: true,
+          });
+          notes.push([`data/${publishName(payload)}`,
+            'The website payload — upload this on the site\'s /admin page. Same table as the graphics.']);
+        }
+        // The SVG entries are already in `files` as blobs; deflating them is
+        // handled by re-tagging here rather than by a second code path.
+        for (const e of entries) if (/\.svg$/.test(e.name)) e.deflate = true;
+        entries.unshift({ name: `${folder}/README.txt`, text: bundleReadme(notes, payload, folder), deflate: true });
+
+        overlay(true, `Zipping ${entries.length} files…`);
+        const zip = await makeZip(entries, (i, n, name) =>
+          overlay(true, `Zipping ${i + 1}/${n} — ${name.split('/').pop()}`));
+        saveBlob(zip, `${folder}.zip`);
+        const mb = (zip.size / 1048576).toFixed(1);
+        $('err').textContent = '';
+        const note = $('cpNote');
+        if (note) note.textContent = `Downloaded ${folder}.zip — ${entries.length} files, ${mb} MB.`;
+      } catch (e) {
+        $('err').textContent = 'ZIP failed: ' + e.message;
+      } finally {
+        overlay(false);
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function jpegBytes(dataUrl) {
       const bin = atob(dataUrl.split(',')[1]);
       const u = new Uint8Array(bin.length);
@@ -2914,6 +3338,7 @@
     $('btnFetch').addEventListener('click', () => fetchMatchResult(false));
     $('btnRefetch').addEventListener('click', () => fetchMatchResult(true));
     $('btnClearCache').addEventListener('click', clearMatchCache);
+    $('dlZip').addEventListener('click', () => downloadZip());
     $('dlPng').addEventListener('click', () => downloadPng().catch(e => $('err').textContent = e.message));
     $('dlPdf').addEventListener('click', () => downloadPdf().catch(e => $('err').textContent = e.message));
     $('dlSvg').addEventListener('click', downloadSvg);
@@ -3019,6 +3444,8 @@
       if (f) loadCheckpoint(f);
       e.target.value = '';                     // allow re-loading the same file
     });
+    $('btnCompare').addEventListener('click', () => compareCheckpoints());
+    $('btnAnchorClear').addEventListener('click', () => unpinAnchor());
     $('btnReset').addEventListener('click', async () => { overlay(true, 'Resetting…'); try { applyState(await api('/api/reset', {})); } finally { overlay(false); } });
     $('btnBaseline').addEventListener('click', async () => { overlay(true, 'Loading baseline…'); try { applyState(await api('/api/mode', { mode: 'baseline' })); } finally { overlay(false); } });
     $('btnFresh').addEventListener('click', async () => { overlay(true, 'Fresh season…'); try { applyState(await api('/api/mode', { mode: 'fresh' })); } finally { overlay(false); } });

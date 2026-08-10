@@ -87,7 +87,21 @@ function currentPriors() {
 }
 
 function currentRanking() {
-  return rank(sim.getData(), config, sim.getPrevRanks(), currentPriors());
+  return rank(sim.getData(), config, sim.getCompareRanks(), currentPriors());
+}
+
+// Rank a checkpoint's season on its own terms, so the "from" end of a
+// comparison is produced by the same engine as the "to" end. The stored
+// `ranking` array in a checkpoint is a read-only audit copy and older files may
+// not carry one at all, so the order is re-derived from the match list rather
+// than read off it.
+function ranksOfCheckpoint(cp) {
+  if (!cp || !cp.data || !Array.isArray(cp.data.teams)) {
+    throw new Error('not a checkpoint file — expected a "data" object with teams[]');
+  }
+  const usePriors = (cp.mode || 'baseline') === 'baseline';
+  const p = usePriors ? priors.getPriors(config, cp.data.teams).priors : null;
+  return rank(cp.data, config, {}, p);
 }
 
 // Build the full state payload the client renders. Snapshots the order so the
@@ -118,6 +132,11 @@ function buildState(rows) {
     mode: sim.getMode(),
     league: sim.getData().league,
     season: sim.getData().season,
+    // What the ▲/▼ column is measured against. Null is the ordinary behaviour —
+    // the previous render — and anything else is a comparison the operator
+    // pinned, which the UI has to say out loud: an arrow beside a side that has
+    // not played is correct under an anchor and a bug without one.
+    anchor: sim.getAnchor() ? { label: anchorLabel, ranks: sim.getAnchor() } : null,
     aiConfigured: cfg.isConfigured(),
     // Without this key the match search falls back to grounded model search,
     // which is materially less reliable — the UI says so up front rather than
@@ -252,6 +271,11 @@ function buildCheckpoint() {
     config: { weights: config.weights, optionalWeights: config.optionalWeights, enabled: config.enabled },
     blurbs: blurbCache,
     prevRanks: sim.getPrevRanks(),
+    // The pinned comparison point, if one is set, so a checkpoint taken during a
+    // week-long comparison restores measuring against the same anchor rather
+    // than silently falling back to day-to-day arrows.
+    anchor: sim.getAnchor(),
+    anchorLabel: anchorLabel,
     siteMeta,
     // Read-only copy of the table as it stood — for audit, not for restore.
     ranking: ranking.map((r) => ({ rank: r.rank, team: r.name, score: +r.score.toFixed(2), won: r.won, lost: r.lost })),
@@ -269,7 +293,7 @@ function buildPublishPayload() {
     data: sim.getData(),
     config,
     blurbs: blurbCache,
-    prevRanks: sim.getPrevRanks(),
+    prevRanks: sim.getCompareRanks(),
     meta: siteMeta,
     priors: priorPack ? priorPack.priors : null,
     forecast,
@@ -284,10 +308,17 @@ function buildPublishPayload() {
   });
 }
 
+// Human-readable description of what the arrows are measured against, carried
+// beside the anchor itself so the UI and the checkpoint can both say it.
+let anchorLabel = '';
+
 function restoreCheckpoint(cp) {
   if (!cp || !cp.data) throw new Error('not a checkpoint file — expected a "data" object');
   if (cp.kind && cp.kind !== 'power-rankings-checkpoint') throw new Error(`unrecognised file kind: ${cp.kind}`);
   sim.loadData(cp.data, cp.mode, cp.prevRanks);
+  // loadData drops any anchor; put back the one this file was taken under.
+  sim.setAnchor(cp.anchor || null);
+  anchorLabel = cp.anchor ? (cp.anchorLabel || 'a pinned comparison point') : '';
   if (cp.config && typeof cp.config === 'object') {
     if (cp.config.weights) for (const k of Object.keys(config.weights)) {
       if (typeof cp.config.weights[k] === 'number') config.weights[k] = cp.config.weights[k];
@@ -424,6 +455,55 @@ const server = http.createServer(async (req, res) => {
       const { file } = await readBody(req);
       if (!file) throw new Error('missing "file"');
       return send(res, 200, restoreCheckpoint(store.read(file)));
+    }
+
+    // Compare two checkpoints. `to` becomes the live season and `from` becomes
+    // the order every arrow is measured against — so a week's worth of results
+    // reads as one movement against a fixed point rather than as whatever the
+    // last match happened to do. The anchor outlives further simulation, so the
+    // next match played still shows movement from `from`.
+    //
+    // Either side may be omitted: `from` alone re-pins the anchor without
+    // touching the season, `to` alone is an ordinary restore.
+    if (req.method === 'POST' && url.pathname === '/api/checkpoint/compare') {
+      const { from, to, fromName, toName } = await readBody(req);
+      if (!from && !to) throw new Error('send at least one of "from" or "to"');
+      // Rank the "from" side BEFORE loading anything, because ranking it needs
+      // its own teams and the load would have replaced them.
+      const fromRanks = from ? ranksOfCheckpoint(from) : null;
+      if (to) restoreCheckpoint(to);
+      let droppedBlurbs = 0;
+      if (fromRanks) {
+        sim.setAnchor(fromRanks);
+        anchorLabel = fromName || (from.savedAt ? `the checkpoint saved ${from.savedAt}` : 'an earlier checkpoint');
+        // Every cached summary opens on the movement ("Up one spot to 3") and
+        // was written against a different comparison, so pinning a new one makes
+        // them contradict the arrow beside them — the exact failure the grounded
+        // critic exists to prevent, arriving through the side door. Dropping them
+        // falls each side back to the deterministic template line, which derives
+        // its movement phrase from the ranking it is handed and is therefore
+        // true by construction. Re-run AI-write all for prose.
+        droppedBlurbs = Object.keys(blurbCache).length;
+        blurbCache = {};
+      }
+      const state = buildState();
+      state.droppedBlurbs = droppedBlurbs;
+      state.compare = {
+        from: fromName || null,
+        to: toName || null,
+        fromRanking: fromRanks
+          ? fromRanks.map((r) => ({ rank: r.rank, name: r.name, rating: +r.scoreDisplay.toFixed(1), won: r.won, lost: r.lost }))
+          : null,
+        fromMatches: from ? (from.data.matches || []).length : null,
+      };
+      return send(res, 200, state);
+    }
+
+    // Drop the pinned comparison point and go back to day-to-day arrows.
+    if (req.method === 'POST' && url.pathname === '/api/anchor/clear') {
+      sim.clearAnchor();
+      anchorLabel = '';
+      return send(res, 200, buildState());
     }
 
     if (req.method === 'POST' && url.pathname === '/api/checkpoint/delete') {

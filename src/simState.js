@@ -45,12 +45,37 @@ function baselineFrom(baseline) {
 let mode = 'baseline';
 let data = baselineFrom(BASELINE);
 let prevRanks = {}; // teamName -> rank, captured before the last mutation
+// A pinned comparison point. `prevRanks` moves every render, which is right for
+// "what did that match just do" but wrong for "where is everyone against the
+// baseline" — by the third match of the week the day-to-day arrows say almost
+// nothing, and a side that has not played carries no arrow at all even though
+// the table has moved under it. An anchor is an order the operator has chosen
+// to measure against (an earlier checkpoint, usually the preseason one) and it
+// SURVIVES simulating further matches, so a whole week reads against one fixed
+// point. Null means the ordinary day-to-day behaviour.
+let anchorRanks = null;
 
 const state = {
   getMode: () => mode,
   getData: () => data,
   getTeams: () => data.teams,
   getPrevRanks: () => prevRanks,
+
+  // What the arrows should actually diff against: the pinned anchor when one is
+  // set, otherwise the last render. Every ranking path goes through this rather
+  // than reading prevRanks directly, so the two cannot disagree.
+  getCompareRanks: () => anchorRanks || prevRanks,
+  getAnchor: () => (anchorRanks ? { ...anchorRanks } : null),
+  // Accepts either a ranking array ([{name, rank}]) or a plain name->rank map,
+  // because the two callers naturally hold one each.
+  setAnchor(ranks) {
+    if (!ranks) return (anchorRanks = null);
+    anchorRanks = Array.isArray(ranks)
+      ? Object.fromEntries(ranks.map((r) => [r.name, r.rank]))
+      : { ...ranks };
+    return anchorRanks;
+  },
+  clearAnchor() { anchorRanks = null; },
 
   // Only the baseline carries last season in. Fresh Start deliberately throws
   // the 2025 evidence away so every team opens on the same 34.0.
@@ -67,6 +92,8 @@ const state = {
     mode = next;
     data = next === 'baseline' ? baselineFrom(BASELINE) : freshFrom(BASELINE);
     prevRanks = {};
+    // A new season is not the season the anchor was taken from.
+    anchorRanks = null;
     return mode;
   },
 
@@ -107,6 +134,10 @@ const state = {
     };
     if (nextMode === 'baseline' || nextMode === 'fresh') mode = nextMode;
     prevRanks = nextPrevRanks && typeof nextPrevRanks === 'object' ? { ...nextPrevRanks } : {};
+    // Loading a different season drops the anchor; the caller pins a new one
+    // straight afterwards if it wants one (that is what comparing two
+    // checkpoints does).
+    anchorRanks = null;
     return data;
   },
 
