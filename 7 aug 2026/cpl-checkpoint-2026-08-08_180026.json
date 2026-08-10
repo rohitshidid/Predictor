@@ -1,0 +1,354 @@
+{
+  "kind": "power-rankings-checkpoint",
+  "version": 1,
+  "savedAt": "2026-08-08T18:00:26.193Z",
+  "league": "Caribbean Premier League",
+  "leagueShort": "CPL",
+  "season": "2026",
+  "mode": "baseline",
+  "matchCount": 1,
+  "data": {
+    "season": "2026",
+    "league": "Caribbean Premier League",
+    "leagueShort": "CPL",
+    "teams": [
+      {
+        "name": "Trinbago Knight Riders",
+        "short": "TKR",
+        "squadStars": 5,
+        "colors": {
+          "primary": "#C8102E",
+          "secondary": "#F5C518"
+        },
+        "logo": "/logos/tkr.png",
+        "priorFrom": "Trinbago Knight Riders",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 3,
+          "exited": 4,
+          "lost": 7,
+          "kept": 11,
+          "arrivals": 4,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "Guyana Amazon Warriors",
+        "short": "GAW",
+        "squadStars": 5,
+        "colors": {
+          "primary": "#16A34A",
+          "secondary": "#F5C518"
+        },
+        "logo": "/logos/gaw.png",
+        "priorFrom": "Guyana Amazon Warriors",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 5,
+          "exited": 5,
+          "lost": 10,
+          "kept": 8,
+          "arrivals": 3,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "Antigua & Barbuda Falcons",
+        "short": "ABF",
+        "squadStars": 4,
+        "colors": {
+          "primary": "#1E3A8A",
+          "secondary": "#EF4444"
+        },
+        "logo": "/logos/abf.png",
+        "priorFrom": "Antigua & Barbuda Falcons",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 5,
+          "exited": 5,
+          "lost": 10,
+          "kept": 8,
+          "arrivals": 6,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "Barbados Tridents",
+        "short": "BT",
+        "squadStars": 4,
+        "colors": {
+          "primary": "#0057A8",
+          "secondary": "#F5C518"
+        },
+        "logo": "/logos/bt.png",
+        "priorFrom": "Barbados Royals",
+        "_brandNote": "Renamed from Barbados Royals - rebrand announced May 2026 under the 'One Barbados' initiative (cpl-2025-season-review.md s4). COLOURS AND CREST ARE STILL THE ROYALS' - drop the licensed Tridents artwork in as public/logos/bt.png and set the real palette here before air. Until then the UI falls back to a drawn colour badge.",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 2,
+          "exited": 4,
+          "lost": 6,
+          "kept": 12,
+          "arrivals": 4,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "Saint Lucia Kings",
+        "short": "SLK",
+        "squadStars": 4,
+        "colors": {
+          "primary": "#1D4ED8",
+          "secondary": "#FACC15"
+        },
+        "logo": "/logos/slk.png",
+        "priorFrom": "Saint Lucia Kings",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 5,
+          "exited": 6,
+          "lost": 11,
+          "kept": 7,
+          "arrivals": 5,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "St Kitts & Nevis Patriots",
+        "short": "SNP",
+        "squadStars": 3,
+        "colors": {
+          "primary": "#0E7490",
+          "secondary": "#DC2626"
+        },
+        "logo": "/logos/snp.png",
+        "priorFrom": "St Kitts & Nevis Patriots",
+        "squadMovement": {
+          "squad2025": 18,
+          "switchedOut": 3,
+          "exited": 5,
+          "lost": 8,
+          "kept": 10,
+          "arrivals": 6,
+          "_source": "cpl-2025-season-review.md s4 — 'Moved to' table + 'Out of the league' list"
+        }
+      },
+      {
+        "name": "Jamaica Kingsmen",
+        "short": "JAM",
+        "squadStars": 3,
+        "colors": {
+          "primary": "#111827",
+          "secondary": "#FDB913"
+        },
+        "logo": "/logos/jam.png",
+        "_priorNote": "New franchise for 2026 - no 2025 record exists, so no prior can be measured. src/priors.js opens them prior.expansionSigma standard deviations below the 2025 league mean."
+      }
+    ],
+    "matches": [
+      {
+        "home": "Jamaica Kingsmen",
+        "away": "Antigua & Barbuda Falcons",
+        "venueHomeTeam": "Antigua & Barbuda Falcons",
+        "tossWinner": "Antigua & Barbuda Falcons",
+        "battingFirst": "Jamaica Kingsmen",
+        "winner": "Antigua & Barbuda Falcons",
+        "innings": [
+          {
+            "batting": "Jamaica Kingsmen",
+            "bowling": "Antigua & Barbuda Falcons",
+            "runs": 167,
+            "balls": 120,
+            "overs": 20,
+            "ppRuns": 50,
+            "deathRuns": 57,
+            "deathBalls": 30,
+            "top4": 0,
+            "wktsLost": 7,
+            "bowlTop2": 4
+          },
+          {
+            "batting": "Antigua & Barbuda Falcons",
+            "bowling": "Jamaica Kingsmen",
+            "runs": 168,
+            "balls": 114,
+            "overs": 19,
+            "ppRuns": 50,
+            "deathRuns": 46,
+            "deathBalls": 24,
+            "top4": 0,
+            "wktsLost": 8,
+            "bowlTop2": 5
+          }
+        ],
+        "stars": {
+          "Jamaica Kingsmen": {
+            "available": 0,
+            "squad": 3
+          },
+          "Antigua & Barbuda Falcons": {
+            "available": 0,
+            "squad": 4
+          }
+        },
+        "significant": {
+          "Jamaica Kingsmen": "",
+          "Antigua & Barbuda Falcons": ""
+        },
+        "id": 1,
+        "date": "2026-08-07T12:00:00.000Z"
+      }
+    ]
+  },
+  "config": {
+    "weights": {
+      "winPct": 0.3,
+      "marginAdjustedWin": 0.04,
+      "rollingNRR": 0.15,
+      "form": 0.12,
+      "powerplayDominance": 0.12,
+      "deathOversNet": 0.15,
+      "sos": 0.02,
+      "homeAwayAdjustment": 0.05,
+      "keyPlayerAvailability": 0.05
+    },
+    "optionalWeights": {
+      "expectedWins": 0.05,
+      "tossLeverage": 0.03,
+      "chaseSet": 0.05,
+      "top4Consistency": 0.12,
+      "bowlingConcentration": 0.03
+    },
+    "enabled": {
+      "expectedWins": false,
+      "tossLeverage": false,
+      "chaseSet": false,
+      "top4Consistency": false,
+      "bowlingConcentration": false
+    }
+  },
+  "blurbs": {
+    "Jamaica Kingsmen": {
+      "text": "Down one spot to 7, the Kingsmen's 0-1 start with a -0.49 rolling NRR and a dismal -9 win quality score shows early struggles, especially with a struggling death overs net of -2.",
+      "source": "ai",
+      "audit": {
+        "team": "Jamaica Kingsmen",
+        "rank": 7,
+        "attempts": [
+          {
+            "attempt": 1,
+            "blurb": "Down one spot to 7, the Kingsmen's 0-1 start with a -0.49 rolling NRR and a dismal -9 win quality score shows early struggles, especially with a struggling death overs net of -2.",
+            "score": 9,
+            "unsupported": [],
+            "reasoning": "The blurb accurately reflects the provided facts and is written in a punchy, engaging style suitable for a power ranking.",
+            "sources": []
+          }
+        ],
+        "grounding": "stats",
+        "significant": null,
+        "result": "ai-published"
+      }
+    },
+    "Antigua & Barbuda Falcons": {
+      "text": "Holding steady at 3, the Falcons boast a perfect 1-0 start with a +0.49 NRR. Despite a 9/100 win quality and zero stars available, their home-field advantage is undeniable.",
+      "source": "ai",
+      "audit": {
+        "team": "Antigua & Barbuda Falcons",
+        "rank": 3,
+        "attempts": [
+          {
+            "attempt": 1,
+            "blurb": "Holding steady at 3, the Falcons are 1-0 with a perfect home record. Their death overs net is +2, but the squad availability and win quality metrics suggest room for improvement.",
+            "score": 7,
+            "unsupported": [
+              "death overs net is +2"
+            ],
+            "reasoning": "The blurb accurately reflects the rank and record, but the 'death overs net is +2' claim is not directly supported by the provided facts, and the writing could be more concise.",
+            "sources": []
+          },
+          {
+            "attempt": 2,
+            "blurb": "Holding steady at 3, the Falcons boast a perfect 1-0 start with a +0.49 NRR. Despite a 9/100 win quality and zero stars available, their home-field advantage is undeniable.",
+            "score": 9,
+            "unsupported": [],
+            "reasoning": "The blurb accurately reflects the team's rank, record, NRR, win quality, and home-field advantage, presenting it in a concise and engaging manner suitable for a power ranking.",
+            "sources": []
+          }
+        ],
+        "grounding": "stats",
+        "significant": null,
+        "result": "ai-published"
+      }
+    }
+  },
+  "prevRanks": {
+    "Trinbago Knight Riders": 1,
+    "Guyana Amazon Warriors": 2,
+    "Antigua & Barbuda Falcons": 3,
+    "St Kitts & Nevis Patriots": 4,
+    "Saint Lucia Kings": 5,
+    "Barbados Tridents": 6,
+    "Jamaica Kingsmen": 7
+  },
+  "siteMeta": {
+    "site": "cplxch",
+    "week": 1,
+    "weekLabel": "",
+    "headline": "",
+    "subhead": "",
+    "region": "",
+    "workedExampleAbbr": "",
+    "nextMatch": null
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "team": "Trinbago Knight Riders",
+      "score": 63.4,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 2,
+      "team": "Guyana Amazon Warriors",
+      "score": 56.4,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 3,
+      "team": "Antigua & Barbuda Falcons",
+      "score": 52.99,
+      "won": 1,
+      "lost": 0
+    },
+    {
+      "rank": 4,
+      "team": "St Kitts & Nevis Patriots",
+      "score": 49.5,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 5,
+      "team": "Saint Lucia Kings",
+      "score": 48.89,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 6,
+      "team": "Barbados Tridents",
+      "score": 41.2,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 7,
+      "team": "Jamaica Kingsmen",
+      "score": 39.66,
+      "won": 0,
+      "lost": 1
+    }
+  ]
+}
