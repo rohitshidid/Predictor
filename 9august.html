@@ -1191,4 +1191,81 @@ form&nbsp;&nbsp;&nbsp;0.12 &times; 0.5 = 6.0&nbsp;&nbsp;&nbsp;&nbsp;home/away&nb
 
     return lead +
       "<div class=\"scroll\"><table><thead><tr><th>Metric</th><th>Their 2025 figure</th>" +
-      "<th>Score 0&ndash;1</th><th>Weight</th><th>Points</th></tr></thead>
+      "<th>Score 0&ndash;1</th><th>Weight</th><th>Points</th></tr></thead><tbody>" + rows +
+      "<tr class=\"tot\"><td>2025 index</td><td></td><td></td><td>100%</td><td>" +
+      d.idx.toFixed(2) + "</td></tr></tbody></table></div>" +
+      "<p class=\"panel-note\" style=\"margin-top:12px;max-width:62ch\">The two greyed rows are the " +
+      "phase metrics. The season review carries no ball-by-ball data, so they score 0.500 for " +
+      "<em>every</em> team and hand each of them the same 13.50 points. They lift the whole scale " +
+      "and change no team's position &mdash; worth knowing when a low-ranked side appears to earn " +
+      "more from the death overs than from winning.</p>" + chain;
+  }
+
+  function expansionDerivation(){
+    return "<p class=\"pr-lead\"><b>Jamaica Kingsmen</b> are new for 2026. There is no 2025 record " +
+      "to measure, so none of the nine metrics can be computed for them &mdash; their opening rating " +
+      "is set by rule instead, and the rule is stated rather than hidden.</p>" +
+      "<div class=\"chain\">" +
+      "<div class=\"chain-row\"><span>Mean 2025 index across the six existing teams</span><b>51.57</b></div>" +
+      "<div class=\"chain-row\"><span>Standard deviation of those six</span><b>8.59</b></div>" +
+      "<div class=\"chain-row\"><span>First-year discount &mdash; one standard deviation below the " +
+        "mean (<code style=\"font-family:var(--mono);font-size:.9em\">prior.expansionSigma = 1.0</code>)" +
+        "</span><b>&minus;8.59</b></div>" +
+      "<div class=\"chain-row\"><span>Opening index &mdash; no continuity adjustment, since there is " +
+        "no previous record to discount</span><b>42.98</b></div>" +
+      "<div class=\"chain-row final\"><span>Published rating</span><b>" +
+        display(42.9796).toFixed(1) + "</b></div>" +
+      "</div>";
+  }
+
+  function drawTable(){
+    var rows = board(FULL, 1).map(function(r){
+      var a = adjusted(r.raw, r.s);
+      return { s:r.s, c:r.c, adj:a.v, val:display(a.v) };
+    });
+    rows.sort(function(a,b){ return b.adj - a.adj; });
+
+    var html = "";
+    rows.forEach(function(r, i){
+      var d = DECOMP[r.s];
+      var wl = d ? (d.w + "&ndash;" + d.l) : "&mdash;";
+      var name = d ? d.n : "Jamaica Kingsmen";
+      html += '<details class="pr"><summary>' +
+        '<span class="pr-rk">' + (i + 1) + '</span>' +
+        '<span class="chip" style="background:' + r.c + '"></span>' +
+        '<span class="pr-name">' + name + ' <em>' + r.s + '</em></span>' +
+        '<span class="pr-wl">' + wl + '</span>' +
+        '<span class="pr-rating">' + r.val.toFixed(1) + '</span>' +
+        '<span class="pr-caret" aria-hidden="true">&rsaquo;</span>' +
+        '</summary><div class="pr-body">' +
+        (d ? derivation(r.s, d) : expansionDerivation()) +
+        '</div></details>';
+    });
+    el("prTable").innerHTML = html;
+  }
+
+  /* ---- verification table ---- */
+  var VERIFY = [
+    ["Saint Lucia Kings",         10,5,3,2,12, 0.746,  0.746],
+    ["Guyana Amazon Warriors",    10,6,4,0,12, 0.629,  0.629],
+    ["Trinbago Knight Riders",    10,6,4,0,12, 0.018,  0.018],
+    ["Antigua & Barbuda Falcons", 10,5,4,1,11,-0.757, -0.757],
+    ["St Kitts & Nevis Patriots", 10,4,6,0, 8,-0.110, -0.110],
+    ["Barbados Royals",           10,2,7,1, 5,-0.379, -0.379]
+  ];
+  (function(){
+    var html = "";
+    VERIFY.forEach(function(r){
+      var ok = Math.abs(r[6] - r[7]) < 0.0006;
+      html += "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + "</td><td>" + r[3] +
+        "</td><td>" + r[4] + "</td><td>" + r[5] + "</td><td>" + r[6].toFixed(3) +
+        "</td><td>" + r[7].toFixed(3) + "</td><td class='" + (ok ? "ok" : "no") + "'>" +
+        (ok ? "exact" : "off") + "</td></tr>";
+    });
+    el("verifyBody").innerHTML = html;
+  })();
+
+  drawTable(); drawHero(); drawPO(); drawDecay(); drawJam(); drawCont();
+})();
+
+</script>
