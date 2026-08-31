@@ -48,6 +48,34 @@ PNG with a wide aspect ratio works best. The QR is drawn into a 54×54 box.
 template. It is a portrait mark (icon over wordmark) on a 16:9 transparent
 canvas with navy type, so it is drawn into a near-square box on a light plate —
 navy artwork is illegible on the CPL navy card and on a night feed without one.
+
+`barbados.png` / `barbados-white.png` are the **Visit Barbados** mark, presenting
+sponsor of the power rankings. It sits bottom-right in one lockup with Willow,
+separated by a hairline rule: **Willow Sports │ Barbados**. The rule is drawn as a
+rect, not typed as a "|", so its weight does not follow whichever display face a
+template happens to use.
+
+Two colourways, picked automatically by the placement, not by hand:
+
+| Placement | File used | Why |
+|---|---|---|
+| Dark card, night feed, keyed/transparent export, **4:5 social tile (dark)** | `barbados-white.png` | the stock wordmark is #29348F and disappears on navy |
+| Light/solid plate, light 4:5 tile | `barbados.png` | white would be invisible on a pale plate |
+
+Both PNGs are pre-rasterised from the supplied SVGs at export resolution
+(2432px and 2928px wide) because the supplied white PNG is only 608px and would
+soften at the 3× broadcast scale. `barbados.svg` / `barbados-white.svg` are kept
+as fallbacks — the loader tries the PNG first, then the SVG, so re-supplying
+either format needs no code change.
+
+Barbados is a long horizontal wordmark (~6.5:1 after trim) against Willow's
+near-square lockup (~0.94:1). It is drawn at 44% of the Willow height so their
+cap-heights line up rather than their bounding boxes; matching box heights would
+let the sponsor overwhelm the broadcaster. Both ratios are measured after the
+auto-crop at load time, so re-supplied artwork re-sizes itself.
+
+The TV deliverable still ships with **no** lockup at all (the `noWillow` path):
+on air the channel's own bug already occupies that corner.
 `cpl.png` is optional: supply it for a league mark top-left on the CPL template,
 otherwise the league's short code runs ahead of the title ("CPL POWER RANKINGS").
 

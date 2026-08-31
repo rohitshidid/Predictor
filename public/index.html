@@ -1124,6 +1124,9 @@
         <div id="cacheNote" style="color:var(--muted);font-size:11px;margin-top:4px;"></div>
         <div id="fetchPreview"></div>
         <button id="btnFinish" class="primary" style="width:100%;margin-top:8px;">Simulate Match</button>
+        <button id="btnUpload" class="ghost" style="width:100%;margin-top:8px;"
+          title="Load a single match from a JSON file and simulate it straight onto the table">⬆ Upload match results</button>
+        <input type="file" id="matchFile" accept="application/json,.json" style="display:none">
         <div class="err" id="err"></div>
       </div>
 
@@ -1586,6 +1589,39 @@
         applyState(data, prev);
         $('sigX').value = ''; $('sigY').value = '';
       } catch (e) { $('err').textContent = e.message; }
+      finally { overlay(false); }
+    }
+
+    // ---- Upload match results: read one match from a JSON file and simulate it ----
+    // The file is a single match object — the SAME shape /api/simulate accepts and
+    // that each entry in a checkpoint's data.matches[] already uses. On upload we
+    // POST it straight to /api/simulate, so it appends, re-ranks, and rewrites the
+    // two played teams' AI summaries exactly as the Simulate Match button does.
+    function extractMatch(obj) {
+      if (obj && Array.isArray(obj.innings)) return obj;            // bare match object
+      if (obj && obj.match && Array.isArray(obj.match.innings)) return obj.match;
+      if (obj && obj.data && Array.isArray(obj.data.matches)) {
+        throw new Error('That is a full checkpoint, not a single match. Use “Restore checkpoint”, or upload one match object (home, away, winner, innings[2]).');
+      }
+      throw new Error('Not a match file. Expected an object with home, away, winner and innings[2].');
+    }
+
+    async function uploadMatch(file) {
+      $('err').textContent = '';
+      let match;
+      try {
+        match = extractMatch(JSON.parse(await file.text()));
+      } catch (e) {
+        $('err').textContent = e instanceof SyntaxError ? 'File is not valid JSON.' : e.message;
+        return;
+      }
+      const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      overlay(true, STATE.aiConfigured ? 'Simulating uploaded match + writing AI summaries…' : 'Simulating uploaded match…');
+      try {
+        const data = await api('/api/simulate', match);          // same route as Finish Match
+        applyState(data, prev);
+        $('err').textContent = `Loaded: ${short(match.home)} vs ${short(match.away)} — table updated.`;
+      } catch (e) { $('err').textContent = `Upload rejected: ${e.message}`; }
       finally { overlay(false); }
     }
 
@@ -2068,30 +2104,78 @@
       // noWillow: the TV deliverable goes out without the lockup. On air the
       // channel's own bug already occupies that corner, so a second mark there
       // reads as a duplication rather than as attribution.
-      if (!(opts && opts.noWillow)) s += willowMark(W - pad, H - footerH + 8, 92, 58, transparent ? P.ink : P.muted, halo, transparent);
+      if (!(opts && opts.noWillow)) s += partnerMarks(W - pad, H - footerH + 8, 92, 58, transparent ? P.ink : P.muted, halo, transparent);
       s += `</svg>`;
       return s;
     }
 
-    // Willow Sports mark, bottom-right on every template. Right-aligned inside a
-    // box whose RIGHT edge is `rx`, so the corner stays flush whatever the
-    // artwork's aspect ratio. Falls back to a wordmark if the file is absent.
-    // The supplied artwork is a PORTRAIT lockup (icon over "WILLOW" over
-    // "SPORTS") centred on a 16:9 transparent canvas, and its wordmark is navy.
-    // Two consequences: fitting it by height inside a wide box renders it
-    // tiny, and navy type disappears on a dark plate or a night feed. So it
-    // gets a near-square box and sits on a light plate with clear space.
-    // Drawn with no plate, so the mark keys straight onto the feed or the card.
-    // `dark` placements prefer a white-knockout asset when one is supplied
-    // (public/logos/Willow_Sports_white.png): the stock artwork's wordmark is
-    // navy, which is close to invisible on the CPL navy card and on a night feed.
-    function willowMark(rx, y, w, h, inkColor, halo, dark) {
-      // Supplied knockout wins; otherwise the generated dark variant; else stock.
-      const art = dark ? (BRAND.willowWhite || BRAND.willowDark || BRAND.willow) : BRAND.willow;
-      if (art) {
-        return `<image x="${rx - w}" y="${y}" width="${w}" height="${h}" href="${art}" preserveAspectRatio="xMidYMid meet"${dark && !BRAND.willowWhite ? halo || '' : ''}/>`;
+    // Presenting-partner lockup, bottom-right on every template:
+    //
+    //     [ WILLOW SPORTS ]  |  [ BARBADOS ]
+    //
+    // Willow is the broadcaster and Visit Barbados the presenting sponsor of the
+    // rankings, so the two sit as one lockup separated by a hairline rule rather
+    // than as two unrelated marks sharing a corner. The rule is drawn rather than
+    // typed: a "|" glyph's height and weight would follow the display face and
+    // drift between templates, where a rect is the same optical hairline at every
+    // export scale.
+    //
+    // Right-aligned: the group's RIGHT edge is `rx` and it is built leftward from
+    // there, so the corner stays flush whatever either artwork's ratio turns out
+    // to be. Both marks are fitted by HEIGHT from `h`; the passed `w` is a legacy
+    // hint and is no longer used for placement, because two marks this differently
+    // shaped cannot share one box without one of them floating in dead space.
+    //
+    // Barbados is a long horizontal wordmark (~6:1) against Willow's near-square
+    // portrait lockup (~0.94:1). Matching their box heights would let Barbados
+    // dominate, so it is drawn at BARB_H_RATIO of the Willow height, which lines
+    // up their cap-heights instead of their bounding boxes.
+    //
+    // `dark` placements take the white-knockout artwork for BOTH marks: the Willow
+    // wordmark is navy and the Barbados wordmark is #29348F, and neither survives
+    // a navy card or a night feed. That is what puts the white Barbados logo on
+    // the 4:5 social tile, which ships in the dark colourway.
+    const BARB_H_RATIO = 0.44;   // Barbados height as a fraction of the Willow height
+    const MARK_GAP_RATIO = 0.20; // clear space either side of the rule, over `h`
+    function partnerMarks(rx, y, w, h, inkColor, halo, dark) {
+      const cy = y + h / 2;
+      const willowArt = dark ? (BRAND.willowWhite || BRAND.willowDark || BRAND.willow) : BRAND.willow;
+      const barbArt = dark ? (BRAND.barbadosWhite || BRAND.barbados) : BRAND.barbados;
+      // The generated dark variant is a luminance lift, not a real knockout, so it
+      // still needs the halo behind it; a supplied knockout does not.
+      const willowHalo = (dark && !BRAND.willowWhite) ? (halo || '') : '';
+      const gap = Math.max(4, Math.round(h * MARK_GAP_RATIO));
+      const out = [];
+      let cursor = rx;                       // right edge of whatever is placed next
+
+      // Visit Barbados, nearest the corner.
+      const hB = Math.max(9, Math.round(h * BARB_H_RATIO));
+      const wB = Math.round(hB * (BRAND.barbadosAR || 6));
+      if (barbArt) {
+        out.push(`<image x="${cursor - wB}" y="${Math.round(cy - hB / 2)}" width="${wB}" height="${hB}" href="${barbArt}" preserveAspectRatio="xMidYMid meet"/>`);
+        cursor -= wB;
+      } else {
+        const fs = Math.max(9, Math.round(h * 0.26));
+        out.push(`<text x="${cursor}" y="${cy}" font-family="${DISP}" font-size="${fs}" font-weight="700" letter-spacing=".6" fill="${inkColor}" text-anchor="end" dominant-baseline="central"${halo || ''}>BARBADOS</text>`);
+        cursor -= Math.round(fs * 5.6);
       }
-      return `<text x="${rx}" y="${y + h / 2}" font-family="${DISP}" font-size="${Math.round(h * 0.46)}" font-weight="700" letter-spacing=".4" fill="${inkColor}" text-anchor="end" dominant-baseline="central"${halo || ''}>WILLOW SPORTS</text>`;
+
+      // The rule between them.
+      cursor -= gap;
+      const ruleH = Math.round(h * 0.52);
+      const ruleW = Math.max(1, Math.round(h / 44));
+      out.push(`<rect x="${cursor - ruleW}" y="${Math.round(cy - ruleH / 2)}" width="${ruleW}" height="${ruleH}" rx="${(ruleW / 2).toFixed(2)}" fill="${inkColor}" opacity=".38"/>`);
+      cursor -= ruleW + gap;
+
+      // Willow Sports.
+      const wW = Math.round(h * (BRAND.willowAR || 0.939));
+      if (willowArt) {
+        out.push(`<image x="${cursor - wW}" y="${y}" width="${wW}" height="${h}" href="${willowArt}" preserveAspectRatio="xMidYMid meet"${willowHalo}/>`);
+      } else {
+        const fs = Math.round(h * 0.26);
+        out.push(`<text x="${cursor}" y="${cy}" font-family="${DISP}" font-size="${fs}" font-weight="700" letter-spacing=".4" fill="${inkColor}" text-anchor="end" dominant-baseline="central"${halo || ''}>WILLOW SPORTS</text>`);
+      }
+      return out.join('');
     }
 
     // ---- CPL website template ----------------------------------------------
@@ -2226,7 +2310,7 @@
       // Same footer contract as the broadcast graphic: the methodology line
       // alone, with the mark, QR and learn-more link together in the header.
       s += `<text x="${pad}" y="${cardY + cardH + 48}" font-size="14" fill="${B.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      if (!(opts && opts.noWillow)) s += willowMark(W - pad, cardY + cardH + 10, 116, 72, CPL.ink, halo, true);
+      if (!(opts && opts.noWillow)) s += partnerMarks(W - pad, cardY + cardH + 10, 116, 72, CPL.ink, halo, true);
       s += `</svg>`;
       return s;
     }
@@ -2396,7 +2480,7 @@
       const markH = 80, markW = Math.round(markH * 0.939);
       const markY = H - pad - markH;
       s += `<text x="${pad}" y="${markY + markH / 2 + 6}" font-size="16" fill="${P.muted}"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
-      s += willowMark(W - pad, markY, markW, markH, P.ink, halo, dark || transparent);
+      s += partnerMarks(W - pad, markY, markW, markH, P.ink, halo, dark || transparent);
       s += `</svg>`;
       return s;
     }
@@ -2581,7 +2665,15 @@
     // of the box empty and the caption above it and the URL below were spaced
     // against dead box rather than against the artwork. Sizing the box from the
     // measured ratio makes the drawn gaps the gaps in the code.
-    let BRAND = { logo: null, qr: null, willow: null, cpl: null, willowWhite: null, logoAR: 8 };
+    let BRAND = {
+      logo: null, qr: null, willow: null, cpl: null, willowWhite: null, logoAR: 8,
+      // Presenting sponsor. `barbadosAR` is the wordmark's own ratio measured after
+      // the trim — the supplied art sits on a wide padded canvas, so the raw file
+      // ratio would size it far too small once the padding is cropped away.
+      // `willowAR` was previously hardcoded at 0.939 in the social tile; measuring
+      // it keeps the pair aligned if either lockup is ever re-supplied.
+      barbados: null, barbadosWhite: null, barbadosAR: 6, willowAR: 0.939
+    };
     function toDataUri(url) {
       return fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error('missing')))
         .then(b => new Promise((res, rej) => {
@@ -2688,7 +2780,7 @@
     }
 
     async function loadBrand() {
-      const [logo, qr, willow, cpl, willowWhite] = await Promise.all([
+      const [logo, qr, willow, cpl, willowWhite, barbados, barbadosWhite] = await Promise.all([
         toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
         toDataUri('/logos/qr.png').then(v => v || toDataUri('/logos/qr.svg')),
         toDataUri('/logos/Willow_Sports.png').then(v => v || toDataUri('/logos/willow.png')),
@@ -2697,9 +2789,14 @@
           .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.jpeg')))
           .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.png'))),
         toDataUri('/logos/Willow_Sports_white.png').then(v => v || toDataUri('/logos/willow-white.png')),
+        // Visit Barbados, presenting sponsor. PNGs are pre-rasterised from the
+        // supplied SVGs at export resolution; the SVG is the fallback so a future
+        // re-supply of either format is picked up without a code change.
+        toDataUri('/logos/barbados.png').then(v => v || toDataUri('/logos/barbados.svg')),
+        toDataUri('/logos/barbados-white.png').then(v => v || toDataUri('/logos/barbados-white.svg')),
       ]);
       // Trim both marks; keep a dark-background version of the Willow lockup.
-      const [willowTrim, willowLift, logoTrim, cplTrim, cplLift, willowWhiteTrim] = await Promise.all([
+      const [willowTrim, willowLift, logoTrim, cplTrim, cplLift, willowWhiteTrim, barbTrim, barbWhiteTrim] = await Promise.all([
         tightCrop(willow), tightCrop(willow, { liftDark: 72 }),
         tightCrop(logo),
         // The CPL mark arrives as a JPEG on a white field: key the field out, then
@@ -2708,17 +2805,24 @@
         tightCrop(cpl, { keyBg: true }),
         tightCrop(cpl, { keyBg: true, liftDark: 90, protectTop: true }),
         tightCrop(willowWhite),
+        tightCrop(barbados), tightCrop(barbadosWhite),
       ]);
       const mark = logoTrim || logo;
+      const willowArt = willowTrim || willow;
+      const barbArt = barbTrim || barbados;
       // Measured once here rather than at draw time: the templates are synchronous
       // string builders and cannot wait on an image decode.
-      const logoAR = await loadImageEl(mark)
-        .then(i => (i.naturalHeight ? i.naturalWidth / i.naturalHeight : 8))
-        .catch(() => 8);
+      const measureAR = (uri, fallback) => uri
+        ? loadImageEl(uri).then(i => (i.naturalHeight ? i.naturalWidth / i.naturalHeight : fallback)).catch(() => fallback)
+        : Promise.resolve(fallback);
+      const [logoAR, willowAR, barbadosAR] = await Promise.all([
+        measureAR(mark, 8), measureAR(willowArt, 0.939), measureAR(barbArt, 6),
+      ]);
       BRAND = {
-        logo: mark, logoAR, qr, willow: willowTrim || willow,
+        logo: mark, logoAR, qr, willow: willowArt, willowAR,
         cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
-        willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift
+        willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift,
+        barbados: barbArt, barbadosWhite: barbWhiteTrim || barbadosWhite, barbadosAR
       };
     }
     // Team crests, same story: the rasterizer cannot fetch /logos/*.png, so each
@@ -3359,6 +3463,12 @@
     $('tplSelect').addEventListener('change', syncTemplateOptions);
     syncTemplateOptions();
     $('btnFinish').addEventListener('click', finishMatch);
+    $('btnUpload').addEventListener('click', () => $('matchFile').click());
+    $('matchFile').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';                 // allow re-uploading the same file
+      if (f) uploadMatch(f);
+    });
     $('btnUndo').addEventListener('click', async () => {
       $('err').textContent = '';
       const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
