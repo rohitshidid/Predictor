@@ -17,9 +17,22 @@ brand-coloured crest badge.
 | Melbourne Stars Women | `sta.png` |
 | Hobart Hurricanes Women | `hur.png` |
 
-The eight crests are ESPN's 500×500 team logos (`a.espncdn.com/i/teamlogos/cricket/500/<espnTeamId>.png`),
-already on alpha, so they need no keying. Confirm the club artwork is cleared for
-broadcast use before air, the same as for the CPL set.
+The eight team logos come **only from the official site**: they are the team tiles
+bigbash.com.au itself serves in its ladder and leaderboards, from Cricket Australia's
+file server — `https://static-files.cricket-australia.pulselive.com/flag/<caTeamId>.png`
+(`caTeamId` is stored per team in `data/wbbl_2026.json`; Sixers 98, Scorchers 95,
+Heat 100, Strikers 99, Thunder 102, Renegades 101, Stars 97, Hurricanes 96). The URLs
+were read from the `logoUrl` field of the site's own embedded team data, which also
+supplies each club's official `teamColor` — now the `colors.primary` in the season file.
+
+They are 300×200 PNGs of the club emblem on its own colour gradient — a filled tile,
+not a transparent crest — so they render as colour badges, exactly as on
+bigbash.com.au. The official site publishes no transparent or vector crest (no SVG
+at the same path, none in its icon sprite, `teambadgeImageUrl` is empty), and keying
+the tile's background out would lose the white emblems on light placements, so the
+tiles are used as supplied. At 300×200 they are upscaled a little in the 4K / 3×
+exports; if Cricket Australia supplies higher-resolution artwork, drop it in under the
+same file names.
 
 | Asset | File | Notes |
 |---|---|---|

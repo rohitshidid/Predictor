@@ -10,96 +10,104 @@
       "short": "SIX",
       "nickname": "Sixers",
       "colors": {
-        "primary": "#E5007D",
+        "primary": "#FF00A0",
         "secondary": "#1A1A1A"
       },
       "logo": "/logos/six.png",
       "squadStars": 0,
-      "priorFrom": "Sydney Sixers Women"
+      "priorFrom": "Sydney Sixers Women",
+      "caTeamId": 98
     },
     {
       "name": "Perth Scorchers Women",
       "short": "SCO",
       "nickname": "Scorchers",
       "colors": {
-        "primary": "#F26522",
+        "primary": "#FE9900",
         "secondary": "#FDB913"
       },
       "logo": "/logos/sco.png",
       "squadStars": 0,
-      "priorFrom": "Perth Scorchers Women"
+      "priorFrom": "Perth Scorchers Women",
+      "caTeamId": 95
     },
     {
       "name": "Brisbane Heat Women",
       "short": "HEA",
       "nickname": "Heat",
       "colors": {
-        "primary": "#00B2E3",
+        "primary": "#01A3AE",
         "secondary": "#0B2D4F"
       },
       "logo": "/logos/hea.png",
       "squadStars": 0,
-      "priorFrom": "Brisbane Heat Women"
+      "priorFrom": "Brisbane Heat Women",
+      "caTeamId": 100
     },
     {
       "name": "Adelaide Strikers Women",
       "short": "STR",
       "nickname": "Strikers",
       "colors": {
-        "primary": "#0084D6",
+        "primary": "#0085CA",
         "secondary": "#002B5C"
       },
       "logo": "/logos/str.png",
       "squadStars": 0,
-      "priorFrom": "Adelaide Strikers Women"
+      "priorFrom": "Adelaide Strikers Women",
+      "caTeamId": 99
     },
     {
       "name": "Sydney Thunder Women",
       "short": "THU",
       "nickname": "Thunder",
       "colors": {
-        "primary": "#9BCB3B",
+        "primary": "#97D700",
         "secondary": "#111111"
       },
       "logo": "/logos/thu.png",
       "squadStars": 0,
-      "priorFrom": "Sydney Thunder Women"
+      "priorFrom": "Sydney Thunder Women",
+      "caTeamId": 102
     },
     {
       "name": "Melbourne Renegades Women",
       "short": "REN",
       "nickname": "Renegades",
       "colors": {
-        "primary": "#E4002B",
+        "primary": "#E5002B",
         "secondary": "#111111"
       },
       "logo": "/logos/ren.png",
       "squadStars": 0,
-      "priorFrom": "Melbourne Renegades Women"
+      "priorFrom": "Melbourne Renegades Women",
+      "caTeamId": 101
     },
     {
       "name": "Melbourne Stars Women",
       "short": "STA",
       "nickname": "Stars",
       "colors": {
-        "primary": "#00A651",
+        "primary": "#00B140",
         "secondary": "#0A3D1F"
       },
       "logo": "/logos/sta.png",
       "squadStars": 0,
-      "priorFrom": "Melbourne Stars Women"
+      "priorFrom": "Melbourne Stars Women",
+      "caTeamId": 97
     },
     {
       "name": "Hobart Hurricanes Women",
       "short": "HUR",
       "nickname": "Hurricanes",
       "colors": {
-        "primary": "#6A2C91",
+        "primary": "#5F259F",
         "secondary": "#F5A800"
       },
       "logo": "/logos/hur.png",
       "squadStars": 0,
-      "priorFrom": "Hobart Hurricanes Women"
+      "priorFrom": "Hobart Hurricanes Women",
+      "caTeamId": 96
     }
   ],
   "matches": [],
@@ -137,5 +145,6 @@
       "translucentCard": "rgba(4,24,11,.74)"
     },
     "bgName": "green"
-  }
+  },
+  "_logoNote": "Team logos are the official team tiles published by bigbash.com.au (Cricket Australia static-files .../flag/<caTeamId>.png, 300x200). Primary colours are the teamColor values from the same official data."
 }
