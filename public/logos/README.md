@@ -23,7 +23,7 @@ broadcast use before air, the same as for the CPL set.
 
 | Asset | File | Notes |
 |---|---|---|
-| WBBL league mark | `wbbl.png` (or `.svg`) | ⚠️ **missing** — drop the licensed mark in and it appears top-left on every template. Until then the title reads "WBBL POWER RANKINGS". The file list comes from `brand.leagueLogos` in the season file. |
+| WBBL league mark | `wbbl.png` | The Weber WBBL shield, cropped from the official WBBL/BBL lock-up on bigbash.com.au (`resources.bigbash.pulselive.com/.../WBBL-BBL-logo-lock-up.png`) — the BBL/KFC half is cut away at the transparent gap between the two shields. Drawn top-left on every template. ⚠️ Only **154×171 px**, so it is upscaled ~2× in the 4K / 3× exports and is slightly soft there; replace it with a high-resolution or vector (`wbbl.svg`) mark when one is supplied — `brand.leagueLogos` tries `wbbl.png` then `wbbl.svg`, so delete the PNG to let an SVG win. |
 | QR | `qr-wbbl.png` | Encodes `https://www.champhunt.com/wbbl`, level H, 2-module quiet zone. Made by `node tools/make-qr.js https://www.champhunt.com/wbbl public/logos/qr-wbbl.png`; that encoder reproduces the CPL `qr.png` module for module, which is how it was verified. |
 | Sponsor | — | WBBL has no presenting sponsor (`brand.sponsor: null`), so the Willow mark stands alone bottom-right. |
 

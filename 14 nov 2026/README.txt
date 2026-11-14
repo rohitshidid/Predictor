@@ -2,8 +2,8 @@ wbbl-power-rankings-week-3-2026-11-15
 =====================================
 
 Women's Big Bash League 2026 — power rankings
-Built 15/11/2026, 12:05:46 am · 22 matches played · Week 3
-Movement (the up/down column) is measured against the preseason baseline (week 0). A side that has not played can still carry an arrow: the table moved under it.
+Built 15/11/2026, 12:49:39 am · 22 matches played · Week 3
+Movement is measured against the previous render.
 
 THE TABLE IN THIS BUNDLE
    1  Sydney Sixers Women          5-0     +3   84.2

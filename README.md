@@ -206,7 +206,7 @@ Floors and caps keep the table publishable — results must visibly drive it, an
 | Website template | navy/lime, "CPL · website" | green/lime, "WBBL · website" — palette in the season file's `brand` block |
 | QR / link | `qr.png` → champhunt.com/cpl | `qr-wbbl.png` → champhunt.com/wbbl |
 | Presenting sponsor | Visit Barbados beside Willow | none — Willow stands alone (`brand.sponsor: null`) |
-| League mark | `cpl.png` | drop a licensed `public/logos/wbbl.png` in; until then the title reads "WBBL POWER RANKINGS" |
+| League mark | `cpl.png` | `wbbl.png` — the Weber WBBL shield from the official lock-up (154×171 px; swap in a high-res/vector mark when available) |
 
 Everything league-specific now lives in the season file's `brand` block (template label, league-mark files, QR file, learn-more URL, sponsor, website palette, publish `site` id). A season file without one renders with the CPL defaults.
 

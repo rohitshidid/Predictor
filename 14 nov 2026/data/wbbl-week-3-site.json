@@ -9,7 +9,7 @@
   "week": 3,
   "weekLabel": "Week 3",
   "preseason": false,
-  "publishedAt": "2026-11-14T18:35:41.022Z",
+  "publishedAt": "2026-11-14T19:19:34.118Z",
   "matchCount": 22,
   "headline": "Sixers are playing the best cricket in the Australia right now.",
   "subhead": "Not our opinion. Nine measurements, one number, no editorial.",
@@ -17,9 +17,9 @@
   "teams": [
     {
       "rank": 1,
-      "prev": 4,
-      "delta": 3,
-      "movement": "up",
+      "prev": 1,
+      "delta": 0,
+      "movement": "same",
       "team": "Sydney Sixers Women",
       "short": "Sixers",
       "abbr": "SIX",
@@ -105,9 +105,9 @@
     },
     {
       "rank": 3,
-      "prev": 6,
-      "delta": 3,
-      "movement": "up",
+      "prev": 3,
+      "delta": 0,
+      "movement": "same",
       "team": "Adelaide Strikers Women",
       "short": "Strikers",
       "abbr": "STR",
@@ -149,9 +149,9 @@
     },
     {
       "rank": 4,
-      "prev": 8,
-      "delta": 4,
-      "movement": "up",
+      "prev": 4,
+      "delta": 0,
+      "movement": "same",
       "team": "Brisbane Heat Women",
       "short": "Heat",
       "abbr": "HEA",
@@ -193,9 +193,9 @@
     },
     {
       "rank": 5,
-      "prev": 3,
-      "delta": -2,
-      "movement": "down",
+      "prev": 5,
+      "delta": 0,
+      "movement": "same",
       "team": "Sydney Thunder Women",
       "short": "Thunder",
       "abbr": "THU",
@@ -237,9 +237,9 @@
     },
     {
       "rank": 6,
-      "prev": 5,
-      "delta": -1,
-      "movement": "down",
+      "prev": 6,
+      "delta": 0,
+      "movement": "same",
       "team": "Melbourne Renegades Women",
       "short": "Renegades",
       "abbr": "REN",
@@ -281,9 +281,9 @@
     },
     {
       "rank": 7,
-      "prev": 1,
-      "delta": -6,
-      "movement": "down",
+      "prev": 7,
+      "delta": 0,
+      "movement": "same",
       "team": "Hobart Hurricanes Women",
       "short": "Hurricanes",
       "abbr": "HUR",
@@ -325,9 +325,9 @@
     },
     {
       "rank": 8,
-      "prev": 7,
-      "delta": -1,
-      "movement": "down",
+      "prev": 8,
+      "delta": 0,
+      "movement": "same",
       "team": "Melbourne Stars Women",
       "short": "Stars",
       "abbr": "STA",
@@ -442,36 +442,7 @@
       "optional": false
     }
   ],
-  "changes": [
-    {
-      "team": "Hurricanes",
-      "abbr": "HUR",
-      "color": "#6A2C91",
-      "delta": -6,
-      "note": "▼6 — Down 6 to 7."
-    },
-    {
-      "team": "Heat",
-      "abbr": "HEA",
-      "color": "#00B2E3",
-      "delta": 4,
-      "note": "▲4 — Up 4 to 4."
-    },
-    {
-      "team": "Sixers",
-      "abbr": "SIX",
-      "color": "#E5007D",
-      "delta": 3,
-      "note": "▲3 — Up 3 to 1."
-    },
-    {
-      "team": "Strikers",
-      "abbr": "STR",
-      "color": "#0084D6",
-      "delta": 3,
-      "note": "▲3 — Up 3 to 3."
-    }
-  ],
+  "changes": [],
   "workedExample": {
     "abbr": "THU",
     "team": "Sydney Thunder Women",
