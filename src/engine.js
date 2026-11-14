@@ -150,15 +150,25 @@ const winPct = (t) => safeDiv(t.won, t.played);
 // a team bowled out cheaply in 14 overs gets its run rate divided by 14 and is
 // flattered. A side that wins a chase early is NOT adjusted — it keeps the overs
 // it actually used, which is also per the rules.
+//
+// Rain: a side bowled out in a REDUCED match is charged its reduced quota
+// (`oversQuota` on the innings), and a DLS result carries explicit `nrrRuns` /
+// `nrrOvers` (side batting first = revised target - 1 from the chaser's
+// allotment) written by tools/import-espn-season.js. Innings without those
+// fields behave exactly as before.
 const oversFaced = (innings, quotaOvers) =>
-  (innings.wktsLost >= 10 ? quotaOvers : innings.overs);
+  (typeof innings.nrrOvers === 'number'
+    ? innings.nrrOvers
+    : innings.wktsLost >= 10 ? (innings.oversQuota || quotaOvers) : innings.overs);
+const nrrRuns = (innings) =>
+  (typeof innings.nrrRuns === 'number' ? innings.nrrRuns : innings.runs);
 
 function seasonNRR(t, quotaOvers) {
   let rf = 0, of = 0, ra = 0, oa = 0;
   for (const r of t.results) {
     const { own, opp } = sides(r.match, t.name);
-    rf += own.runs; of += oversFaced(own, quotaOvers);
-    ra += opp.runs; oa += oversFaced(opp, quotaOvers);
+    rf += nrrRuns(own); of += oversFaced(own, quotaOvers);
+    ra += nrrRuns(opp); oa += oversFaced(opp, quotaOvers);
   }
   return safeDiv(rf, of) - safeDiv(ra, oa);
 }
@@ -168,8 +178,8 @@ function rollingNRR(t, window, quotaOvers) {
   let rf = 0, of = 0, ra = 0, oa = 0;
   for (const r of recent) {
     const { own, opp } = sides(r.match, t.name);
-    rf += own.runs; of += oversFaced(own, quotaOvers);
-    ra += opp.runs; oa += oversFaced(opp, quotaOvers);
+    rf += nrrRuns(own); of += oversFaced(own, quotaOvers);
+    ra += nrrRuns(opp); oa += oversFaced(opp, quotaOvers);
   }
   return safeDiv(rf, of) - safeDiv(ra, oa);
 }

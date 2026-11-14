@@ -23,9 +23,10 @@
 // simulated seasons, so simulating would return the same numbers with sampling
 // noise on top and a seed to argue about.
 const DEFAULTS = {
-  // Games each side plays in the league stage. CPL 2025 ran six teams x ten
-  // games; 2026 adds a seventh, and 7 x 10 / 2 = 35 league matches, which with
-  // four playoff matches is the 39-match season we were given.
+  // Games each side plays in the league stage. Ten in both leagues: WBBL is
+  // eight teams x ten = 40 league matches (+ Knockout, Challenger, Final); CPL
+  // 2026 was seven x ten / 2 = 35, which with four playoff matches is the
+  // 39-match season we were given.
   gamesEach: 10,
   // Index points for a fixed odds ratio — the spread control. It is set so the
   // FORECAST spread comes out well inside the spread of last season's OUTCOMES

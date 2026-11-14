@@ -14,7 +14,7 @@ const ROOT = __dirname;
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 
 async function main() {
-  const data = read('data/cpl_2026.json');
+  const data = JSON.parse(fs.readFileSync(cfg.seasonFile, 'utf8'));
   const config = read('weights.config.json');
   const lastWeek = read('data/lastweek.json').ranks || {};
 

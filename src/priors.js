@@ -8,7 +8,8 @@
 //
 // The prior is DERIVED, not typed in. It is the index each side earned across
 // the real 2025 season, computed by running the SAME engine and the SAME
-// weights over data/cpl_2025.json. There is no second methodology to argue
+// weights over the previous season (data/wbbl_2025.json for WBBL, data/cpl_2025.json
+// for CPL). There is no second methodology to argue
 // with: whatever the ranking formula says about 2025 is the number a team
 // carries into 2026.
 //
@@ -27,8 +28,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { rank } = require('./engine');
+const { seasonFile } = require('./config');
 
-const SEASON_FILE = path.join(__dirname, '..', 'data', 'cpl_2025.json');
+// The previous season is named by the current season file (`priorSource`), so
+// the WBBL edition reads data/wbbl_2025.json and the CPL edition
+// data/cpl_2025.json without either being hardcoded here.
+const ROOT = path.join(__dirname, '..');
+const PRIOR_REL = JSON.parse(fs.readFileSync(seasonFile, 'utf8')).priorSource || 'data/wbbl_2025.json';
+const SEASON_FILE = path.resolve(ROOT, PRIOR_REL);
 
 const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 const stddev = (a) => {
@@ -115,7 +122,7 @@ function computePriors(config, teams) {
     expansion,
     sigma,
     source: {
-      file: 'data/cpl_2025.json',
+      file: PRIOR_REL,
       season: season.season,
       matches: season.matches.length,
       note: season.source,

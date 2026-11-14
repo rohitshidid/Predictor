@@ -4,7 +4,30 @@ Place each franchise's **licensed** logo file here and it renders automatically 
 no code change needed. If a file is missing, the UI falls back to the team's
 brand-coloured crest badge.
 
-## Naming
+## WBBL (data/wbbl_2026.json)
+
+| Team | File |
+|---|---|
+| Sydney Sixers Women | `six.png` |
+| Perth Scorchers Women | `sco.png` |
+| Brisbane Heat Women | `hea.png` |
+| Adelaide Strikers Women | `str.png` |
+| Sydney Thunder Women | `thu.png` |
+| Melbourne Renegades Women | `ren.png` |
+| Melbourne Stars Women | `sta.png` |
+| Hobart Hurricanes Women | `hur.png` |
+
+The eight crests are ESPN's 500×500 team logos (`a.espncdn.com/i/teamlogos/cricket/500/<espnTeamId>.png`),
+already on alpha, so they need no keying. Confirm the club artwork is cleared for
+broadcast use before air, the same as for the CPL set.
+
+| Asset | File | Notes |
+|---|---|---|
+| WBBL league mark | `wbbl.png` (or `.svg`) | ⚠️ **missing** — drop the licensed mark in and it appears top-left on every template. Until then the title reads "WBBL POWER RANKINGS". The file list comes from `brand.leagueLogos` in the season file. |
+| QR | `qr-wbbl.png` | Encodes `https://www.champhunt.com/wbbl`, level H, 2-module quiet zone. Made by `node tools/make-qr.js https://www.champhunt.com/wbbl public/logos/qr-wbbl.png`; that encoder reproduces the CPL `qr.png` module for module, which is how it was verified. |
+| Sponsor | — | WBBL has no presenting sponsor (`brand.sponsor: null`), so the Willow mark stands alone bottom-right. |
+
+## CPL (data/cpl_2026.json)
 
 Name each file by the team's short code (lowercase), matching the `logo` field in
 `data/cpl_2026.json`:

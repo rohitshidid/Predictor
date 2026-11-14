@@ -157,9 +157,11 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
       delta: r.delta,
       movement: r.movement,
       team: r.name,
-      // `short` on a CPL team is the abbreviation (TKR); the site also wants a
-      // human short name for narrow screens, so derive one from the full name.
-      short: shortName(r.name),
+      // `short` on a team is the abbreviation (TKR, SIX); the site also wants a
+      // human short name for narrow screens. A season file can name it outright
+      // (`nickname`: "Sixers") — city-first WBBL names would otherwise collapse
+      // both Sydney sides to "Sydney" — else it is derived from the full name.
+      short: tm.nickname || shortName(r.name),
       abbr: tm.short || r.short || '',
       color: (tm.colors && tm.colors.primary) || '#334155',
       secondary: (tm.colors && tm.colors.secondary) || '#94a3b8',

@@ -1,0 +1,141 @@
+{
+  "season": "2026",
+  "league": "Women's Big Bash League",
+  "leagueShort": "WBBL",
+  "region": "Australia",
+  "note": "WBBL|12 (2026-27) starting state. matches[] is EMPTY on purpose: this is the preseason baseline, and the season's real results are loaded on top of it as checkpoints (see the dated folders, e.g. '14 nov 2026/'), exactly as the CPL edition worked. Each team's OPENING RATING is the index it earned across the real WBBL|11 season, derived by running this same engine over data/wbbl_2025.json (src/priors.js), decaying as 2026 results arrive (weights.config.json -> prior). All eight franchises are unchanged from 2025, so there is no expansion side and no rebrand.",
+  "teams": [
+    {
+      "name": "Sydney Sixers Women",
+      "short": "SIX",
+      "nickname": "Sixers",
+      "colors": {
+        "primary": "#E5007D",
+        "secondary": "#1A1A1A"
+      },
+      "logo": "/logos/six.png",
+      "squadStars": 0,
+      "priorFrom": "Sydney Sixers Women"
+    },
+    {
+      "name": "Perth Scorchers Women",
+      "short": "SCO",
+      "nickname": "Scorchers",
+      "colors": {
+        "primary": "#F26522",
+        "secondary": "#FDB913"
+      },
+      "logo": "/logos/sco.png",
+      "squadStars": 0,
+      "priorFrom": "Perth Scorchers Women"
+    },
+    {
+      "name": "Brisbane Heat Women",
+      "short": "HEA",
+      "nickname": "Heat",
+      "colors": {
+        "primary": "#00B2E3",
+        "secondary": "#0B2D4F"
+      },
+      "logo": "/logos/hea.png",
+      "squadStars": 0,
+      "priorFrom": "Brisbane Heat Women"
+    },
+    {
+      "name": "Adelaide Strikers Women",
+      "short": "STR",
+      "nickname": "Strikers",
+      "colors": {
+        "primary": "#0084D6",
+        "secondary": "#002B5C"
+      },
+      "logo": "/logos/str.png",
+      "squadStars": 0,
+      "priorFrom": "Adelaide Strikers Women"
+    },
+    {
+      "name": "Sydney Thunder Women",
+      "short": "THU",
+      "nickname": "Thunder",
+      "colors": {
+        "primary": "#9BCB3B",
+        "secondary": "#111111"
+      },
+      "logo": "/logos/thu.png",
+      "squadStars": 0,
+      "priorFrom": "Sydney Thunder Women"
+    },
+    {
+      "name": "Melbourne Renegades Women",
+      "short": "REN",
+      "nickname": "Renegades",
+      "colors": {
+        "primary": "#E4002B",
+        "secondary": "#111111"
+      },
+      "logo": "/logos/ren.png",
+      "squadStars": 0,
+      "priorFrom": "Melbourne Renegades Women"
+    },
+    {
+      "name": "Melbourne Stars Women",
+      "short": "STA",
+      "nickname": "Stars",
+      "colors": {
+        "primary": "#00A651",
+        "secondary": "#0A3D1F"
+      },
+      "logo": "/logos/sta.png",
+      "squadStars": 0,
+      "priorFrom": "Melbourne Stars Women"
+    },
+    {
+      "name": "Hobart Hurricanes Women",
+      "short": "HUR",
+      "nickname": "Hurricanes",
+      "colors": {
+        "primary": "#6A2C91",
+        "secondary": "#F5A800"
+      },
+      "logo": "/logos/hur.png",
+      "squadStars": 0,
+      "priorFrom": "Hobart Hurricanes Women"
+    }
+  ],
+  "matches": [],
+  "seasonStart": "2026-10-29",
+  "seasonEnd": "2026-12-05",
+  "priorSource": "data/wbbl_2025.json",
+  "espn": {
+    "league": "18042",
+    "series2025": "1490537",
+    "firstEvent2026": "1543944"
+  },
+  "_squadMovementNote": "No squadMovement entries: unlike the CPL edition there is no sourced 2025->2026 retention table for the WBBL squads yet, so the continuity adjustment (weights.config.json -> prior.continuity) leaves every side's 2025 index as-is. Add { squad2025, kept, lost } per team to switch it on.",
+  "brand": {
+    "templateLabel": "WBBL · website",
+    "leagueLogos": [
+      "/logos/wbbl.png",
+      "/logos/wbbl.svg"
+    ],
+    "leagueLogoKeyBg": false,
+    "qr": "/logos/qr-wbbl.png",
+    "learnUrl": "Champhunt.com/WBBL",
+    "learnHref": "https://www.champhunt.com/wbbl",
+    "sponsor": null,
+    "site": "champhunt-wbbl",
+    "palette": {
+      "bg": "#06210F",
+      "card": "#04180B",
+      "accent": "#D7F21E",
+      "ink": "#ffffff",
+      "muted": "#a3b7a8",
+      "line": "rgba(255,255,255,.10)",
+      "up": "#4ade80",
+      "down": "#ff7a6e",
+      "tileCard": "#0D2E18",
+      "translucentCard": "rgba(4,24,11,.74)"
+    },
+    "bgName": "green"
+  }
+}

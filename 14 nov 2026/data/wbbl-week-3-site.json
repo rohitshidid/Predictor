@@ -1,0 +1,481 @@
+{
+  "kind": "champhunt-site-rankings",
+  "version": 1,
+  "site": "champhunt-wbbl",
+  "league": "Women's Big Bash League",
+  "leagueShort": "WBBL",
+  "season": "2026",
+  "region": "Australia",
+  "week": 3,
+  "weekLabel": "Week 3",
+  "preseason": false,
+  "publishedAt": "2026-11-14T18:35:41.022Z",
+  "matchCount": 22,
+  "headline": "Sixers are playing the best cricket in the Australia right now.",
+  "subhead": "Not our opinion. Nine measurements, one number, no editorial.",
+  "nextMatch": null,
+  "teams": [
+    {
+      "rank": 1,
+      "prev": 4,
+      "delta": 3,
+      "movement": "up",
+      "team": "Sydney Sixers Women",
+      "short": "Sixers",
+      "abbr": "SIX",
+      "color": "#E5007D",
+      "secondary": "#1A1A1A",
+      "logo": "/logos/six.png",
+      "rating": 84.2,
+      "index": 67.4,
+      "played": 5,
+      "w": 5,
+      "l": 0,
+      "recordIsProjected": false,
+      "nrr": "+1.16",
+      "rollingNrr": "+1.16",
+      "form": [
+        "W",
+        "W",
+        "W",
+        "W",
+        "W"
+      ],
+      "streak": {
+        "type": "W",
+        "len": 5
+      },
+      "blurb": "Up 3 to 1. 5-0 (100% wins), on a 5-match winning run, rolling NRR +1.16.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 100,
+        "rollingNRR": 79,
+        "deathOversNet": 57,
+        "form": 94,
+        "powerplayDominance": 49,
+        "homeAwayAdjustment": 60,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 76,
+        "sos": 40
+      }
+    },
+    {
+      "rank": 2,
+      "prev": 2,
+      "delta": 0,
+      "movement": "same",
+      "team": "Perth Scorchers Women",
+      "short": "Scorchers",
+      "abbr": "SCO",
+      "color": "#F26522",
+      "secondary": "#FDB913",
+      "logo": "/logos/sco.png",
+      "rating": 83.3,
+      "index": 64.2,
+      "played": 6,
+      "w": 5,
+      "l": 1,
+      "recordIsProjected": false,
+      "nrr": "+0.78",
+      "rollingNrr": "+0.35",
+      "form": [
+        "W",
+        "W",
+        "W",
+        "W",
+        "L"
+      ],
+      "streak": {
+        "type": "L",
+        "len": 1
+      },
+      "blurb": "Holding at 2. 5-1 (83% wins), rolling NRR +0.35, powerplay strength.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 83,
+        "rollingNRR": 59,
+        "deathOversNet": 21,
+        "form": 61,
+        "powerplayDominance": 96,
+        "homeAwayAdjustment": 50,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 72,
+        "sos": 48
+      }
+    },
+    {
+      "rank": 3,
+      "prev": 6,
+      "delta": 3,
+      "movement": "up",
+      "team": "Adelaide Strikers Women",
+      "short": "Strikers",
+      "abbr": "STR",
+      "color": "#0084D6",
+      "secondary": "#002B5C",
+      "logo": "/logos/str.png",
+      "rating": 81.1,
+      "index": 55.9,
+      "played": 5,
+      "w": 3,
+      "l": 2,
+      "recordIsProjected": false,
+      "nrr": "+0.23",
+      "rollingNrr": "+0.23",
+      "form": [
+        "W",
+        "L",
+        "L",
+        "W",
+        "W"
+      ],
+      "streak": {
+        "type": "W",
+        "len": 2
+      },
+      "blurb": "Up 3 to 3. 3-2 (60% wins), on a 2-match winning run, rolling NRR +0.23.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 60,
+        "rollingNRR": 56,
+        "deathOversNet": 69,
+        "form": 70,
+        "powerplayDominance": 54,
+        "homeAwayAdjustment": 36,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 55,
+        "sos": 41
+      }
+    },
+    {
+      "rank": 4,
+      "prev": 8,
+      "delta": 4,
+      "movement": "up",
+      "team": "Brisbane Heat Women",
+      "short": "Heat",
+      "abbr": "HEA",
+      "color": "#00B2E3",
+      "secondary": "#0B2D4F",
+      "logo": "/logos/hea.png",
+      "rating": 80.6,
+      "index": 53.9,
+      "played": 6,
+      "w": 4,
+      "l": 2,
+      "recordIsProjected": false,
+      "nrr": "+1.15",
+      "rollingNrr": "+1.46",
+      "form": [
+        "L",
+        "W",
+        "W",
+        "W",
+        "W"
+      ],
+      "streak": {
+        "type": "W",
+        "len": 4
+      },
+      "blurb": "Up 4 to 4. 4-2 (67% wins), on a 4-match winning run, rolling NRR +1.46, powerplay strength.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 67,
+        "rollingNRR": 86,
+        "deathOversNet": 61,
+        "form": 86,
+        "powerplayDominance": 88,
+        "homeAwayAdjustment": 40,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 96,
+        "sos": 44
+      }
+    },
+    {
+      "rank": 5,
+      "prev": 3,
+      "delta": -2,
+      "movement": "down",
+      "team": "Sydney Thunder Women",
+      "short": "Thunder",
+      "abbr": "THU",
+      "color": "#9BCB3B",
+      "secondary": "#111111",
+      "logo": "/logos/thu.png",
+      "rating": 79.3,
+      "index": 49.4,
+      "played": 5,
+      "w": 2,
+      "l": 3,
+      "recordIsProjected": false,
+      "nrr": "+0.21",
+      "rollingNrr": "+0.21",
+      "form": [
+        "W",
+        "W",
+        "L",
+        "L",
+        "L"
+      ],
+      "streak": {
+        "type": "L",
+        "len": 3
+      },
+      "blurb": "Down 2 to 5. 2-3 (40% wins), on a 3-match losing skid, rolling NRR +0.21.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 40,
+        "rollingNRR": 55,
+        "deathOversNet": 48,
+        "form": 22,
+        "powerplayDominance": 49,
+        "homeAwayAdjustment": 24,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 57,
+        "sos": 76
+      }
+    },
+    {
+      "rank": 6,
+      "prev": 5,
+      "delta": -1,
+      "movement": "down",
+      "team": "Melbourne Renegades Women",
+      "short": "Renegades",
+      "abbr": "REN",
+      "color": "#E4002B",
+      "secondary": "#111111",
+      "logo": "/logos/ren.png",
+      "rating": 79,
+      "index": 48.3,
+      "played": 5,
+      "w": 2,
+      "l": 3,
+      "recordIsProjected": false,
+      "nrr": "-0.53",
+      "rollingNrr": "-0.53",
+      "form": [
+        "L",
+        "L",
+        "W",
+        "W",
+        "L"
+      ],
+      "streak": {
+        "type": "L",
+        "len": 1
+      },
+      "blurb": "Down 1 to 6. 2-3 (40% wins), rolling NRR -0.53.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 40,
+        "rollingNRR": 37,
+        "deathOversNet": 68,
+        "form": 43,
+        "powerplayDominance": 32,
+        "homeAwayAdjustment": 24,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 34,
+        "sos": 56
+      }
+    },
+    {
+      "rank": 7,
+      "prev": 1,
+      "delta": -6,
+      "movement": "down",
+      "team": "Hobart Hurricanes Women",
+      "short": "Hurricanes",
+      "abbr": "HUR",
+      "color": "#6A2C91",
+      "secondary": "#F5A800",
+      "logo": "/logos/hur.png",
+      "rating": 75.4,
+      "index": 34.9,
+      "played": 6,
+      "w": 0,
+      "l": 6,
+      "recordIsProjected": false,
+      "nrr": "-2.09",
+      "rollingNrr": "-2.28",
+      "form": [
+        "L",
+        "L",
+        "L",
+        "L",
+        "L"
+      ],
+      "streak": {
+        "type": "L",
+        "len": 6
+      },
+      "blurb": "Down 6 to 7. 0-6 (0% wins), on a 6-match losing skid, rolling NRR -2.28, leaky at the death.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 0,
+        "rollingNRR": 0,
+        "deathOversNet": 41,
+        "form": 4,
+        "powerplayDominance": 0,
+        "homeAwayAdjustment": 0,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 0,
+        "sos": 45
+      }
+    },
+    {
+      "rank": 8,
+      "prev": 7,
+      "delta": -1,
+      "movement": "down",
+      "team": "Melbourne Stars Women",
+      "short": "Stars",
+      "abbr": "STA",
+      "color": "#00A651",
+      "secondary": "#0A3D1F",
+      "logo": "/logos/sta.png",
+      "rating": 74.8,
+      "index": 32.6,
+      "played": 6,
+      "w": 1,
+      "l": 5,
+      "recordIsProjected": false,
+      "nrr": "-0.60",
+      "rollingNrr": "-0.90",
+      "form": [
+        "L",
+        "L",
+        "L",
+        "L",
+        "L"
+      ],
+      "streak": {
+        "type": "L",
+        "len": 5
+      },
+      "blurb": "Down 1 to 8. 1-5 (17% wins), on a 5-match losing skid, rolling NRR -0.90, leaky at the death.",
+      "blurbSource": "template",
+      "marks": {
+        "winPct": 17,
+        "rollingNRR": 28,
+        "deathOversNet": 33,
+        "form": 8,
+        "powerplayDominance": 29,
+        "homeAwayAdjustment": 10,
+        "keyPlayerAvailability": 100,
+        "marginAdjustedWin": 34,
+        "sos": 57
+      }
+    }
+  ],
+  "factors": [
+    {
+      "n": 1,
+      "key": "winPct",
+      "name": "Win %",
+      "note": "How often they win. The foundation.",
+      "weight": 30,
+      "optional": false
+    },
+    {
+      "n": 2,
+      "key": "rollingNRR",
+      "name": "Rolling net run rate",
+      "note": "Whether they out-score opponents — last five games only, so one early thrashing does not flatter them all season.",
+      "weight": 15,
+      "optional": false
+    },
+    {
+      "n": 3,
+      "key": "deathOversNet",
+      "name": "Death overs (16–20)",
+      "note": "The closing overs, where T20 games are actually decided — their hitting against their bowling.",
+      "weight": 15,
+      "optional": false
+    },
+    {
+      "n": 4,
+      "key": "form",
+      "name": "Momentum",
+      "note": "Are they hot right now? The latest match counts most.",
+      "weight": 12,
+      "optional": false
+    },
+    {
+      "n": 5,
+      "key": "powerplayDominance",
+      "name": "Powerplay (overs 1–6)",
+      "note": "Command of the opening burst. Runs scored there, minus runs conceded.",
+      "weight": 12,
+      "optional": false
+    },
+    {
+      "n": 6,
+      "key": "homeAwayAdjustment",
+      "name": "Home / away",
+      "note": "Teams that only win at home are flattered. Travelling well counts.",
+      "weight": 5,
+      "optional": false
+    },
+    {
+      "n": 7,
+      "key": "keyPlayerAvailability",
+      "name": "Key players",
+      "note": "A side missing its stars isn't the same side, whatever last week's results say.",
+      "weight": 5,
+      "optional": false
+    },
+    {
+      "n": 8,
+      "key": "marginAdjustedWin",
+      "name": "Win quality",
+      "note": "How they win — a 60-run rout versus a last-ball escape.",
+      "weight": 4,
+      "optional": false
+    },
+    {
+      "n": 9,
+      "key": "sos",
+      "name": "Strength of schedule",
+      "note": "Whether the opponents they beat were any good.",
+      "weight": 2,
+      "optional": false
+    }
+  ],
+  "changes": [
+    {
+      "team": "Hurricanes",
+      "abbr": "HUR",
+      "color": "#6A2C91",
+      "delta": -6,
+      "note": "▼6 — Down 6 to 7."
+    },
+    {
+      "team": "Heat",
+      "abbr": "HEA",
+      "color": "#00B2E3",
+      "delta": 4,
+      "note": "▲4 — Up 4 to 4."
+    },
+    {
+      "team": "Sixers",
+      "abbr": "SIX",
+      "color": "#E5007D",
+      "delta": 3,
+      "note": "▲3 — Up 3 to 1."
+    },
+    {
+      "team": "Strikers",
+      "abbr": "STR",
+      "color": "#0084D6",
+      "delta": 3,
+      "note": "▲3 — Up 3 to 3."
+    }
+  ],
+  "workedExample": {
+    "abbr": "THU",
+    "team": "Sydney Thunder Women",
+    "short": "Thunder",
+    "total": 79.3
+  }
+}

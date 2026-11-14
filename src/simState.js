@@ -1,6 +1,7 @@
 // In-memory simulator state. Holds the working season the engine ranks, plus the
 // mode toggle:
-//   - baseline: the 2026 season as recorded in data/cpl_2026.json, with each
+//   - baseline: the 2026 season as recorded in the season file (config.seasonFile,
+//               data/wbbl_2026.json by default), with each
 //               team's rating OPENING on what it earned in the real 2025 season
 //               (src/priors.js) and that carry-in decaying as 2026 results land
 //   - fresh:    same teams, ZERO matches and NO carry-in — every side starts
@@ -12,11 +13,9 @@
 // `prevRanks` remembers the ranking BEFORE the last mutation so the ▲/▼ arrows
 // show how the just-finished match (or weight change) moved every team.
 const fs = require('node:fs');
-const path = require('node:path');
+const { seasonFile } = require('./config');
 
-const BASELINE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'data', 'cpl_2026.json'), 'utf8')
-);
+const BASELINE = JSON.parse(fs.readFileSync(seasonFile, 'utf8'));
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -58,6 +57,9 @@ let anchorRanks = null;
 const state = {
   getMode: () => mode,
   getData: () => data,
+  // The season file as shipped — league branding and the prior season live
+  // here, not in the (checkpoint-replaceable) working data.
+  getBaseline: () => BASELINE,
   getTeams: () => data.teams,
   getPrevRanks: () => prevRanks,
 

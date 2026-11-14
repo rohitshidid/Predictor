@@ -1,0 +1,223 @@
+{
+  "kind": "power-rankings-checkpoint",
+  "version": 1,
+  "savedAt": "2026-11-14T18:33:04.615Z",
+  "league": "Women's Big Bash League",
+  "leagueShort": "WBBL",
+  "season": "2026",
+  "mode": "baseline",
+  "matchCount": 0,
+  "data": {
+    "season": "2026",
+    "league": "Women's Big Bash League",
+    "leagueShort": "WBBL",
+    "region": "Australia",
+    "teams": [
+      {
+        "name": "Sydney Sixers Women",
+        "short": "SIX",
+        "nickname": "Sixers",
+        "colors": {
+          "primary": "#E5007D",
+          "secondary": "#1A1A1A"
+        },
+        "logo": "/logos/six.png",
+        "squadStars": 0,
+        "priorFrom": "Sydney Sixers Women"
+      },
+      {
+        "name": "Perth Scorchers Women",
+        "short": "SCO",
+        "nickname": "Scorchers",
+        "colors": {
+          "primary": "#F26522",
+          "secondary": "#FDB913"
+        },
+        "logo": "/logos/sco.png",
+        "squadStars": 0,
+        "priorFrom": "Perth Scorchers Women"
+      },
+      {
+        "name": "Brisbane Heat Women",
+        "short": "HEA",
+        "nickname": "Heat",
+        "colors": {
+          "primary": "#00B2E3",
+          "secondary": "#0B2D4F"
+        },
+        "logo": "/logos/hea.png",
+        "squadStars": 0,
+        "priorFrom": "Brisbane Heat Women"
+      },
+      {
+        "name": "Adelaide Strikers Women",
+        "short": "STR",
+        "nickname": "Strikers",
+        "colors": {
+          "primary": "#0084D6",
+          "secondary": "#002B5C"
+        },
+        "logo": "/logos/str.png",
+        "squadStars": 0,
+        "priorFrom": "Adelaide Strikers Women"
+      },
+      {
+        "name": "Sydney Thunder Women",
+        "short": "THU",
+        "nickname": "Thunder",
+        "colors": {
+          "primary": "#9BCB3B",
+          "secondary": "#111111"
+        },
+        "logo": "/logos/thu.png",
+        "squadStars": 0,
+        "priorFrom": "Sydney Thunder Women"
+      },
+      {
+        "name": "Melbourne Renegades Women",
+        "short": "REN",
+        "nickname": "Renegades",
+        "colors": {
+          "primary": "#E4002B",
+          "secondary": "#111111"
+        },
+        "logo": "/logos/ren.png",
+        "squadStars": 0,
+        "priorFrom": "Melbourne Renegades Women"
+      },
+      {
+        "name": "Melbourne Stars Women",
+        "short": "STA",
+        "nickname": "Stars",
+        "colors": {
+          "primary": "#00A651",
+          "secondary": "#0A3D1F"
+        },
+        "logo": "/logos/sta.png",
+        "squadStars": 0,
+        "priorFrom": "Melbourne Stars Women"
+      },
+      {
+        "name": "Hobart Hurricanes Women",
+        "short": "HUR",
+        "nickname": "Hurricanes",
+        "colors": {
+          "primary": "#6A2C91",
+          "secondary": "#F5A800"
+        },
+        "logo": "/logos/hur.png",
+        "squadStars": 0,
+        "priorFrom": "Hobart Hurricanes Women"
+      }
+    ],
+    "matches": []
+  },
+  "config": {
+    "weights": {
+      "winPct": 0.3,
+      "marginAdjustedWin": 0.04,
+      "rollingNRR": 0.15,
+      "form": 0.12,
+      "powerplayDominance": 0.12,
+      "deathOversNet": 0.15,
+      "sos": 0.02,
+      "homeAwayAdjustment": 0.05,
+      "keyPlayerAvailability": 0.05
+    },
+    "optionalWeights": {
+      "expectedWins": 0.05,
+      "tossLeverage": 0.03,
+      "chaseSet": 0.05,
+      "top4Consistency": 0.12,
+      "bowlingConcentration": 0.03
+    },
+    "enabled": {
+      "expectedWins": false,
+      "tossLeverage": false,
+      "chaseSet": false,
+      "top4Consistency": false,
+      "bowlingConcentration": false
+    }
+  },
+  "blurbs": {},
+  "prevRanks": {
+    "Hobart Hurricanes Women": 1,
+    "Perth Scorchers Women": 2,
+    "Sydney Thunder Women": 3,
+    "Sydney Sixers Women": 4,
+    "Melbourne Renegades Women": 5,
+    "Adelaide Strikers Women": 6,
+    "Melbourne Stars Women": 7,
+    "Brisbane Heat Women": 8
+  },
+  "anchor": null,
+  "anchorLabel": "",
+  "siteMeta": {
+    "site": "champhunt-wbbl",
+    "week": 0,
+    "weekLabel": "Preseason",
+    "headline": "",
+    "subhead": "",
+    "region": "",
+    "workedExampleAbbr": "",
+    "nextMatch": null
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "team": "Hobart Hurricanes Women",
+      "score": 68.48,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 2,
+      "team": "Perth Scorchers Women",
+      "score": 59.67,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 3,
+      "team": "Sydney Thunder Women",
+      "score": 53.61,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 4,
+      "team": "Sydney Sixers Women",
+      "score": 52.48,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 5,
+      "team": "Melbourne Renegades Women",
+      "score": 51.94,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 6,
+      "team": "Adelaide Strikers Women",
+      "score": 49.03,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 7,
+      "team": "Melbourne Stars Women",
+      "score": 41.49,
+      "won": 0,
+      "lost": 0
+    },
+    {
+      "rank": 8,
+      "team": "Brisbane Heat Women",
+      "score": 22.59,
+      "won": 0,
+      "lost": 0
+    }
+  ]
+}

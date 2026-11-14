@@ -35,8 +35,12 @@ let blurbCache = {};
 // Editorial fields the engine cannot derive — which week this is, the hero
 // sentence, the next fixture. They ride along in checkpoints so restoring a
 // Tuesday file brings back Tuesday's week number too.
+// League branding from the season file (QR, learn-more URL, sponsor, website
+// palette). Older season files carry none, so the UI keeps its CPL defaults.
+const BRAND = sim.getBaseline().brand || null;
+
 const DEFAULT_SITE_META = {
-  site: 'cplxch',
+  site: (BRAND && BRAND.site) || 'cplxch',
   week: 1,
   weekLabel: '',
   headline: '',
@@ -79,7 +83,7 @@ function mergeSiteMeta(patch) {
 
 // The baseline carries the real 2025 season in as each team's opening rating;
 // Fresh Start ranks the same teams with no past at all. `priors` is derived from
-// data/cpl_2025.json by the same engine and the same weights, so a weight change
+// the season file's `priorSource` by the same engine and weights, so a weight change
 // moves the carry-in and the live table together.
 function currentPriors() {
   if (!sim.usePriors()) return null;
@@ -131,7 +135,9 @@ function buildState(rows) {
   return {
     mode: sim.getMode(),
     league: sim.getData().league,
+    leagueShort: sim.getData().leagueShort,
     season: sim.getData().season,
+    brand: BRAND,
     // What the ▲/▼ column is measured against. Null is the ordinary behaviour —
     // the previous render — and anything else is a comparison the operator
     // pinned, which the UI has to say out loud: an arrow beside a side that has
@@ -173,6 +179,7 @@ function buildState(rows) {
     teams: sim.getTeams().map((t) => ({
       name: t.name,
       short: t.short,
+      nickname: t.nickname || null,
       squadStars: t.squadStars || 0,
       primary: (t.colors && t.colors.primary) || '#334155',
       secondary: (t.colors && t.colors.secondary) || '#94a3b8',

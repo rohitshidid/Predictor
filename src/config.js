@@ -27,6 +27,14 @@ const num = (v, d) => {
 };
 
 module.exports = {
+  // Which league this server runs. The season file names its own prior season
+  // (`priorSource`) and carries the league's branding (`brand`), so switching
+  // league is this one setting: SEASON_FILE=data/cpl_2026.json brings the CPL
+  // edition back unchanged.
+  seasonFile: path.resolve(
+    path.join(__dirname, '..'),
+    (process.env.SEASON_FILE || 'data/wbbl_2026.json').trim()
+  ),
   llm: {
     geminiKey: (process.env.GEMINI_API_KEY || '').trim(),
     // Grounded verify / critic — judgement, full model.

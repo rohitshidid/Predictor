@@ -823,11 +823,11 @@
           title="Everything, in one archive: both house styles, keyed and solid, tables, TV frames, social tiles, PDFs, vectors and the website JSON — each at the top of its format's quality range, named so the folder reads cold.">&#128230;
           Download ZIP</button>
         <label class="bgopt"
-          title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; CPL matches the cplt20.com points-table styling.">
+          title="Which site's house style the exported table is drawn in. Willow is the broadcast overlay; the league template matches the league's own points-table styling.">
           Template
           <select id="tplSelect">
             <option value="willow" selected>Willow TV · broadcast</option>
-            <option value="cpl">CPL · website</option>
+            <option value="cpl" id="tplLeagueOpt">CPL · website</option>
           </select>
         </label>
         <button id="dlPng" title="Download the current table as a PNG image">PNG</button>
@@ -840,7 +840,7 @@
           title="Download the TV deliverable: exactly 1920x1080, without the Willow lockup. The Transparent background switch decides whether it carries an alpha channel for keying or sits on the template's solid plate.">TV
           Version</button>
         <button id="dlSocial"
-          title="Download a 1080x1350 social tile (4:5 feed portrait). The colourway follows the Template switch: Willow gives the light tile, CPL the dark one.">Social
+          title="Download a 1080x1350 social tile (4:5 feed portrait). The colourway follows the Template switch: Willow gives the light tile, the league template the dark one.">Social
           tile</button>
         <button id="dlSocialPng"
           title="Download the social tile as a transparent PNG, with an alpha channel so it can be laid over a photograph">Tile
@@ -858,11 +858,11 @@
           <input type="checkbox" id="bgTransparent" checked> Transparent background (TV overlay)
         </label>
         <label class="bgopt" id="bgCplOpt"
-          title="How much of the CPL card is painted. Solid is the website look; translucent keeps an alpha channel so the table can be keyed over a live feed. PDF is always exported solid.">
+          title="How much of the league card is painted. Solid is the website look; translucent keeps an alpha channel so the table can be keyed over a live feed. PDF is always exported solid.">
           Background
           <select id="cplBg">
-            <option value="solid" selected>Solid navy (website)</option>
-            <option value="translucent">Translucent navy (overlay)</option>
+            <option value="solid" selected id="cplBgSolidOpt">Solid navy (website)</option>
+            <option value="translucent" id="cplBgTransOpt">Translucent navy (overlay)</option>
           </select>
         </label>
         <label class="bgopt"
@@ -968,7 +968,7 @@
         </div>
         <label>Hero sentence <span style="color:var(--muted);font-weight:400;">(blank = auto)</span></label>
         <input type="text" id="pubHeadline" maxlength="240"
-          placeholder="Trinbago are playing the best cricket in the Caribbean right now.">
+          placeholder="The Sixers are playing the best cricket in the league right now.">
         <div class="row">
           <div>
             <label>Next match</label>
@@ -977,12 +977,12 @@
           </div>
           <div>
             <label>Venue</label>
-            <input type="text" id="pubVenue" maxlength="60" placeholder="Providence">
+            <input type="text" id="pubVenue" maxlength="60" placeholder="North Sydney Oval">
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button id="btnPublish" style="flex:1;"
-            title="Download the website JSON. Upload it on the cplxch /admin page to update every ranking, blurb and carousel.">🌐
+            title="Download the website JSON. Upload it on the site's /admin page to update every ranking, blurb and carousel.">🌐
             Export for website</button>
           <button id="btnPublishPreview" class="ghost" style="flex:0 0 auto;"
             title="Show what the file will contain without downloading it">Preview</button>
@@ -1929,8 +1929,10 @@
         + `</a>`;
     }
 
-    const LEARN_URL = 'Champhunt.com/CPL';   // label shown on the graphic
-    const LEARN_HREF = 'https://www.champhunt.com/cpl';
+    // Defaults are the CPL edition's; applyBrandConfig() replaces them with the
+    // season file's `brand` block (WBBL: Champhunt.com/WBBL).
+    let LEARN_URL = 'Champhunt.com/CPL';   // label shown on the graphic
+    let LEARN_HREF = 'https://www.champhunt.com/cpl';
 
     // ---- the top-right attribution block --------------------------------------
     // Caption, partner mark, live URL, QR, and the context line that closes it.
@@ -2148,10 +2150,13 @@
       const out = [];
       let cursor = rx;                       // right edge of whatever is placed next
 
-      // Visit Barbados, nearest the corner.
+      // Presenting sponsor (CPL: Visit Barbados), nearest the corner. A league
+      // with no sponsor in its brand block skips the sponsor and the rule.
       const hB = Math.max(9, Math.round(h * BARB_H_RATIO));
       const wB = Math.round(hB * (BRAND.barbadosAR || 6));
-      if (barbArt) {
+      if (!BRAND_CFG.sponsor) {
+        // nothing — Willow is drawn flush to the corner below
+      } else if (barbArt) {
         out.push(`<image x="${cursor - wB}" y="${Math.round(cy - hB / 2)}" width="${wB}" height="${hB}" href="${barbArt}" preserveAspectRatio="xMidYMid meet"/>`);
         cursor -= wB;
       } else {
@@ -2161,11 +2166,13 @@
       }
 
       // The rule between them.
-      cursor -= gap;
-      const ruleH = Math.round(h * 0.52);
-      const ruleW = Math.max(1, Math.round(h / 44));
-      out.push(`<rect x="${cursor - ruleW}" y="${Math.round(cy - ruleH / 2)}" width="${ruleW}" height="${ruleH}" rx="${(ruleW / 2).toFixed(2)}" fill="${inkColor}" opacity=".38"/>`);
-      cursor -= ruleW + gap;
+      if (BRAND_CFG.sponsor) {
+        cursor -= gap;
+        const ruleH = Math.round(h * 0.52);
+        const ruleW = Math.max(1, Math.round(h / 44));
+        out.push(`<rect x="${cursor - ruleW}" y="${Math.round(cy - ruleH / 2)}" width="${ruleW}" height="${ruleH}" rx="${(ruleW / 2).toFixed(2)}" fill="${inkColor}" opacity=".38"/>`);
+        cursor -= ruleW + gap;
+      }
 
       // Willow Sports.
       const wW = Math.round(h * (BRAND.willowAR || 0.939));
@@ -2200,6 +2207,41 @@
       solid: { page: CPL.bg, card: CPL.card, line: CPL.line, muted: CPL.muted, shadow: false },
       translucent: { page: null, card: 'rgba(10,10,32,.74)', line: 'rgba(255,255,255,.14)', muted: 'rgba(255,255,255,.80)', shadow: true },
     };
+
+    // ---- league branding ------------------------------------------------------
+    // Everything league-specific on the graphics — the website template's palette,
+    // the league mark, the QR and its URL, and whether a presenting sponsor sits
+    // beside Willow — comes from the season file's `brand` block (see
+    // data/wbbl_2026.json). The defaults below are the CPL edition, so a season
+    // file without a brand block renders exactly as it always did.
+    let BRAND_CFG = {
+      templateLabel: 'CPL · website',
+      leagueLogos: ['/logos/cpl.png', '/logos/cpl.svg', '/logos/CPL logo.jpeg', '/logos/CPL logo.png'],
+      leagueLogoKeyBg: true,
+      qr: '/logos/qr.png',
+      learnUrl: 'Champhunt.com/CPL',
+      learnHref: 'https://www.champhunt.com/cpl',
+      sponsor: 'barbados',
+      bgName: 'navy',
+      palette: null,
+    };
+    function leagueSlug() {
+      return ((STATE && (STATE.leagueShort || STATE.league)) || 'league').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    function applyBrandConfig(cfg) {
+      if (cfg) BRAND_CFG = Object.assign({}, BRAND_CFG, cfg);
+      LEARN_URL = BRAND_CFG.learnUrl || LEARN_URL;
+      LEARN_HREF = BRAND_CFG.learnHref || LEARN_HREF;
+      if (BRAND_CFG.palette) {
+        Object.assign(CPL, BRAND_CFG.palette);
+        Object.assign(CPL_BG.solid, { page: CPL.bg, card: CPL.card, line: CPL.line, muted: CPL.muted });
+        if (BRAND_CFG.palette.translucentCard) CPL_BG.translucent.card = BRAND_CFG.palette.translucentCard;
+      }
+      const label = (id, text) => { const el = $(id); if (el && text) el.textContent = text; };
+      label('tplLeagueOpt', BRAND_CFG.templateLabel);
+      label('cplBgSolidOpt', `Solid ${BRAND_CFG.bgName || 'navy'} (website)`);
+      label('cplBgTransOpt', `Translucent ${BRAND_CFG.bgName || 'navy'} (overlay)`);
+    }
     // Stat columns, centred, in the order CPL lists them. `Points` becomes
     // `Rating` — a power ranking has no league points, and printing the score
     // under CPL's own header would read as an official standing, which it isn't.
@@ -2343,7 +2385,7 @@
             line: 'rgba(255,255,255,.16)', A: dark ? CPL.accent : '#7aa7ff',
             up: '#4ade80', down: '#ff7a6e', title: '#ffffff' }
         : dark
-        ? { page: CPL.bg, card: '#11112c', ink: CPL.ink, muted: CPL.muted, line: CPL.line,
+        ? { page: CPL.bg, card: CPL.tileCard || '#11112c', ink: CPL.ink, muted: CPL.muted, line: CPL.line,
             A: CPL.accent, up: CPL.up, down: CPL.down, title: CPL.accent }
         : { page: '#f4f6f9', card: '#ffffff', ink: '#12151a', muted: '#5b6472', line: '#e4e8ee',
             A: '#0b5cff', up: '#12864f', down: '#c0392b', title: '#ffffff' };
@@ -2434,7 +2476,13 @@
       // a result exists the real record is the honest column, and a graphic that
       // kept projecting over the top of it would be lying by omission.
       const fc = (STATE.matchCount === 0 && STATE.forecast) ? STATE.forecast : null;
-      const rowTop = 332, rh = 117, colStats = 792, colScore = W - pad - 26, ratingW = 86;
+      // Row pitch fits the space above the footer. 117 was sized for CPL's seven
+      // sides; WBBL's eight at 117 ran the last plate into the Willow mark. The
+      // footer geometry (markH/markY below) is fixed, so the rows take what is
+      // left, never more than the original 117.
+      const rowTop = 332, colStats = 792, colScore = W - pad - 26, ratingW = 86;
+      const footTop = H - pad - 80 - 14;
+      const rh = Math.min(117, Math.floor((footTop - rowTop) / Math.max(1, n)));
       const colMv = (colStats + (colScore - ratingW)) / 2;
       s += `<text x="${pad + 128}" y="${rowTop - 14}" font-size="15" letter-spacing=".08em" fill="${P.muted}"${halo}>TEAM</text>`;
       // The won-loss head runs two lines on the tile, because the figure under it
@@ -2459,7 +2507,15 @@
         // rather than estimated from a per-character width, which is what got it
         // wrong the first time. 30 is also the same share of the canvas the name
         // takes on the landscape graphic, so the two read at the same weight.
-        s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="30" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central"${halo}>${esc(truncate(r.name, 26).toUpperCase())} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
+        // Shrink only a name that would reach the won-loss figure. 0.703 em/char
+        // is the display face's caps advance with the .4 tracking, measured off
+        // "MELBOURNE RENEGADES WOMEN" (527 units at 30px); the abbreviation tspan
+        // and the widest won-loss figure (~90 at 30px) are reserved. Every CPL
+        // name fits at 30, so that tile is unchanged.
+        const nm = truncate(r.name, 26).toUpperCase();
+        const nameRoom = (colStats - 90) - (pad + 138) - (String(r.short).length + 1) * 0.7 * 17;
+        const nameSize = Math.max(20, Math.min(30, nameRoom / (nm.length * 0.703))).toFixed(1);
+        s += `<text x="${pad + 138}" y="${nameY}" font-family="${DISP}" font-size="${nameSize}" font-weight="700" letter-spacing=".4" fill="${P.ink}" dominant-baseline="central"${halo}>${esc(nm)} <tspan font-size="17" letter-spacing="1" fill="${P.muted}">${esc(r.short)}</tspan></text>`;
         if (sl) s += `<text x="${pad + 138}" y="${cy + 18}" font-size="17" fill="${P.muted}" dominant-baseline="central"${halo}>${esc(sl)}</text>`;
         const rec = fc && fc.teams[r.name] ? fc.teams[r.name] : r;
         s += `<text x="${colStats}" y="${cy}" font-family="${DISP}" font-size="30" font-weight="700" fill="${P.ink}" text-anchor="end" dominant-baseline="central"${halo}>${rec.won}-${rec.lost}</text>`;
@@ -2543,7 +2599,8 @@
     // styles, and two files called cpl-power-rankings.png overwrite each other.
     function exportName(ext, variant) {
       const league = (STATE.leagueShort || STATE.league || 'power').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      return `${league}-power-rankings-${variant || currentTemplate()}.${ext}`;
+      const tpl = currentTemplate() === 'cpl' ? league : currentTemplate();
+      return `${league}-power-rankings-${variant || tpl}.${ext}`;
     }
 
     // ---- daily checkpoints ----
@@ -2779,21 +2836,35 @@
       } catch { return uri; }
     }
 
-    async function loadBrand() {
+    // First artwork in the list that exists. Paths may contain spaces, so each
+    // path segment is encoded before it is fetched.
+    async function firstAsset(paths) {
+      for (const p of paths || []) {
+        const uri = await toDataUri(String(p).split('/').map(encodeURIComponent).join('/'));
+        if (uri) return uri;
+      }
+      return null;
+    }
+    async function loadBrand(cfg) {
+      applyBrandConfig(cfg);
+      const qrPath = BRAND_CFG.qr || '/logos/qr.png';
+      // A sponsor named in the brand block is looked up as <name>.png/.svg and
+      // <name>-white.png/.svg — the CPL edition's Visit Barbados mark. With no
+      // sponsor the Willow lockup stands alone.
+      const sp = BRAND_CFG.sponsor;
       const [logo, qr, willow, cpl, willowWhite, barbados, barbadosWhite] = await Promise.all([
         toDataUri('/logos/champhunt.png').then(v => v || toDataUri('/logos/champhunt.svg')),
-        toDataUri('/logos/qr.png').then(v => v || toDataUri('/logos/qr.svg')),
+        // The QR must encode the brand block's learnHref. No file means the drawn
+        // placeholder, which does not scan — never fall back to another league's QR.
+        toDataUri(qrPath).then(v => v || toDataUri(qrPath.replace(/\.png$/i, '.svg'))),
         toDataUri('/logos/Willow_Sports.png').then(v => v || toDataUri('/logos/willow.png')),
-        toDataUri('/logos/cpl.png')
-          .then(v => v || toDataUri('/logos/cpl.svg'))
-          .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.jpeg')))
-          .then(v => v || toDataUri('/logos/' + encodeURIComponent('CPL logo.png'))),
+        firstAsset(BRAND_CFG.leagueLogos),
         toDataUri('/logos/Willow_Sports_white.png').then(v => v || toDataUri('/logos/willow-white.png')),
-        // Visit Barbados, presenting sponsor. PNGs are pre-rasterised from the
-        // supplied SVGs at export resolution; the SVG is the fallback so a future
-        // re-supply of either format is picked up without a code change.
-        toDataUri('/logos/barbados.png').then(v => v || toDataUri('/logos/barbados.svg')),
-        toDataUri('/logos/barbados-white.png').then(v => v || toDataUri('/logos/barbados-white.svg')),
+        // Presenting sponsor. PNGs are pre-rasterised from the supplied SVGs at
+        // export resolution; the SVG is the fallback so a future re-supply of
+        // either format is picked up without a code change.
+        sp ? firstAsset([`/logos/${sp}.png`, `/logos/${sp}.svg`]) : null,
+        sp ? firstAsset([`/logos/${sp}-white.png`, `/logos/${sp}-white.svg`]) : null,
       ]);
       // Trim both marks; keep a dark-background version of the Willow lockup.
       const [willowTrim, willowLift, logoTrim, cplTrim, cplLift, willowWhiteTrim, barbTrim, barbWhiteTrim] = await Promise.all([
@@ -2802,8 +2873,8 @@
         // The CPL mark arrives as a JPEG on a white field: key the field out, then
         // trim. The dark variant additionally lifts its near-black wordmark so it
         // stays visible on the navy card without putting a plate behind it.
-        tightCrop(cpl, { keyBg: true }),
-        tightCrop(cpl, { keyBg: true, liftDark: 90, protectTop: true }),
+        tightCrop(cpl, { keyBg: BRAND_CFG.leagueLogoKeyBg !== false }),
+        tightCrop(cpl, { keyBg: BRAND_CFG.leagueLogoKeyBg !== false, liftDark: 90, protectTop: true }),
         tightCrop(willowWhite),
         tightCrop(barbados), tightCrop(barbadosWhite),
       ]);
@@ -3232,7 +3303,7 @@
       const hasBackdrop = !!($('frameBg') && $('frameBg').value);
 
       for (const template of ['willow', 'cpl']) {
-        const dir = template === 'willow' ? 'willow-broadcast' : 'cpl-website';
+        const dir = template === 'willow' ? 'willow-broadcast' : `${leagueSlug()}-website`;
         // "Keyed" is the alpha build in both styles; the two templates spell it
         // differently in their own controls (a checkbox vs a dropdown), which is
         // why both keys are set rather than one.
@@ -3569,10 +3640,10 @@
     (async function init() {
       overlay(true, 'Loading…');
       try {
-        await loadBrand();
+        const data = await api('/api/state');
+        await loadBrand(data.brand);
         await loadBackdrops();
         await refreshCheckpoints();
-        const data = await api('/api/state');
         applyState(data);
         await loadTeamLogos();
         fillTeamSelects();

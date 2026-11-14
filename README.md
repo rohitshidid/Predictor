@@ -4,6 +4,8 @@ A weekly, AI-assisted power ranking for T20 cricket leagues. Teams are ranked by
 
 > **Core rule:** The AI never decides the ranking. Code computes the order from stats. The AI only writes the prose.
 
+> **This branch runs the Women's Big Bash League (WBBL|12, 2026).** The same app produced the CPL 2026 rankings; nothing league-specific is hardcoded any more. See [WBBL edition](#wbbl-edition) for what changed, how the data was built and how to keep it current. `SEASON_FILE=data/cpl_2026.json` brings the CPL edition back unchanged.
+
 ---
 
 ## Prerequisites
@@ -62,7 +64,7 @@ Visit **[http://localhost:3000](http://localhost:3000)** in your browser.
 | Section | Description |
 |---|---|
 | **Left panel** | Live power rankings — teams ordered by score, with movement arrows (▲/▼) and a blurb for each team |
-| **Season panel** (top right) | Switch between *Baseline* — the 2026 season with every team's rating opening on what it earned in the real 2025 season, weighted by how much of that squad is still there and decaying as results arrive — and *Fresh Start*, which throws that history away and starts all seven level on 34.0 |
+| **Season panel** (top right) | Switch between *Baseline* — the 2026 season with every team's rating opening on what it earned in the real 2025 season (WBBL|11), decaying as results arrive — and *Fresh Start*, which throws that history away and starts every side level on 34.0 |
 | **Season carry-in** (per team) | Open a team's **Details** to see where its rating came from: the index carried in from 2025, what this season alone says, how much of the published number is still last season, and how much of the squad was retained |
 | **Simulate Match** (right) | Enter match details and press **Simulate Match** to append the result and instantly re-rank |
 | **Weights (live)** (bottom right) | Drag sliders to adjust how much each factor (Win %, NRR, Powerplay, etc.) contributes to the score. Rankings update instantly. |
@@ -93,7 +95,9 @@ true by construction; press **AI-write all** for prose again.
 | `npm start` | Start the interactive ranking server on port 3000 |
 | `node server.js` | Same as above |
 | `npm test` | Run the match-resolution test suite (offline — spends no API calls) |
-| `node src/generateSeason.js` | Regenerate the synthetic IPL season data in `data/` |
+| `node src/generateSeason.js` | Regenerate the synthetic CPL demo season (legacy; writes `data/cpl_2026.json`) |
+| `node tools/import-espn-season.js …` | Pull a real season from ESPN's public API into the engine's match shape — see [WBBL edition](#wbbl-edition) |
+| `node tools/make-qr.js <url> <out.png>` | Regenerate a graphic's QR code (dependency-free) |
 
 ---
 
@@ -134,10 +138,16 @@ Predictor/
 │   ├── templates.js        # Blurb sentence templates
 │   └── generateSeason.js   # Generates synthetic season data
 ├── data/
-│   ├── cpl_2026.json           # 2026 starting state — teams, no matches yet
-│   ├── cpl_2025.json           # REAL CPL 2025 (34 matches) — source of the priors
+│   ├── wbbl_2026.json          # WBBL|12 starting state — teams, branding, no matches (the default SEASON_FILE)
+│   ├── wbbl_2025.json          # REAL WBBL|11 (43 matches, from ESPN) — source of the WBBL priors
+│   ├── cpl_2026.json           # CPL 2026 starting state — SEASON_FILE=data/cpl_2026.json
+│   ├── cpl_2025.json           # REAL CPL 2025 (34 matches) — source of the CPL priors
 │   ├── cpl_2026_synthetic.json # Archived 39-match demo season (nothing loads it)
 │   └── lastweek.json           # Last week's ranking snapshot (for ▲/▼ deltas)
+├── tools/
+│   ├── import-espn-season.js # ESPN season importer (scores, toss, phase splits, DLS NRR)
+│   └── make-qr.js            # QR generator for the graphic's learn-more link
+├── 14 nov 2026/            # WBBL deliverables + checkpoints for 14 Nov 2026 (week 3)
 ├── weights.config.json     # Ranking weights — tune here, not in code
 ├── parameters.md           # All ranking parameters explained in detail
 ├── structure.md            # Architecture and design decisions
@@ -178,6 +188,55 @@ They are fitted, not guessed. 300 independently seeded synthetic seasons are gen
 Floors and caps keep the table publishable — results must visibly drive it, and no single family may dominate. `weights.config.json` carries a per-metric note explaining each number.
 
 > **Caveat:** the only ground truth available today is the synthetic generator, so phase metrics score better here than they likely would against real cricket. Re-fit once a season of live CricAPI results has accumulated.
+
+---
+
+## WBBL edition
+
+### What changed from CPL
+
+| Area | CPL | WBBL |
+|---|---|---|
+| Season file | `data/cpl_2026.json` | `data/wbbl_2026.json` (default; pick with `SEASON_FILE`) |
+| Prior season | `data/cpl_2025.json`, typed from a season review | `data/wbbl_2025.json`, imported from ESPN — named by the season file's `priorSource` |
+| Teams | 7 (one expansion side, one rebrand) | 8, all returning — no expansion discount, no rebrand |
+| Phase splits in the prior | zero (no ball-by-ball in the review) | **real** — powerplay (overs 1-6) and death (16-20) summed from ESPN's over-by-over runs |
+| Squad continuity | from the review's movement tables | not applied yet — no sourced WBBL retention table (add `squadMovement` per team to switch it on) |
+| Key players (`squadStars`) | 3-5 per side | 0 for every side, i.e. neutral, until there is a sourced availability feed |
+| Website template | navy/lime, "CPL · website" | green/lime, "WBBL · website" — palette in the season file's `brand` block |
+| QR / link | `qr.png` → champhunt.com/cpl | `qr-wbbl.png` → champhunt.com/wbbl |
+| Presenting sponsor | Visit Barbados beside Willow | none — Willow stands alone (`brand.sponsor: null`) |
+| League mark | `cpl.png` | drop a licensed `public/logos/wbbl.png` in; until then the title reads "WBBL POWER RANKINGS" |
+
+Everything league-specific now lives in the season file's `brand` block (template label, league-mark files, QR file, learn-more URL, sponsor, website palette, publish `site` id). A season file without one renders with the CPL defaults.
+
+### Rain, DLS and net run rate
+
+WBBL has a lot of rain. Two rules the CPL data never exercised are now applied, and only to innings that carry the fields, so CPL figures are unchanged:
+
+- A side **bowled out in a reduced match** is charged its reduced quota (`oversQuota`), not 20 overs.
+- In a **DLS result** the side batting first is credited with *revised target - 1* from the chasing side's allotted overs (`nrrRuns` / `nrrOvers`, written by the importer).
+
+With both, the engine's season NRR reproduces the published WBBL|11 table: seven sides to three decimals, Thunder -0.124 against -0.126.
+
+One WBBL|12 game is handled differently by different tables: match 15 (Sixers v Thunder, 8 Nov), where the first innings was cut and Thunder chased a revised 168. Under the DLS rule above Sixers are +1.156 and Thunder +0.215; a table that leaves that game out of NRR shows +1.275 / +0.361. The engine follows the rule.
+
+### Keeping it current
+
+1. Rebuild the season to date straight from the feed (WBBL|12 is ESPN league `18042`; its event ids start at 1543944):
+   ```bash
+   node tools/import-espn-season.js 18042 1543944 1543999 --until 2026-11-21 --checkpoint "21 nov 2026/wbbl-checkpoint-2026-11-21.json"
+   ```
+   Unplayed fixtures are skipped, so an id range running past today is harmless. This is the preferred path: it carries real powerplay/death splits and the DLS net-run-rate fields, which the in-app fetch and the simulate form do not.
+2. `npm start`, then **Compare two checkpoints**: *From* `14 nov 2026/wbbl-checkpoint-preseason-week-0.json`, *To* the file from step 1. The arrows then read as movement since the preseason baseline. (Or **Load checkpoint** for day-to-day arrows.)
+3. Optionally **AI-write all** for prose blurbs (needs `GEMINI_API_KEY`; otherwise template blurbs are used).
+4. Set the week number in **Publish to the website** (the season opened 29 Oct, so 14 Nov is week 3), then **Download ZIP**. Save the ZIP's contents next to the checkpoint in the new dated folder.
+
+The 2025 prior was built with:
+
+```bash
+node tools/import-espn-season.js 1490537 1494526 1494568 --out data/wbbl_2025.json   # then wrapped with the season header
+```
 
 ---
 
