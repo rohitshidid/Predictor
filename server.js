@@ -226,7 +226,9 @@ function toMatch(p) {
     bowling: String(i.bowling),
     runs: Math.max(0, Math.round(+i.runs || 0)),
     balls: Math.max(1, Math.round(+i.balls || 120)),
-    overs: +(+((+i.balls || 120) / 6)).toFixed(1),
+    // Overs as a true fraction of balls. Rounding to one decimal (98 balls ->
+    // 16.3 rather than 16.333) shifted every net run rate in the third decimal.
+    overs: +(+((+i.balls || 120) / 6)).toFixed(4),
     ppRuns: Math.max(0, Math.round(+i.ppRuns || 0)),
     deathRuns: Math.max(0, Math.round(+i.deathRuns || 0)),
     deathBalls: Math.max(0, Math.round(+i.deathBalls || 0)),
@@ -234,11 +236,20 @@ function toMatch(p) {
     top4: Math.max(0, Math.round(+i.top4 || 0)),
     wktsLost: Math.max(0, Math.min(10, Math.round(+i.wktsLost || 0))),
     bowlTop2: Math.max(0, Math.min(10, Math.round(+i.bowlTop2 || 0))),
+    // Rain fields from tools/import-espn-season.js. Dropping them would charge a
+    // rain-reduced or DLS game as a full 20 overs and move the published NRR.
+    ...num('oversQuota', i), ...num('nrrRuns', i), ...num('nrrOvers', i),
   }));
-  return {
+  // A name the season does not know is ignored by the engine without a word, so
+  // a misspelt team would silently vanish from the table. Refuse it instead.
+  const known = new Set(sim.getTeams().map((t) => t.name));
+  for (const n of [p.home, p.away, p.winner]) {
+    if (!known.has(n)) throw new Error(`unknown team "${n}" — expected one of: ${[...known].join(', ')}`);
+  }
+  const out = {
     home: p.home,
     away: p.away,
-    venueHomeTeam: p.venueHomeTeam || p.home,
+    venueHomeTeam: p.venueHomeTeam === null ? null : (p.venueHomeTeam || p.home),
     tossWinner: p.tossWinner || p.home,
     battingFirst: p.battingFirst || inn[0].batting,
     winner: p.winner,
@@ -246,6 +257,48 @@ function toMatch(p) {
     stars: p.stars || {},
     significant: p.significant || {},
   };
+  // Real fixture details, kept when the file has them. `date` matters most: the
+  // engine orders form and rolling NRR by it.
+  if (p.date && !Number.isNaN(Date.parse(p.date))) out.date = new Date(p.date).toISOString();
+  for (const k of ['espnId', 'matchNo', 'stage', 'venue', 'margin']) {
+    if (typeof p[k] === 'string' && p[k]) out[k] = p[k].slice(0, 120);
+  }
+  if (p.dls === true) out.dls = true;
+  return out;
+}
+
+function num(key, obj) {
+  const v = Number(obj[key]);
+  return obj[key] != null && Number.isFinite(v) ? { [key]: v } : {};
+}
+
+// Several matches from one uploaded file. Abandoned / no-result games carry no
+// innings and the engine skips them anyway, so they are counted, not loaded.
+// A match already in the season (same ESPN id, or same teams on the same day)
+// is skipped too — so re-uploading a season file that has grown by a matchday
+// adds only the new games.
+function appendBatch(list) {
+  if (!Array.isArray(list) || !list.length) throw new Error('no matches in the file');
+  const keyOf = (m) => (m.espnId ? `espn:${m.espnId}`
+    : `${String(m.date || '').slice(0, 10)}|${[m.home, m.away].sort().join('|')}`);
+  const have = new Set(sim.getData().matches.map(keyOf));
+  // Validate everything before touching the season, so a bad row cannot leave
+  // half a file loaded.
+  const ready = [];
+  let noResult = 0, duplicate = 0;
+  list.forEach((raw, i) => {
+    if (!raw || typeof raw !== 'object') throw new Error(`match ${i + 1}: not an object`);
+    if (!raw.winner && (!Array.isArray(raw.innings) || raw.innings.length === 0)) { noResult++; return; }
+    let m;
+    try { m = toMatch(raw); } catch (e) { throw new Error(`match ${i + 1} (${raw.home} v ${raw.away}): ${e.message}`); }
+    const k = keyOf(m);
+    if (have.has(k)) { duplicate++; return; }
+    have.add(k);
+    ready.push(m);
+  });
+  ready.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  for (const m of ready) sim.appendMatch(m);
+  return { added: ready.length, noResult, duplicate, teams: [...new Set(ready.flatMap((m) => [m.home, m.away]))] };
 }
 
 async function regenerate(teamNames, significantMap = {}) {
@@ -598,6 +651,20 @@ const server = http.createServer(async (req, res) => {
       // Regenerate ONLY the two teams that played, with their significant notes.
       await regenerate([match.home, match.away], match.significant);
       return send(res, 200, buildState());
+    }
+
+    // A whole file of results at once — the season to date from
+    // tools/import-espn-season.js, or any array of simulate-shaped matches.
+    // Summaries are refreshed once for every side that played rather than per
+    // match, so a 20-game file costs one pass of AI calls, not twenty.
+    if (req.method === 'POST' && url.pathname === '/api/simulate-batch') {
+      const body = await readBody(req);
+      const list = Array.isArray(body) ? body : body.matches;
+      const result = appendBatch(list);
+      if (result.added) await regenerate(result.teams);
+      const state = buildState();
+      state.batch = result;
+      return send(res, 200, state);
     }
 
     if (req.method === 'POST' && url.pathname === '/api/generate-all') {

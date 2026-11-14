@@ -1125,7 +1125,7 @@
         <div id="fetchPreview"></div>
         <button id="btnFinish" class="primary" style="width:100%;margin-top:8px;">Simulate Match</button>
         <button id="btnUpload" class="ghost" style="width:100%;margin-top:8px;"
-          title="Load a single match from a JSON file and simulate it straight onto the table">⬆ Upload match results</button>
+          title="Load results from a JSON file: one match, or a whole list of matches (e.g. the season to date from tools/import-espn-season.js). Matches already on the table are skipped, so re-uploading a file that has grown by a matchday adds only the new games.">⬆ Upload match results</button>
         <input type="file" id="matchFile" accept="application/json,.json" style="display:none">
         <div class="err" id="err"></div>
       </div>
@@ -1597,25 +1597,44 @@
     // that each entry in a checkpoint's data.matches[] already uses. On upload we
     // POST it straight to /api/simulate, so it appends, re-ranks, and rewrites the
     // two played teams' AI summaries exactly as the Simulate Match button does.
-    function extractMatch(obj) {
-      if (obj && Array.isArray(obj.innings)) return obj;            // bare match object
-      if (obj && obj.match && Array.isArray(obj.match.innings)) return obj.match;
+    // Returns a list. One match keeps the original single-match path; several
+    // (a bare array, or { matches: [...] } as a season file has) go to the
+    // batch route, which keeps real dates and the rain/DLS net-run-rate fields.
+    function extractMatches(obj) {
+      if (Array.isArray(obj)) return obj;                             // list of matches
+      if (obj && Array.isArray(obj.innings)) return [obj];            // bare match object
+      if (obj && obj.match && Array.isArray(obj.match.innings)) return [obj.match];
       if (obj && obj.data && Array.isArray(obj.data.matches)) {
-        throw new Error('That is a full checkpoint, not a single match. Use “Restore checkpoint”, or upload one match object (home, away, winner, innings[2]).');
+        throw new Error('That is a full checkpoint, not a results file. Use “Load checkpoint”, or upload one match / a list of matches.');
       }
-      throw new Error('Not a match file. Expected an object with home, away, winner and innings[2].');
+      if (obj && Array.isArray(obj.matches)) return obj.matches;      // season-shaped file
+      throw new Error('Not a match file. Expected one match (home, away, winner, innings[2]) or a list of them.');
     }
 
     async function uploadMatch(file) {
       $('err').textContent = '';
-      let match;
+      let matches;
       try {
-        match = extractMatch(JSON.parse(await file.text()));
+        matches = extractMatches(JSON.parse(await file.text()));
       } catch (e) {
         $('err').textContent = e instanceof SyntaxError ? 'File is not valid JSON.' : e.message;
         return;
       }
       const prev = Object.fromEntries(STATE.ranking.map(r => [r.name, r.rank]));
+      if (matches.length !== 1) {
+        overlay(true, `Loading ${matches.length} matches${STATE.aiConfigured ? ' + writing AI summaries' : ''}…`);
+        try {
+          const data = await api('/api/simulate-batch', { matches });
+          applyState(data, prev);
+          const b = data.batch || {};
+          const extra = [b.duplicate ? `${b.duplicate} already on the table` : '', b.noResult ? `${b.noResult} no-result` : '']
+            .filter(Boolean).join(', ');
+          $('err').textContent = `Loaded ${b.added} match${b.added === 1 ? '' : 'es'}${extra ? ` (skipped: ${extra})` : ''} — table updated, ${data.matchCount} played.`;
+        } catch (e) { $('err').textContent = `Upload rejected: ${e.message}`; }
+        finally { overlay(false); }
+        return;
+      }
+      const match = matches[0];
       overlay(true, STATE.aiConfigured ? 'Simulating uploaded match + writing AI summaries…' : 'Simulating uploaded match…');
       try {
         const data = await api('/api/simulate', match);          // same route as Finish Match

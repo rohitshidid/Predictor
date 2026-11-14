@@ -156,7 +156,12 @@ const state = {
       ? new Date(data.matches[data.matches.length - 1].date)
       : seasonStart || lastBaseline || new Date();
     const id = (data.matches.reduce((mx, m) => Math.max(mx, m.id || 0), 0) || 0) + 1;
-    const record = { ...match, id, date: new Date(lastDate.getTime() + 12 * 3600 * 1000).toISOString() };
+    // A real fixture date (an uploaded or imported result) is kept; a hand-
+    // simulated match is placed 12 hours after the last one, as before.
+    const date = match.date && !Number.isNaN(Date.parse(match.date))
+      ? new Date(match.date).toISOString()
+      : new Date(lastDate.getTime() + 12 * 3600 * 1000).toISOString();
+    const record = { ...match, id, date };
     data.matches.push(record);
     return record;
   },

@@ -223,14 +223,18 @@ One WBBL|12 game is handled differently by different tables: match 15 (Sixers v 
 
 ### Keeping it current
 
-1. Rebuild the season to date straight from the feed (WBBL|12 is ESPN league `18042`; its event ids start at 1543944):
+**Upload the season's results and download the ZIP** — the everyday path:
+
+1. Write the season to date as one results file (WBBL|12 is ESPN league `18042`; its event ids start at 1543944):
    ```bash
-   node tools/import-espn-season.js 18042 1543944 1543999 --until 2026-11-21 --checkpoint "21 nov 2026/wbbl-checkpoint-2026-11-21.json"
+   node tools/import-espn-season.js 18042 1543944 1543999 --until 2026-11-21 --out "21 nov 2026/wbbl-2026-matches-to-21-nov.json"
    ```
-   Unplayed fixtures are skipped, so an id range running past today is harmless. This is the preferred path: it carries real powerplay/death splits and the DLS net-run-rate fields, which the in-app fetch and the simulate form do not.
-2. `npm start`, then **Compare two checkpoints**: *From* `14 nov 2026/wbbl-checkpoint-preseason-week-0.json`, *To* the file from step 1. The arrows then read as movement since the preseason baseline. (Or **Load checkpoint** for day-to-day arrows.)
-3. Optionally **AI-write all** for prose blurbs (needs `GEMINI_API_KEY`; otherwise template blurbs are used).
-4. Set the week number in **Publish to the website** (the season opened 29 Oct, so 14 Nov is week 3), then **Download ZIP**. Save the ZIP's contents next to the checkpoint in the new dated folder.
+   Unplayed fixtures are skipped, so an id range running past today is harmless. The file carries real dates, powerplay/death splits and the DLS net-run-rate fields. `14 nov 2026/wbbl-2026-matches-to-14-nov.json` is the 22-match file for 14 Nov.
+2. `npm start`, open http://localhost:4310 (it opens on the preseason baseline) and press **⬆ Upload match results** → pick the file. One match or a whole list both work; matches already on the table are skipped, so re-uploading a file that has grown by a matchday adds only the new games.
+3. Set the week number in **Publish to the website** (the season opened 29 Oct, so 14 Nov is week 3) and press **📦 Download ZIP** straight away. The ▲/▼ arrows measure against the last render, which right after the upload is the preseason table; any later re-render (another upload, a weight change) resets them. For arrows pinned to the preseason whatever happens, use **Compare two checkpoints** with *From* `14 nov 2026/wbbl-checkpoint-preseason-week-0.json`.
+4. Optionally **AI-write all** first for prose blurbs (needs `GEMINI_API_KEY`; otherwise template blurbs are used). Save the ZIP's contents and the results file in a new dated folder.
+
+`--checkpoint <file>` instead of `--out` writes a checkpoint for **Load checkpoint** rather than a results file for upload.
 
 The 2025 prior was built with:
 
