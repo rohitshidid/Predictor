@@ -2391,6 +2391,7 @@
     function socialTileSvg(opts) {
       const st = STATE, rows = st.ranking, n = rows.length;
       const dark = ((opts && opts.theme) || 'light') === 'dark';
+      if (dark && isStadium()) return stadiumTileSvg(opts);
       // Keyed build: no page fill and no header band, so the tile can be dropped
       // straight onto a photograph. The row plates stay — smoked rather than
       // solid — because without them the figures sit on open picture and the
@@ -2560,6 +2561,289 @@
       return s;
     }
 
+    // ---- stadium theme (WBBL website set) -------------------------------------
+    // The Champhunt WBBL points-table look: a floodlit stadium, lime streaks, the
+    // league lock-up top-left, a two-colour heavy italic title, a glowing column
+    // bar, ranked plates with gold/silver/bronze badges and W/L form pills.
+    // Switched on by `brand.theme: "stadium"` in the season file; it replaces the
+    // website-set table, 16:9 and social tile only. The Willow broadcast set and
+    // every CPL graphic keep their own templates.
+    //
+    // The backdrop is the designer's still when `brand.backdrop` resolves to a
+    // file, otherwise it is drawn here in vector — floodlight banks, haze, a lit
+    // field and the lime slashes — so the graphic never ships on a flat fill.
+    const HEAVY = "'Montserrat','Segoe UI Black','Segoe UI','Arial Black',Arial,sans-serif";
+    const _heavyCtx = document.createElement('canvas').getContext('2d');
+    function heavyWidth(s, size, weight, italic) {
+      _heavyCtx.font = `${italic ? 'italic ' : ''}${weight || 900} ${size}px ${HEAVY}`;
+      return _heavyCtx.measureText(String(s)).width;
+    }
+    function isStadium() { return BRAND_CFG.theme === 'stadium'; }
+    const RANK_BADGE = [
+      ['#FFE680', '#D9A70A'],   // 1 gold
+      ['#F5F6F7', '#AEB4BB'],   // 2 silver
+      ['#EFB27A', '#A9622A'],   // 3 bronze
+    ];
+    const FORM_FILL = { W: '#1FA94B', L: '#E0352B' };
+
+    function stadiumBackdrop(W, H) {
+      if (BRAND.backdrop) {
+        return `<image x="0" y="0" width="${W}" height="${H}" href="${BRAND.backdrop}" preserveAspectRatio="xMidYMid slice"/>`;
+      }
+      const A = CPL.accent, u = Math.min(W, H) / 1000;
+      let d = `<defs>`
+        + `<radialGradient id="sdBase" cx=".5" cy=".2" r=".95"><stop offset="0" stop-color="#1f6a2b"/><stop offset=".3" stop-color="#0d3c19"/><stop offset=".66" stop-color="#06210f"/><stop offset="1" stop-color="#020b05"/></radialGradient>`
+        + `<radialGradient id="sdFlare"><stop offset="0" stop-color="#ffffff"/><stop offset=".2" stop-color="#f4ffd8" stop-opacity=".9"/><stop offset=".5" stop-color="#c9f27a" stop-opacity=".22"/><stop offset="1" stop-color="#9be05a" stop-opacity="0"/></radialGradient>`
+        + `<radialGradient id="sdHaze"><stop offset="0" stop-color="#b4ec74" stop-opacity=".26"/><stop offset="1" stop-color="#b4ec74" stop-opacity="0"/></radialGradient>`
+        + `<radialGradient id="sdField" cx=".5" cy="1" r=".75"><stop offset="0" stop-color="#46a836" stop-opacity=".5"/><stop offset="1" stop-color="#46a836" stop-opacity="0"/></radialGradient>`
+        + `<linearGradient id="sdSlash" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${A}" stop-opacity="0"/><stop offset=".5" stop-color="${A}" stop-opacity=".9"/><stop offset="1" stop-color="${A}" stop-opacity="0"/></linearGradient>`
+        + `<radialGradient id="sdVig" cx=".5" cy=".42" r=".78"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>`
+        + `</defs>`;
+      d += `<rect width="${W}" height="${H}" fill="url(#sdBase)"/>`;
+      // Floodlights: haze at both top corners, and two lamp banks in the gap
+      // between the lock-up and the attribution block so neither sits on type.
+      // The lamps are softened so they read as light, not as a grid of dots.
+      d += `<filter id="sdSoft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${(3.2 * u).toFixed(1)}"/></filter>`;
+      for (const b of [{ x: .12, y: .0 }, { x: .88, y: .0 }]) {
+        d += `<ellipse cx="${b.x * W}" cy="${b.y * H}" rx="${.26 * W}" ry="${.2 * H}" fill="url(#sdHaze)"/>`;
+      }
+      for (const b of [{ x: .41, y: .03 }, { x: .59, y: .03 }]) {
+        const bx = b.x * W, by = b.y * H;
+        d += `<ellipse cx="${bx}" cy="${by + 30 * u}" rx="${.17 * W}" ry="${.13 * H}" fill="url(#sdHaze)"/>`;
+        d += `<g filter="url(#sdSoft)" opacity=".85">`;
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
+          d += `<circle cx="${(bx + (c - 1.5 + (r ? .5 : 0)) * 24 * u).toFixed(1)}" cy="${(by + r * 20 * u).toFixed(1)}" r="${(11 * u).toFixed(1)}" fill="url(#sdFlare)"/>`;
+        }
+        d += `</g>`;
+      }
+      d += `<ellipse cx="${W / 2}" cy="${H}" rx="${.72 * W}" ry="${.34 * H}" fill="url(#sdField)"/>`;
+      // Lime slashes, all leaning "/", kept to the outer margins.
+      const slash = (x, y0, y1, w, op) => {
+        const lean = (y1 - y0) * H * 0.38, X = x * W, w2 = w * W;
+        return `<polygon points="${X},${y1 * H} ${X + w2},${y1 * H} ${X + w2 + lean},${y0 * H} ${X + lean},${y0 * H}" fill="url(#sdSlash)" opacity="${op}"/>`;
+      };
+      d += slash(-.05, .30, .98, .014, .9) + slash(-.02, .48, 1.02, .006, .8) + slash(-.09, .12, .62, .022, .55);
+      d += slash(.90, .02, .45, .012, .8) + slash(.935, .10, .62, .006, .7) + slash(.86, .55, 1.0, .018, .5);
+      d += `<polygon points="0,${H} ${.045 * W},${H} 0,${H - .07 * H}" fill="${A}" opacity=".9"/>`;
+      d += `<polygon points="${W},${H} ${W - .05 * W},${H} ${W},${H - .08 * H}" fill="${A}" opacity=".85"/>`;
+      d += `<polygon points="${W},${H - .14 * H} ${W},${H - .2 * H} ${W - .07 * W},${H}" fill="${A}" opacity=".22"/>`;
+      d += `<rect width="${W}" height="${H}" fill="url(#sdVig)"/>`;
+      return d;
+    }
+    // The 16:9 frame paints the backdrop across the full 1920x1080 and lays the
+    // table over it, so the picture runs edge to edge rather than stopping at the
+    // table's own bounds.
+    function stadiumBackdropSvg(W, H) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${stadiumBackdrop(W, H)}</svg>`;
+    }
+
+    // "WOMEN'S BIG BASH LEAGUE" -> WOMEN'S / BIG BASH / LEAGUE: packed greedily
+    // into lines no longer than the longest word or a third of the run.
+    function lockupLines(text) {
+      const words = String(text).toUpperCase().split(/\s+/).filter(Boolean);
+      const max = Math.max(...words.map(w => w.length), Math.ceil(words.join(' ').length / 3));
+      const lines = [];
+      for (const w of words) {
+        const last = lines[lines.length - 1];
+        if (last && (last + ' ' + w).length <= max) lines[lines.length - 1] = last + ' ' + w; else lines.push(w);
+      }
+      return lines;
+    }
+    // League mark, a hairline, and the stacked league name with the season in lime.
+    function stadiumLockup(x, y, h, halo) {
+      const st = STATE, art = BRAND.cplDark || BRAND.cpl;
+      let g = '', tx = x;
+      if (art) {
+        const mw = h * 0.92;
+        g += `<image x="${x}" y="${y}" width="${mw}" height="${h}" href="${art}" preserveAspectRatio="xMidYMid meet"/>`;
+        tx = x + mw + h * 0.12;
+        g += `<rect x="${tx}" y="${y + h * 0.1}" width="1.5" height="${h * 0.8}" fill="#ffffff" opacity=".55"/>`;
+        tx += h * 0.14;
+      }
+      const lines = lockupLines(st.league);
+      const rows = lines.length + 1, lh = h / (rows + 0.15), size = lh * 0.93;
+      lines.forEach((ln, i) => {
+        g += `<text x="${tx}" y="${(y + lh * (i + 1) - lh * 0.12).toFixed(1)}" font-family="${HEAVY}" font-size="${size.toFixed(1)}" font-weight="900" fill="#ffffff"${halo}>${esc(ln)}</text>`;
+      });
+      g += `<text x="${tx}" y="${(y + lh * rows - lh * 0.06).toFixed(1)}" font-family="${HEAVY}" font-size="${(size * 1.12).toFixed(1)}" font-weight="900" fill="${CPL.accent}"${halo}>${esc(st.season)}</text>`;
+      return g;
+    }
+    // Title: every word white but the last, which is lime — POWER RANKINGS,
+    // PRESEASON POWER RANKINGS. Sized to the width it is given.
+    function stadiumTitle(x, baseY, maxW, maxSize, halo) {
+      const text = STATE.matchCount === 0 ? 'PRESEASON POWER RANKINGS' : 'POWER RANKINGS';
+      const words = text.split(' '), last = words.pop();
+      const size = Math.min(maxSize, maxSize * maxW / heavyWidth(text, maxSize, 900, true));
+      return { size, svg: `<text x="${x}" y="${baseY}" font-family="${HEAVY}" font-size="${size.toFixed(1)}" font-weight="900" font-style="italic" letter-spacing="-1" fill="#ffffff"${halo}>${esc(words.join(' '))} <tspan fill="${CPL.accent}">${esc(last)}</tspan></text>` };
+    }
+    // — WOMEN'S BIG BASH LEAGUE 2026 — with lime rules either side.
+    function stadiumSubtitle(x, y, size, halo) {
+      const text = `${String(STATE.league).toUpperCase()} ${STATE.season}`;
+      const track = size * 0.28, tw = heavyWidth(text, size, 700) + track * text.length, rule = size * 3.2, gap = size * 0.9;
+      let g = `<rect x="${x}" y="${y - size * 0.38}" width="${rule}" height="2" fill="${CPL.accent}"/>`;
+      g += `<text x="${x + rule + gap}" y="${y}" font-family="${HEAVY}" font-size="${size}" font-weight="700" letter-spacing="${track.toFixed(2)}" fill="#ffffff"${halo}>${esc(text)}</text>`;
+      g += `<rect x="${x + rule + 2 * gap + tw}" y="${y - size * 0.38}" width="${rule}" height="2" fill="${CPL.accent}"/>`;
+      return g;
+    }
+    function rankBadge(cx, cy, s, rank) {
+      const id = `rb${rank}`, [c0, c1] = RANK_BADGE[rank - 1] || ['#E6F64A', '#AFC70E'];
+      return `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></linearGradient></defs>`
+        + `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" rx="${s * 0.18}" fill="url(#${id})"/>`
+        + `<text x="${cx}" y="${cy}" font-family="${HEAVY}" font-size="${(s * 0.56).toFixed(1)}" font-weight="900" fill="#0d140a" text-anchor="middle" dominant-baseline="central">${rank}</text>`;
+    }
+    // Last five, oldest first, centred on cx. Nothing played yet: five empty rings.
+    function formPills(cx, cy, r, seq) {
+      const n = 5, step = r * 2.3, x0 = cx - step * (n - 1) / 2;
+      let g = '';
+      for (let i = 0; i < n; i++) {
+        const x = x0 + i * step, k = seq[i];
+        if (!k) { g += `<circle cx="${x}" cy="${cy}" r="${r}" fill="none" stroke="#ffffff" stroke-opacity=".25" stroke-width="1.5"/>`; continue; }
+        g += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${FORM_FILL[k]}" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.2"/>`;
+        g += `<text x="${x}" y="${cy}" font-family="${HEAVY}" font-size="${(r * 1.05).toFixed(1)}" font-weight="900" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${k}</text>`;
+      }
+      return g;
+    }
+    // Two-line team name: the longest first line that fits, the rest under it —
+    // SYDNEY SIXERS / WOMEN, MELBOURNE / RENEGADES WOMEN. Shrinks only if a line
+    // still runs past maxW.
+    function twoLineName(name, maxW, maxSize) {
+      const words = String(name).toUpperCase().split(/\s+/);
+      let best = null;
+      for (let k = words.length - 1; k >= 1; k--) {
+        const a = words.slice(0, k).join(' '), b = words.slice(k).join(' ');
+        if (heavyWidth(a, maxSize, 800) <= maxW) { best = [a, b]; break; }
+      }
+      if (!best) best = words.length > 1 ? [words[0], words.slice(1).join(' ')] : [words[0], ''];
+      const widest = Math.max(...best.map(l => heavyWidth(l, maxSize, 800)));
+      return { lines: best.filter(Boolean), size: Math.max(12, Math.min(maxSize, maxSize * maxW / widest)) };
+    }
+    function nameSvg(x, cy, name, maxW, maxSize, halo) {
+      const { lines, size } = twoLineName(name, maxW, maxSize);
+      const lh = size * 1.06, top = cy - (lines.length - 1) * lh / 2;
+      return lines.map((ln, i) => `<text x="${x}" y="${(top + i * lh).toFixed(1)}" font-family="${HEAVY}" font-size="${size.toFixed(1)}" font-weight="800" fill="#ffffff" dominant-baseline="central"${halo}>${esc(ln)}</text>`).join('');
+    }
+    function updatedLine() {
+      const d = STATE.lastMatchDate ? new Date(STATE.lastMatchDate) : new Date();
+      const day = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Sydney' });
+      return STATE.matchCount === 0 ? `Preseason ratings, carried in from ${Number(STATE.season) - 1}.` : `Rankings updated ${day}.`;
+    }
+    const nrrText = (r) => `${r.seasonNRR >= 0 ? '+' : ''}${r.seasonNRR.toFixed(3)}`;
+    const stadiumDefs = (keyed) => `<defs>`
+      + `<filter id="sdGlow" x="-5%" y="-60%" width="110%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="${CPL.accent}" flood-opacity=".45"/></filter>`
+      + `<linearGradient id="sdRow" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0d2c15" stop-opacity="${keyed ? .78 : .94}"/><stop offset="1" stop-color="#05170a" stop-opacity="${keyed ? .78 : .94}"/></linearGradient>`
+      + (keyed ? `<filter id="sdsh" x="-20%" y="-40%" width="140%" height="180%"><feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-color="#020a04" flood-opacity=".9"/></filter>` : '')
+      + `</defs>`;
+
+    // Shared body for the landscape table and the social tile: column bar, rows,
+    // footer. `L` carries the geometry; the two callers differ only in numbers.
+    function stadiumBody(s, L, halo) {
+      const rows = STATE.ranking, A = CPL.accent, muted = 'rgba(255,255,255,.72)';
+      const fc = (STATE.matchCount === 0 && STATE.forecast) ? STATE.forecast : null;
+      s += `<rect x="${L.x0}" y="${L.barY}" width="${L.x1 - L.x0}" height="${L.barH}" rx="10" fill="#04180b" fill-opacity=".9" stroke="${A}" stroke-width="1.6" filter="url(#sdGlow)"/>`;
+      const hy = L.barY + L.barH / 2, hs = L.headSize;
+      const head = (x, t, anchor) => `<text x="${x}" y="${hy}" font-family="${HEAVY}" font-size="${hs}" font-weight="800" letter-spacing="1" fill="#ffffff" text-anchor="${anchor || 'middle'}" dominant-baseline="central"${halo}>${t}</text>`;
+      s += head(L.badgeX, '#') + head(L.nameX, 'TEAM', 'start');
+      if (L.codeX) s += head(L.codeX, '');
+      s += head(L.wX, fc ? 'W*' : 'W') + head(L.lX, fc ? 'L*' : 'L') + head(L.nrrX, 'NRR') + head(L.mvX, 'MOVE') + head(L.formX, 'FORM') + head(L.ratingX, 'RATING');
+      rows.forEach((r, i) => {
+        const y = L.rowTop + i * L.rh, ch = L.rh - L.gap, cy = y + ch / 2;
+        s += `<rect x="${L.x0}" y="${y}" width="${L.x1 - L.x0}" height="${ch}" rx="10" fill="url(#sdRow)" stroke="${A}" stroke-opacity=".16"/>`;
+        s += rankBadge(L.badgeX, cy, L.badge, r.rank);
+        s += teamMarkAt(r.name, L.logoX, cy, L.logoR);
+        s += nameSvg(L.nameX, cy, r.name, L.nameW, L.nameSize, halo);
+        if (L.codeX) s += `<text x="${L.codeX}" y="${cy}" font-family="${HEAVY}" font-size="${L.codeSize}" font-weight="700" letter-spacing="1" fill="${muted}" text-anchor="middle" dominant-baseline="central"${halo}>${esc(r.short)}</text>`;
+        const rec = fc && fc.teams[r.name] ? fc.teams[r.name] : r;
+        const num = (x, t, size, fill) => `<text x="${x}" y="${cy}" font-family="${HEAVY}" font-size="${size}" font-weight="800" fill="${fill || '#ffffff'}" text-anchor="middle" dominant-baseline="central"${halo}>${esc(t)}</text>`;
+        s += num(L.wX, rec.won, L.numSize) + num(L.lX, rec.lost, L.numSize) + num(L.nrrX, nrrText(r), L.numSize * 0.92);
+        const mv = movementText(r);
+        if (mv) s += num(L.mvX, mv, L.numSize * 0.8, r.movement === 'up' ? '#5BE37D' : r.movement === 'down' ? '#FF6B5E' : A);
+        s += formPills(L.formX, cy, L.pillR, (r.formRecord && r.formRecord.seq) || []);
+        s += `<text x="${L.ratingX}" y="${cy}" font-family="${HEAVY}" font-size="${L.ratingSize}" font-weight="900" fill="${A}" text-anchor="middle" dominant-baseline="central"${halo}>${r.scoreDisplay.toFixed(1)}</text>`;
+      });
+      const fy = L.footY;
+      s += `<text x="${L.x0}" y="${fy}" font-family="${HEAVY}" font-size="${L.footSize}" font-weight="700" fill="#ffffff"${halo}>Ranked on win%, NRR, form, phase splits and strength of schedule.</text>`;
+      s += `<text x="${L.x0}" y="${fy + L.footSize * 1.45}" font-family="${HEAVY}" font-size="${L.footSize}" font-weight="700" fill="#ffffff"${halo}>${esc(updatedLine())}${fc ? ' *W/L projected for the season.' : ''}</text>`;
+      return s;
+    }
+
+    function stadiumTableSvg(opts) {
+      const n = STATE.ranking.length;
+      const keyed = ((opts && opts.bg) || cplBackground()) !== 'solid';
+      const noPage = keyed || (opts && opts.noPage);
+      const halo = keyed ? ' filter="url(#sdsh)"' : '';
+      const W = 1280, pad = 36, rh = 80;
+      const titleY = 268, barY = 322, barH = 50, rowTop = barY + barH + 12;
+      const footY = rowTop + n * rh + 34;
+      const H = footY + 76;
+      const scale = (opts && opts.scale) || 1;
+      SVG_LINKS = [];
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="${HEAVY}">`;
+      s += stadiumDefs(keyed);
+      if (!noPage) s += stadiumBackdrop(W, H);
+      s += stadiumLockup(pad, 26, 128, halo);
+      s += brandBlock({
+        W, H, pad, blockT: 30, qrS: 82, gap: 18, logoW: 210,
+        capSize: 11, urlSize: 14.5, ctxSize: 13, ctxGap: 20, fallbackSize: 32,
+        capFill: 'rgba(255,255,255,.8)', markFill: '#ffffff', linkFill: CPL.accent, halo,
+        ctx: esc(BRAND_CFG.editionLabel || `SEASON ${STATE.season}`),
+      });
+      // Trophy, right of the title and under the attribution block.
+      let titleW = W - 2 * pad;
+      if (BRAND.trophy) {
+        const th = barY - 150 + 30, tw = th * (BRAND.trophyAR || 0.6);
+        s += `<image x="${W - pad - 70 - tw}" y="150" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
+        titleW = W - 2 * pad - tw - 110;
+      }
+      s += stadiumTitle(pad, titleY - 22, Math.min(titleW, 820), 104, halo).svg;
+      s += stadiumSubtitle(pad + 4, titleY + 26, 15, halo);
+      s = stadiumBody(s, {
+        x0: pad, x1: W - pad, barY, barH, rowTop, rh, gap: 10, headSize: 15,
+        badgeX: pad + 40, badge: 46, logoX: pad + 112, logoR: 30, nameX: pad + 160, nameW: 300, nameSize: 23,
+        codeX: 548, codeSize: 16, wX: 630, lX: 700, nrrX: 800, mvX: 900, formX: 1035, pillR: 14,
+        ratingX: 1180, ratingSize: 34, numSize: 25, footY, footSize: 14,
+      }, halo);
+      if (!(opts && opts.noWillow)) s += partnerMarks(W - pad, footY - 26, 70, 66, '#ffffff', halo, true);
+      return s + `</svg>`;
+    }
+
+    function stadiumTileSvg(opts) {
+      const n = STATE.ranking.length;
+      const keyed = !!(opts && opts.transparent);
+      const halo = keyed ? ' filter="url(#sdsh)"' : '';
+      const W = SOCIAL_W, H = SOCIAL_H, pad = 40;
+      const scale = (opts && opts.scale) || 1;
+      SVG_LINKS = [];
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="0 0 ${W} ${H}" font-family="${HEAVY}">`;
+      s += stadiumDefs(keyed);
+      if (!keyed) s += stadiumBackdrop(W, H);
+      s += stadiumLockup(pad, 34, 118, halo);
+      s += brandBlock({
+        W, H, pad, blockT: 38, qrS: 80, gap: 18, logoW: 210,
+        capSize: 12, urlSize: 16, ctxSize: 14, ctxGap: 21, fallbackSize: 32,
+        capFill: 'rgba(255,255,255,.8)', markFill: '#ffffff', linkFill: CPL.accent, halo,
+        ctx: esc(BRAND_CFG.editionLabel || `SEASON ${STATE.season}`),
+      });
+      const barY = 318, barH = 46, rowTop = barY + barH + 12;
+      let titleW = W - 2 * pad;
+      if (BRAND.trophy) {
+        const th = barY - 165 + 20, tw = th * (BRAND.trophyAR || 0.6);
+        s += `<image x="${W - pad - 30 - tw}" y="165" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
+        titleW = W - 2 * pad - tw - 50;
+      }
+      s += stadiumTitle(pad, 252, Math.min(titleW, 760), 96, halo).svg;
+      s += stadiumSubtitle(pad + 4, 292, 14, halo);
+      const markH = 70, footTop = H - pad - markH - 14;
+      const rh = Math.min(110, Math.floor((footTop - rowTop) / Math.max(1, n)));
+      s = stadiumBody(s, {
+        x0: pad, x1: W - pad, barY, barH, rowTop, rh, gap: 10, headSize: 14,
+        badgeX: pad + 34, badge: 44, logoX: pad + 100, logoR: 27, nameX: pad + 142, nameW: 268, nameSize: 25,
+        codeX: 0, wX: 498, lX: 552, nrrX: 640, mvX: 724, formX: 846, pillR: 13,
+        ratingX: 985, ratingSize: 36, numSize: 26, footY: H - pad - markH / 2 - 6, footSize: 15,
+      }, halo);
+      s += partnerMarks(W - pad, H - pad - markH, Math.round(markH * 0.939), markH, '#ffffff', halo, true);
+      return s + `</svg>`;
+    }
+
     // Template picker. Every download path goes through here, so the switch in
     // the export bar is the single place that decides which house style ships.
     // While the ZIP is being assembled every export has to be produced in a
@@ -2582,7 +2866,8 @@
       const sel = $('tplSelect'); return sel ? sel.value : 'willow';
     }
     function buildTableSvg(opts) {
-      return currentTemplate() === 'cpl' ? cplTableSvg(opts) : tableSvg(opts);
+      if (currentTemplate() !== 'cpl') return tableSvg(opts);
+      return isStadium() ? stadiumTableSvg(opts) : cplTableSvg(opts);
     }
 
     function saveBlob(blob, name) {
@@ -2908,7 +3193,17 @@
       const [logoAR, willowAR, barbadosAR] = await Promise.all([
         measureAR(mark, 8), measureAR(willowArt, 0.939), measureAR(barbArt, 6),
       ]);
+      // Stadium theme drop-ins: the designer's backdrop still and trophy cut-out.
+      // Both optional — without the backdrop the stadium look is drawn in vector,
+      // without the trophy the title simply has the width to itself.
+      const stadium = BRAND_CFG.theme === 'stadium';
+      const [backdrop, trophyRaw] = stadium
+        ? await Promise.all([firstAsset(BRAND_CFG.backdrop), firstAsset(BRAND_CFG.trophy)])
+        : [null, null];
+      const trophy = trophyRaw ? ((await tightCrop(trophyRaw)) || trophyRaw) : null;
+      const [backdropAR, trophyAR] = await Promise.all([measureAR(backdrop, 16 / 9), measureAR(trophy, 0.6)]);
       BRAND = {
+        backdrop, backdropAR, trophy, trophyAR,
         logo: mark, logoAR, qr, willow: willowArt, willowAR,
         cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
         willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift,
@@ -3125,7 +3420,10 @@
       // The table is authored in fixed units and its height grows with the field,
       // so the fit is measured off the real thing rather than assumed: render at
       // scale 1 and read the height the SVG declares for itself.
-      const probe = buildTableSvg({ transparent: tr, noWillow: true, scale: 1 });
+      // Stadium, solid: the backdrop is painted across the whole frame below and
+      // the table is built without its own, so the picture runs edge to edge.
+      const stadiumFrame = !tr && currentTemplate() === 'cpl' && isStadium();
+      const probe = buildTableSvg({ transparent: tr, noWillow: true, noPage: stadiumFrame, scale: 1 });
       const unitH = +(/height="(\d+)"/.exec(probe) || [])[1] || unitW * 0.78;
       const q = fixedScale(), FW = TV_W * q, FH = TV_H * q;
       const scale = Math.min((FH * (1 - 2 * TV_INSET)) / unitH,
@@ -3133,12 +3431,13 @@
       // Rasterized at frame scale, not scaled up afterwards, so the type stays
       // vector-sharp. opaque=false either way: on the solid path the plate is
       // painted onto the frame below, which covers the whole 1920x1080.
-      const table = await rasterize(buildTableSvg({ transparent: tr, noWillow: true, scale }), false);
+      const table = await rasterize(buildTableSvg({ transparent: tr, noWillow: true, noPage: stadiumFrame, scale }), false);
       const c = document.createElement('canvas');
       c.width = FW; c.height = FH;
       const ctx = c.getContext('2d');
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       if (!tr) { ctx.fillStyle = tvPlate(); ctx.fillRect(0, 0, FW, FH); }
+      if (stadiumFrame) ctx.drawImage(await rasterize(stadiumBackdropSvg(FW, FH), false), 0, 0);
       ctx.drawImage(table, Math.round((FW - table.width) / 2), Math.round((FH - table.height) / 2));
       return {
         name: exportName('png', `tv-${tr ? 'transparent' : 'solid'}-${FW}x${FH}`),

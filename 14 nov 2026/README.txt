@@ -2,7 +2,7 @@ wbbl-power-rankings-week-3-2026-11-15
 =====================================
 
 Women's Big Bash League 2026 — power rankings
-Built 15/11/2026, 12:56:04 am · 22 matches played · Week 3
+Built 15/11/2026, 7:52:44 pm · 22 matches played · Week 3
 Movement is measured against the previous render.
 
 THE TABLE IN THIS BUNDLE
@@ -22,12 +22,12 @@ FILES
         The website payload — upload this on the site's /admin page. Same table as the graphics.
 
   wbbl-website/
-    01-table-3840x3102-translucent.png
-        Ranking table, 3840x3102, alpha channel kept — key this over a feed or a photograph.
-    02-table-3840x3102-solid.png
-        Ranking table, 3840x3102, on its solid plate — for anywhere without a key.
+    01-table-3840x3402-translucent.png
+        Ranking table, 3840x3402, alpha channel kept — key this over a feed or a photograph.
+    02-table-3840x3402-solid.png
+        Ranking table, 3840x3402, on its solid plate — for anywhere without a key.
     03-table-print.pdf
-        Ranking table for print, lossless at 3840x3102 (~370 DPI). The Champhunt URL is a live link.
+        Ranking table for print, lossless at 3840x3402 (~370 DPI). The Champhunt URL is a live link.
     04-table-vector.svg
         Ranking table as vector artwork. Scales to any size with no loss; open in Illustrator/Figma.
     05-tv-1920x1080-translucent-3x.png

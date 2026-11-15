@@ -154,6 +154,9 @@ function buildState(rows) {
     optionalWeights: config.optionalWeights || {},
     enabled: config.enabled || {},
     matchCount: sim.getData().matches.length,
+    // Date of the latest result on the table — the stadium template's
+    // "Rankings updated …" line. Null before a ball is bowled.
+    lastMatchDate: sim.getData().matches.reduce((d, m) => (m.date && String(m.date) > d ? String(m.date) : d), '') || null,
     // Preseason forecast: each side's projected league record, computed from the
     // same priors the opening ratings come from. Null in Fresh Start, which has
     // no past to project from. The graphics show it only while nothing has been

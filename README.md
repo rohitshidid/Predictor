@@ -203,7 +203,7 @@ Floors and caps keep the table publishable — results must visibly drive it, an
 | Phase splits in the prior | zero (no ball-by-ball in the review) | **real** — powerplay (overs 1-6) and death (16-20) summed from ESPN's over-by-over runs |
 | Squad continuity | from the review's movement tables | not applied yet — no sourced WBBL retention table (add `squadMovement` per team to switch it on) |
 | Key players (`squadStars`) | 3-5 per side | 0 for every side, i.e. neutral, until there is a sourced availability feed |
-| Website template | navy/lime, "CPL · website" | green/lime, "WBBL · website" — palette in the season file's `brand` block |
+| Website template | navy/lime card, "CPL · website" | **stadium theme** (`brand.theme: "stadium"`), matching Champhunt's WBBL points-table graphic: floodlit green backdrop with lime slashes, league lock-up, "POWER **RANKINGS**" heavy italic title, gold/silver/bronze rank badges, W/L form pills, "Rankings updated <date of last result>". Applies to the website table, 16:9 and social tile; the Willow broadcast set keeps Willow's style. Backdrop and trophy are drop-ins (`public/logos/wbbl-backdrop.*`, `wbbl-trophy.png`); without them the backdrop is drawn and there is no trophy |
 | QR / link | `qr.png` → champhunt.com/cpl | `qr-wbbl.png` → champhunt.com/wbbl |
 | Presenting sponsor | Visit Barbados beside Willow | none — Willow stands alone (`brand.sponsor: null`) |
 | League mark | `cpl.png` | `wbbl.png` — the Weber WBBL shield from the official lock-up (154×171 px; swap in a high-res/vector mark when available) |

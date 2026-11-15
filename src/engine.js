@@ -291,7 +291,9 @@ function streakOf(t) {
 }
 function formRecord(t, window) {
   const recent = t.results.slice(-window);
-  return { wins: recent.filter((r) => r.win).length, of: recent.length };
+  // `seq` is the same window as W/L letters, oldest first — the form pills on
+  // the stadium template and on the website read it in that order.
+  return { wins: recent.filter((r) => r.win).length, of: recent.length, seq: recent.map((r) => (r.win ? 'W' : 'L')) };
 }
 
 // Map the raw 0-100 index onto the published band. Order-preserving; clamped so

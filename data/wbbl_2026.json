@@ -144,7 +144,18 @@
       "tileCard": "#0D2E18",
       "translucentCard": "rgba(4,24,11,.74)"
     },
-    "bgName": "green"
+    "bgName": "green",
+    "theme": "stadium",
+    "editionLabel": "WBBL | 12",
+    "backdrop": [
+      "/logos/wbbl-backdrop.jpg",
+      "/logos/wbbl-backdrop.png",
+      "/logos/wbbl-backdrop.webp"
+    ],
+    "trophy": [
+      "/logos/wbbl-trophy.png",
+      "/logos/wbbl-trophy.webp"
+    ]
   },
   "_logoNote": "Team logos are the official team tiles published by bigbash.com.au (Cricket Australia static-files .../flag/<caTeamId>.png, 300x200). Primary colours are the teamColor values from the same official data."
 }
