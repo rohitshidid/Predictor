@@ -212,6 +212,9 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
 
   const top = teams[0];
   const region = meta.region || data.region || data.leagueShort || data.league;
+  // "the" belongs to the league fallback ("in the CPL"), not to a place name:
+  // WBBL's region "Australia" read "in the Australia".
+  const where = meta.region || data.region || `the ${data.leagueShort || data.league}`;
 
   return {
     kind: 'champhunt-site-rankings',
@@ -233,7 +236,7 @@ function buildSitePayload({ data, config, blurbs = {}, prevRanks = {}, meta = {}
     // ever as good as the team name it is built from.
     headline:
       meta.headline ||
-      (top ? `${top.short} are playing the best cricket in the ${region} right now.` : ''),
+      (top ? `${top.short} are playing the best cricket in ${where} right now.` : ''),
     subhead: meta.subhead || 'Not our opinion. Nine measurements, one number, no editorial.',
 
     // Next fixture for the hero countdown. Null => the site keeps its own value.

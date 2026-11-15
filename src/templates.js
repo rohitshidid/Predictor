@@ -37,7 +37,11 @@ function factSheet(r) {
     powerplay: signed(r.powerplayDominance) + ' PP dominance',
     death: `death net ${signed(r.deathOversNet, 0)}`,
     homeAway: `home ${pct(r.homeWinPct)} / away ${pct(r.awayWinPct)}`,
-    stars: `${r.starsAvailable}/${r.squadStars} stars available`,
+    // squadStars 0 = no player data for this league (WBBL), not "no stars":
+    // "0/0 stars available" led the model to write that a side had no stars.
+    stars: r.squadStars
+      ? `${r.starsAvailable}/${r.squadStars} stars available`
+      : 'not tracked (no player data) — do not mention',
     movement: movementPhrase(r),
   };
 }
