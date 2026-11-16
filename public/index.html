@@ -2690,12 +2690,18 @@
       const text = STATE.matchCount === 0 ? 'PRESEASON POWER RANKINGS' : 'POWER RANKINGS';
       const words = text.split(' '), last = words.pop();
       const size = Math.min(maxSize, maxSize * maxW / heavyWidth(text, maxSize, 900, true));
-      return { size, svg: `<text x="${x}" y="${baseY}" font-family="${HEAVY}" font-size="${size.toFixed(1)}" font-weight="900" font-style="italic" letter-spacing="-1" fill="#ffffff"${halo}>${esc(words.join(' '))} <tspan fill="${CPL.accent}">${esc(last)}</tspan></text>` };
+      // Rendered width: the measure plus the -1 letter-spacing the text is set with.
+      const width = heavyWidth(text, size, 900, true) - text.length;
+      return { size, width, svg: `<text x="${x}" y="${baseY}" font-family="${HEAVY}" font-size="${size.toFixed(1)}" font-weight="900" font-style="italic" letter-spacing="-1" fill="#ffffff"${halo}>${esc(words.join(' '))} <tspan fill="${CPL.accent}">${esc(last)}</tspan></text>` };
     }
-    // — WOMEN'S BIG BASH LEAGUE 2026 — with lime rules either side.
-    function stadiumSubtitle(x, y, size, halo) {
+    // — WOMEN'S BIG BASH LEAGUE 2026 — with lime rules either side. Given
+    // `width` (the title's), the rules stretch so the line spans exactly the
+    // title above it — the two read as one locked block, edge to edge, which
+    // the client asked for on the WBBL artwork.
+    function stadiumSubtitle(x, y, size, halo, width) {
       const text = `${String(STATE.league).toUpperCase()} ${STATE.season}`;
-      const track = size * 0.28, tw = heavyWidth(text, size, 700) + track * text.length, rule = size * 3.2, gap = size * 0.9;
+      const track = size * 0.28, tw = heavyWidth(text, size, 700) + track * text.length, gap = size * 0.9;
+      const rule = width ? Math.max(size * 1.5, (width - tw - 2 * gap) / 2) : size * 3.2;
       let g = `<rect x="${x}" y="${y - size * 0.38}" width="${rule}" height="2" fill="${CPL.accent}"/>`;
       g += `<text x="${x + rule + gap}" y="${y}" font-family="${HEAVY}" font-size="${size}" font-weight="700" letter-spacing="${track.toFixed(2)}" fill="#ffffff"${halo}>${esc(text)}</text>`;
       g += `<rect x="${x + rule + 2 * gap + tw}" y="${y - size * 0.38}" width="${rule}" height="2" fill="${CPL.accent}"/>`;
@@ -2826,8 +2832,9 @@
         s += t.svg;
         titleW = t.left - pad - 30;
       }
-      s += stadiumTitle(pad, titleY - 22, Math.min(titleW, 820), 104, halo).svg;
-      s += stadiumSubtitle(pad + 4, titleY + 26, 15, halo);
+      const title = stadiumTitle(pad, titleY - 22, Math.min(titleW, 820), 104, halo);
+      s += title.svg;
+      s += stadiumSubtitle(pad + 4, titleY + 26, 15, halo, title.width - 4);
       s = stadiumBody(s, {
         x0: pad, x1: W - pad, barY, barH, rowTop, rh, gap: 10, headSize: 15,
         badgeX: pad + 40, badge: 46, logoX: pad + 110, logoR: 30, logoW: 74, nameX: pad + 160, nameW: 300, nameSize: 23,
@@ -2862,8 +2869,9 @@
         s += t.svg;
         titleW = t.left - pad - 24;
       }
-      s += stadiumTitle(pad, 284, Math.min(titleW, 760), 96, halo).svg;
-      s += stadiumSubtitle(pad + 4, 324, 14, halo);
+      const title = stadiumTitle(pad, 284, Math.min(titleW, 760), 96, halo);
+      s += title.svg;
+      s += stadiumSubtitle(pad + 4, 324, 14, halo, title.width - 4);
       const markH = 70, footTop = H - pad - markH - 14;
       const rh = Math.min(110, Math.floor((footTop - rowTop) / Math.max(1, n)));
       s = stadiumBody(s, {
