@@ -2587,8 +2587,21 @@
     const FORM_FILL = { W: '#1FA94B', L: '#E0352B' };
 
     function stadiumBackdrop(W, H) {
-      if (BRAND.backdrop) {
-        return `<image x="0" y="0" width="${W}" height="${H}" href="${BRAND.backdrop}" preserveAspectRatio="xMidYMid slice"/>`;
+      // Designer stills: a landscape and a portrait cut. Each frame takes the one
+      // whose shape is closer to its own (16:9 -> landscape, 4:5 tile -> portrait)
+      // so the cover-fit crops as little of the artwork as possible. The still is
+      // busy at the top (a floodlight ring sits behind the title), so a dark wash
+      // runs down from the top and up from the foot to keep the type readable.
+      const stills = [[BRAND.backdrop, BRAND.backdropAR], [BRAND.backdropPortrait, BRAND.backdropPortraitAR]]
+        .filter(([uri]) => uri);
+      if (stills.length) {
+        const ar = W / H, off = (a) => Math.abs(Math.log((a || ar) / ar));
+        const [uri] = stills.sort((a, b) => off(a[1]) - off(b[1]))[0];
+        return `<defs><linearGradient id="sdScrim" x1="0" y1="0" x2="0" y2="1">`
+          + `<stop offset="0" stop-color="#000" stop-opacity=".62"/><stop offset=".3" stop-color="#000" stop-opacity=".42"/>`
+          + `<stop offset=".62" stop-color="#000" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient></defs>`
+          + `<image x="0" y="0" width="${W}" height="${H}" href="${uri}" preserveAspectRatio="xMidYMid slice"/>`
+          + `<rect width="${W}" height="${H}" fill="url(#sdScrim)"/>`;
       }
       const A = CPL.accent, u = Math.min(W, H) / 1000;
       let d = `<defs>`
@@ -2790,8 +2803,10 @@
       // Trophy, right of the title and under the attribution block.
       let titleW = W - 2 * pad;
       if (BRAND.trophy) {
-        const th = barY - 150 + 30, tw = th * (BRAND.trophyAR || 0.6);
-        s += `<image x="${W - pad - 70 - tw}" y="150" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
+        // Stands on the column bar without dipping into it: the bar is translucent,
+        // so anything behind it shows through the header labels.
+        const ty = 138, th = barY - 8 - ty, tw = th * (BRAND.trophyAR || 0.6);
+        s += `<image x="${W - pad - 70 - tw}" y="${ty}" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
         titleW = W - 2 * pad - tw - 110;
       }
       s += stadiumTitle(pad, titleY - 22, Math.min(titleW, 820), 104, halo).svg;
@@ -2826,8 +2841,8 @@
       const barY = 318, barH = 46, rowTop = barY + barH + 12;
       let titleW = W - 2 * pad;
       if (BRAND.trophy) {
-        const th = barY - 165 + 20, tw = th * (BRAND.trophyAR || 0.6);
-        s += `<image x="${W - pad - 30 - tw}" y="165" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
+        const ty = 148, th = barY - 8 - ty, tw = th * (BRAND.trophyAR || 0.6);
+        s += `<image x="${W - pad - 30 - tw}" y="${ty}" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
         titleW = W - 2 * pad - tw - 50;
       }
       s += stadiumTitle(pad, 252, Math.min(titleW, 760), 96, halo).svg;
@@ -3197,13 +3212,15 @@
       // Both optional — without the backdrop the stadium look is drawn in vector,
       // without the trophy the title simply has the width to itself.
       const stadium = BRAND_CFG.theme === 'stadium';
-      const [backdrop, trophyRaw] = stadium
-        ? await Promise.all([firstAsset(BRAND_CFG.backdrop), firstAsset(BRAND_CFG.trophy)])
-        : [null, null];
+      const [backdrop, backdropPortrait, trophyRaw] = stadium
+        ? await Promise.all([firstAsset(BRAND_CFG.backdrop), firstAsset(BRAND_CFG.backdropPortrait), firstAsset(BRAND_CFG.trophy)])
+        : [null, null, null];
       const trophy = trophyRaw ? ((await tightCrop(trophyRaw)) || trophyRaw) : null;
-      const [backdropAR, trophyAR] = await Promise.all([measureAR(backdrop, 16 / 9), measureAR(trophy, 0.6)]);
+      const [backdropAR, backdropPortraitAR, trophyAR] = await Promise.all([
+        measureAR(backdrop, 16 / 9), measureAR(backdropPortrait, 0.8), measureAR(trophy, 0.6),
+      ]);
       BRAND = {
-        backdrop, backdropAR, trophy, trophyAR,
+        backdrop, backdropAR, backdropPortrait, backdropPortraitAR, trophy, trophyAR,
         logo: mark, logoAR, qr, willow: willowArt, willowAR,
         cpl: cplTrim || cpl, cplDark: cplLift || cplTrim || cpl,
         willowWhite: willowWhiteTrim || willowWhite, willowDark: willowLift,

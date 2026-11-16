@@ -152,6 +152,11 @@
       "/logos/wbbl-backdrop.png",
       "/logos/wbbl-backdrop.webp"
     ],
+    "backdropPortrait": [
+      "/logos/wbbl-backdrop-portrait.jpg",
+      "/logos/wbbl-backdrop-portrait.png",
+      "/logos/wbbl-backdrop-portrait.webp"
+    ],
     "trophy": [
       "/logos/wbbl-trophy.png",
       "/logos/wbbl-trophy.webp"
