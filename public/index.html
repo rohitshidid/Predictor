@@ -1975,12 +1975,15 @@
       const logoX = brandR - o.logoW;
       const capY = o.blockT + o.capSize * 0.74;         // cap-height on the block top
       const urlY = blockB - 3;                          // descenders on the block foot
-      const logoY = capY + 3 + ((urlY - o.urlSize * 0.72 - capY - 3) - logoH) / 2;
+      let logoY = capY + 3 + ((urlY - o.urlSize * 0.72 - capY - 3) - logoH) / 2;
       const halo = o.halo || '';
       let g = '';
       if (BRAND.qr) g += `<image x="${qrX}" y="${o.blockT}" width="${o.qrS}" height="${o.qrS}" href="${BRAND.qr}"/>`;
       else g += placeholderQr(qrX, o.blockT, o.qrS);
-      g += `<text x="${brandR}" y="${capY.toFixed(2)}"`
+      // `noCaption` (the stadium theme) drops "Powered by" and centres the mark
+      // and link on the QR, as in the WBBL reference artwork.
+      if (o.noCaption) logoY = o.blockT + ((urlY - o.urlSize * 0.72 - o.blockT) - logoH) / 2;
+      else g += `<text x="${brandR}" y="${capY.toFixed(2)}"`
         + ` font-size="${o.capSize}" font-weight="600" letter-spacing=".4" fill="${o.capFill}"`
         + `${o.capOpacity ? ` opacity="${o.capOpacity}"` : ''}`
         + ` text-anchor="end"${halo}>Powered by</text>`;
@@ -2762,7 +2765,7 @@
         const y = L.rowTop + i * L.rh, ch = L.rh - L.gap, cy = y + ch / 2;
         s += `<rect x="${L.x0}" y="${y}" width="${L.x1 - L.x0}" height="${ch}" rx="10" fill="url(#sdRow)" stroke="${A}" stroke-opacity=".16"/>`;
         s += rankBadge(L.badgeX, cy, L.badge, r.rank);
-        s += teamMarkAt(r.name, L.logoX, cy, L.logoR);
+        s += teamMarkAt(r.name, L.logoX, cy, L.logoR, L.logoW);
         s += nameSvg(L.nameX, cy, r.name, L.nameW, L.nameSize, halo);
         if (L.codeX) s += `<text x="${L.codeX}" y="${cy}" font-family="${HEAVY}" font-size="${L.codeSize}" font-weight="700" letter-spacing="1" fill="${muted}" text-anchor="middle" dominant-baseline="central"${halo}>${esc(r.short)}</text>`;
         const rec = fc && fc.teams[r.name] ? fc.teams[r.name] : r;
@@ -2779,13 +2782,29 @@
       return s;
     }
 
+    // The trophy as the WBBL reference artwork places it: large, centred on cx,
+    // its bowl just under the attribution block and its foot cut off at the
+    // column bar, as if standing behind it. The bar is translucent, so the cut
+    // is a clip rather than an overlap. TROPHY_SHOWN is the share of the
+    // trimmed cut-out kept above the bar: bowl and pillar, not the plinth.
+    const TROPHY_SHOWN = 0.86;
+    function stadiumTrophy(cx, top, barY, id) {
+      const vis = barY - 4 - top, th = vis / TROPHY_SHOWN, tw = th * (BRAND.trophyAR || 0.6);
+      const x = cx - tw / 2;
+      return {
+        left: x,
+        svg: `<clipPath id="${id}"><rect x="${x - 2}" y="${top - 2}" width="${tw + 4}" height="${vis + 2}"/></clipPath>`
+          + `<image x="${x.toFixed(1)}" y="${top}" width="${tw.toFixed(1)}" height="${th.toFixed(1)}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMin meet" clip-path="url(#${id})"/>`,
+      };
+    }
+
     function stadiumTableSvg(opts) {
       const n = STATE.ranking.length;
       const keyed = ((opts && opts.bg) || cplBackground()) !== 'solid';
       const noPage = keyed || (opts && opts.noPage);
       const halo = keyed ? ' filter="url(#sdsh)"' : '';
       const W = 1280, pad = 36, rh = 80;
-      const titleY = 268, barY = 322, barH = 50, rowTop = barY + barH + 12;
+      const titleY = 292, barY = 352, barH = 50, rowTop = barY + barH + 12;
       const footY = rowTop + n * rh + 34;
       const H = footY + 76;
       const scale = (opts && opts.scale) || 1;
@@ -2795,7 +2814,7 @@
       if (!noPage) s += stadiumBackdrop(W, H);
       s += stadiumLockup(pad, 26, 128, halo);
       s += brandBlock({
-        W, H, pad, blockT: 30, qrS: 82, gap: 18, logoW: 210,
+        W, H, pad, blockT: 30, qrS: 82, gap: 18, logoW: 240, noCaption: true,
         capSize: 11, urlSize: 14.5, ctxSize: 13, ctxGap: 20, fallbackSize: 32,
         capFill: 'rgba(255,255,255,.8)', markFill: '#ffffff', linkFill: CPL.accent, halo,
         ctx: esc(BRAND_CFG.editionLabel || `SEASON ${STATE.season}`),
@@ -2803,17 +2822,15 @@
       // Trophy, right of the title and under the attribution block.
       let titleW = W - 2 * pad;
       if (BRAND.trophy) {
-        // Stands on the column bar without dipping into it: the bar is translucent,
-        // so anything behind it shows through the header labels.
-        const ty = 138, th = barY - 8 - ty, tw = th * (BRAND.trophyAR || 0.6);
-        s += `<image x="${W - pad - 70 - tw}" y="${ty}" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
-        titleW = W - 2 * pad - tw - 110;
+        const t = stadiumTrophy(W - pad - 110, 142, barY, 'sdTroT');
+        s += t.svg;
+        titleW = t.left - pad - 30;
       }
       s += stadiumTitle(pad, titleY - 22, Math.min(titleW, 820), 104, halo).svg;
       s += stadiumSubtitle(pad + 4, titleY + 26, 15, halo);
       s = stadiumBody(s, {
         x0: pad, x1: W - pad, barY, barH, rowTop, rh, gap: 10, headSize: 15,
-        badgeX: pad + 40, badge: 46, logoX: pad + 112, logoR: 30, nameX: pad + 160, nameW: 300, nameSize: 23,
+        badgeX: pad + 40, badge: 46, logoX: pad + 110, logoR: 30, logoW: 74, nameX: pad + 160, nameW: 300, nameSize: 23,
         codeX: 548, codeSize: 16, wX: 630, lX: 700, nrrX: 800, mvX: 900, formX: 1035, pillR: 14,
         ratingX: 1180, ratingSize: 34, numSize: 25, footY, footSize: 14,
       }, halo);
@@ -2833,25 +2850,25 @@
       if (!keyed) s += stadiumBackdrop(W, H);
       s += stadiumLockup(pad, 34, 118, halo);
       s += brandBlock({
-        W, H, pad, blockT: 38, qrS: 80, gap: 18, logoW: 210,
+        W, H, pad, blockT: 38, qrS: 80, gap: 18, logoW: 240, noCaption: true,
         capSize: 12, urlSize: 16, ctxSize: 14, ctxGap: 21, fallbackSize: 32,
         capFill: 'rgba(255,255,255,.8)', markFill: '#ffffff', linkFill: CPL.accent, halo,
         ctx: esc(BRAND_CFG.editionLabel || `SEASON ${STATE.season}`),
       });
-      const barY = 318, barH = 46, rowTop = barY + barH + 12;
+      const barY = 356, barH = 46, rowTop = barY + barH + 12;
       let titleW = W - 2 * pad;
       if (BRAND.trophy) {
-        const ty = 148, th = barY - 8 - ty, tw = th * (BRAND.trophyAR || 0.6);
-        s += `<image x="${W - pad - 30 - tw}" y="${ty}" width="${tw}" height="${th}" href="${BRAND.trophy}" preserveAspectRatio="xMidYMax meet"/>`;
-        titleW = W - 2 * pad - tw - 50;
+        const t = stadiumTrophy(W - pad - 100, 150, barY, 'sdTroS');
+        s += t.svg;
+        titleW = t.left - pad - 24;
       }
-      s += stadiumTitle(pad, 252, Math.min(titleW, 760), 96, halo).svg;
-      s += stadiumSubtitle(pad + 4, 292, 14, halo);
+      s += stadiumTitle(pad, 284, Math.min(titleW, 760), 96, halo).svg;
+      s += stadiumSubtitle(pad + 4, 324, 14, halo);
       const markH = 70, footTop = H - pad - markH - 14;
       const rh = Math.min(110, Math.floor((footTop - rowTop) / Math.max(1, n)));
       s = stadiumBody(s, {
         x0: pad, x1: W - pad, barY, barH, rowTop, rh, gap: 10, headSize: 14,
-        badgeX: pad + 34, badge: 44, logoX: pad + 100, logoR: 27, nameX: pad + 142, nameW: 268, nameSize: 25,
+        badgeX: pad + 34, badge: 44, logoX: pad + 98, logoR: 27, logoW: 72, nameX: pad + 142, nameW: 268, nameSize: 25,
         codeX: 0, wX: 498, lX: 552, nrrX: 640, mvX: 724, formX: 846, pillR: 13,
         ratingX: 985, ratingSize: 36, numSize: 26, footY: H - pad - markH / 2 - 6, footSize: 15,
       }, halo);
@@ -3264,11 +3281,13 @@
     }
     // A team's mark inside a square box centred on (cx, cy): the licensed logo
     // if we have it, otherwise the deterministic crest badge.
-    function teamMarkAt(name, cx, cy, r) {
+    // `boxW` widens the slot past a square, so a wide crest (the Strikers'
+    // wordmark, the Sixers' "6ers") is not shrunk to fit a circle-sized box.
+    function teamMarkAt(name, cx, cy, r, boxW) {
       const src = TEAM_LOGOS[name];
       if (!src) return crestSvgAt(name, cx, cy, r);
-      const d = r * 2;
-      return `<image x="${cx - r}" y="${cy - r}" width="${d}" height="${d}" href="${src}" ` +
+      const d = r * 2, w = boxW || d;
+      return `<image x="${cx - w / 2}" y="${cy - r}" width="${w}" height="${d}" href="${src}" ` +
         `preserveAspectRatio="xMidYMid meet"/>`;
     }
     // Placeholder QR: correct finder squares and a deterministic module field so

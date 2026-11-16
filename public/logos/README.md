@@ -17,22 +17,20 @@ brand-coloured crest badge.
 | Melbourne Stars Women | `sta.png` |
 | Hobart Hurricanes Women | `hur.png` |
 
-The eight team logos come **only from the official site**: they are the team tiles
-bigbash.com.au itself serves in its ladder and leaderboards, from Cricket Australia's
-file server — `https://static-files.cricket-australia.pulselive.com/flag/<caTeamId>.png`
-(`caTeamId` is stored per team in `data/wbbl_2026.json`; Sixers 98, Scorchers 95,
-Heat 100, Strikers 99, Thunder 102, Renegades 101, Stars 97, Hurricanes 96). The URLs
-were read from the `logoUrl` field of the site's own embedded team data, which also
-supplies each club's official `teamColor` — now the `colors.primary` in the season file.
+The eight team logos are the clubs' **transparent crests** (the 6ers wordmark, the
+Scorchers sun, the Heat "B", …), matching Champhunt's WBBL reference artwork, which
+shows crests rather than colour tiles. They are ESPN's 500×500 club crests on alpha,
+trimmed to their visible bounds (plus 4 px) so each fills its slot; the stadium rows
+give them a wider-than-square slot so wordmark crests (Strikers, Thunder) are not
+shrunk to a circle. They are used by every template, the Willow set included.
 
-They are 300×200 PNGs of the club emblem on its own colour gradient — a filled tile,
-not a transparent crest — so they render as colour badges, exactly as on
-bigbash.com.au. The official site publishes no transparent or vector crest (no SVG
-at the same path, none in its icon sprite, `teambadgeImageUrl` is empty), and keying
-the tile's background out would lose the white emblems on light placements, so the
-tiles are used as supplied. At 300×200 they are upscaled a little in the 4K / 3×
-exports; if Cricket Australia supplies higher-resolution artwork, drop it in under the
-same file names.
+The previous files were the official bigbash.com.au team tiles — 300×200 PNGs of the
+emblem on a filled colour gradient, from Cricket Australia's file server
+(`https://static-files.cricket-australia.pulselive.com/flag/<caTeamId>.png`; `caTeamId`
+is still stored per team in `data/wbbl_2026.json`, and each club's official
+`teamColor` from the same data is the `colors.primary` there). They are in git history
+(commit 2a916c1) if the tile look is ever wanted back. If Cricket Australia supplies
+official transparent crests, drop them in under the same file names.
 
 | Asset | File | Notes |
 |---|---|---|
